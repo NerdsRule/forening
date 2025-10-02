@@ -1,5 +1,5 @@
 
-namespace Organization.Shared.DatabaseObjets;
+namespace Organization.Shared.DatabaseObjects;
 /// <summary>
 /// Base class for all table objects
 /// </summary>
