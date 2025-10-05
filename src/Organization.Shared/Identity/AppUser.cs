@@ -21,13 +21,7 @@ public class AppUser : IdentityUser
     public int UsedPoints { get; set; }
 
     /// <summary>
-    /// FK to the user's organization.
+    /// Organization membership identifier.
     /// </summary>
-    [ForeignKey(nameof(TOrganization))]
-    public int OrganizationId { get; set; }
-
-    /// <summary>
-    /// Navigation reference to the organization (generic type).
-    /// </summary>
-    public virtual TOrganization? Organization { get; set; }
+    public string? OrganizationMembershipId { get; set; }
 }

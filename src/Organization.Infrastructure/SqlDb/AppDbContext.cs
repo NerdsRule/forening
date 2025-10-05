@@ -14,7 +14,7 @@ public class AppDbContext : IdentityDbContext<AppUser>
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
-        options.UseSqlite("Data Source=org.db");
+        //options.UseSqlite("Data Source=org.db");
         //options.UseSqlServer("Server=tcp:space4it.database.windows.net,1433;Initial Catalog=roskildefestival;Persist Security Info=False;User ID=roskildeowner;Password=[passsword];MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;");
     }
 
