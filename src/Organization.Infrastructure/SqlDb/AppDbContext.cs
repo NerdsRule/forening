@@ -20,6 +20,12 @@ public class AppDbContext : IdentityDbContext<AppUser>
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
+        builder.Entity<AppUser>(entity =>
+        {
+            entity.Property(e => e.Points).HasDefaultValue(0);
+            entity.Property(e => e.UsedPoints).HasDefaultValue(0);
+            entity.Property(e => e.MemberNumber).HasMaxLength(50);
+        });
         builder.Entity<TAppUserOrganization>().HasIndex(u => new { u.AppUserId, u.OrganizationId }).IsUnique();
         builder.Entity<TAppUserDepartment>().HasIndex(u => new { u.AppUserId, u.DepartmentId }).IsUnique();
         // builder.Entity<TProduct>().HasIndex(u => new {u.NormalizedName, u.TProductSizeId, u.TProductTypeId}).IsUnique();

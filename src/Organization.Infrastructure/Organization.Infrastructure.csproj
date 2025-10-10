@@ -28,4 +28,8 @@
     <ProjectReference Include="../Organization.Shared/Organization.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Identity/" />
+  </ItemGroup>
+
 </Project>

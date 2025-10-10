@@ -1,3 +1,4 @@
+
 using Organization.ApiService.V1;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,6 +21,18 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseInMemoryDataba
 
 // Register RootDbReadWrite with scoped lifetime to ensure a new instance per request
 builder.Services.AddScoped<IRootDbReadWrite>(x => new RootDbReadWrite(builder.Services));
+
+// Add Identity services
+builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
+{
+    options.Password.RequireDigit = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = true;
+    options.Password.RequiredLength = 8;
+    options.User.RequireUniqueEmail = true;
+}).AddEntityFrameworkStores<AppDbContext>()
+  .AddDefaultTokenProviders();
 #endregion
 
 var app = builder.Build();

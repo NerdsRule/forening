@@ -21,7 +21,7 @@ public class AppUser : IdentityUser
     public int UsedPoints { get; set; }
 
     /// <summary>
-    /// Organization membership identifier.
+    /// Member number associated with the user.
     /// </summary>
-    public string? OrganizationMembershipId { get; set; }
+    public string? MemberNumber { get; set; }
 }

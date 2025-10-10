@@ -19,6 +19,7 @@ global using Organization.Shared.DatabaseObjects;
 global using Organization.Shared.Interfaces;
 global using Organization.Shared.Identity;
 global using Organization.Infrastructure.SqlDb;
+global using Microsoft.AspNetCore.Identity;
 
 namespace Organization.ApiService;
 
