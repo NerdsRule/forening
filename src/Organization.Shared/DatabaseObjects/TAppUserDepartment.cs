@@ -41,15 +41,5 @@ public class TAppUserDepartment : TBaseTable
     /// <summary>
     /// Role of the user within the department.
     /// </summary>
-    public RoleInDepartmentEnum Role { get; set; } = RoleInDepartmentEnum.Member;
-
-    /// <summary>
-    /// Role of the user within the department.
-    /// </summary>
-    public enum RoleInDepartmentEnum
-    {
-        Member = 0,
-        Admin = 1,
-        Owner = 2
-    }
+    public DepartmentRolesEnum Role { get; set; } = DepartmentRolesEnum.Member;
 }

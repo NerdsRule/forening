@@ -1,6 +1,4 @@
 
-using Organization.ApiService.V1;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add service defaults & Aspire client integrations.
@@ -9,8 +7,12 @@ builder.AddServiceDefaults();
 // Add services to the container.
 builder.Services.AddProblemDetails();
 
+// Enable authorization services - policies can be added here as needed
+builder.Services.AddAuthorization();
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
 
 #region Database
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -33,6 +35,14 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
     options.User.RequireUniqueEmail = true;
 }).AddEntityFrameworkStores<AppDbContext>()
   .AddDefaultTokenProviders();
+
+// Configure cookie authentication for Identity
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Cookie.Name = "OrgAuth";
+    options.ExpireTimeSpan = TimeSpan.FromHours(8);
+    options.SlidingExpiration = true;
+});
 #endregion
 
 var app = builder.Build();
@@ -45,9 +55,15 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+// Ensure authentication/authorization middleware are in place.
+// Authentication must run before Authorization and before endpoint routing that requires it.
+app.UseAuthentication();
+app.UseAuthorization();
+
 WeatherEndpoints.MapWeatherEndpoints(app);
 WeatherEndpointsV2.MapWeatherEndpointsV2(app);
 OrganizationEndpoints.MapOrganizationEndpoints(app);
+UserRolesEndpoints.MapUserRolesEndpoints(app);
 
 app.MapDefaultEndpoints();
 

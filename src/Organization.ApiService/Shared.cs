@@ -20,6 +20,13 @@ global using Organization.Shared.Interfaces;
 global using Organization.Shared.Identity;
 global using Organization.Infrastructure.SqlDb;
 global using Microsoft.AspNetCore.Identity;
+global using Microsoft.AspNetCore.Authentication;
+global using Microsoft.AspNetCore.Authorization;
+global using System.Security.Claims;
+global using Organization.Shared;
+
+
+global using Organization.ApiService.V1;
 
 namespace Organization.ApiService;
 

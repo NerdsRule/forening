@@ -20,6 +20,7 @@ public static class WeatherEndpoints
                 .ToArray();
             return forecast;
         })
-        .WithName("GetWeatherForecast");
+        .WithName("GetWeatherForecast")
+        .RequireAuthorization();
     }
 }

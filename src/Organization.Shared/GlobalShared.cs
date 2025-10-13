@@ -11,3 +11,36 @@ global using Organization.Shared.DatabaseObjects;
 
 namespace Organization.Shared;
 
+/// <summary>
+/// Defines roles that users can have within a department.
+/// </summary>
+public enum DepartmentRolesEnum
+{
+    /// <summary>
+    /// User with department-wide administrative privileges.
+    /// </summary>
+    DepartmentAdmin,
+    /// <summary>
+    /// Read-only or external collaborator with limited access to department resources.
+    /// </summary>
+    Member
+}
+
+/// <summary>
+/// Defines roles that users can have within an organization.
+/// </summary>
+public enum OrganizationRolesEnum
+{
+    /// <summary>
+    /// User with enterprise-wide administrative privileges.
+    /// </summary>
+    EnterpriseAdmin,
+    /// <summary>
+    /// User with administrative privileges within a specific organization.
+    /// </summary>
+    Admin,
+    /// <summary>
+    /// Regular member of the organization with standard access rights.
+    /// </summary>
+    Member
+}

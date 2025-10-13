@@ -28,3 +28,5 @@ Open source forening system med primært fokus på opgaver til medlemmer
 # Roller og rettigheder
 - Roller kan oprettes for at styre adgang til forskellige funktioner i systemet.
 - Roller kan tildeles til medlemmer.
+# Test
+- https://localhost:xxxx/openapi/v1.json
