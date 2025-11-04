@@ -1,4 +1,6 @@
 
+using System.Text;
+using Microsoft.AspNetCore.DataProtection;
 using Organization.Shared.Identity;
 
 namespace Organization.Test;
@@ -11,6 +13,9 @@ private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
     {
         // Arrange
         var cancellationToken = CancellationToken.None;
+        var timeout = TimeSpan.FromMinutes(5);
+        var cancellationTokenSource = new CancellationTokenSource(timeout);
+        cancellationToken = cancellationTokenSource.Token;
         var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Organization_AppHost>(cancellationToken);
         appHost.Services.AddLogging(logging =>
         {
@@ -60,5 +65,56 @@ private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
         var registerResult = await registerResponse.Content.ReadFromJsonAsync<UserModel>(cancellationToken);
         registerResult.Should().NotBeNull("Register result was null.");
         
+        // Login user
+        var loginModel = new LoginModel
+        {
+            Email = registerModel.Email,
+            Password = registerModel.Password
+        };
+        var loginResponse = await httpClient.PostAsJsonAsync("/v1/api/users/login", loginModel, cancellationToken);
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Login response status code was not OK.");
+
+        // Logout user
+        const string Empty = "{}";
+        var emptyContent = new StringContent(Empty, Encoding.UTF8, "application/json");
+        var logoutResponse = await httpClient.PostAsync("/v1/api/users/logout", emptyContent);
+        logoutResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Logout response status code was not OK.");
+
+        // Login again to test role assignment
+        loginResponse = await httpClient.PostAsJsonAsync("/v1/api/users/login", loginModel, cancellationToken);
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Second login response status code was not OK.");
+        
+        // During startup all roles are added here
+        var roleContent = new string[] { OrganizationRolesEnum.EnterpriseAdmin.ToString() };
+        var roleResponse = await httpClient.PostAsJsonAsync("/v1/api/roles", roleContent);
+        roleResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Add role response status code was not OK.");
+
+        // Add role to user. Will only work for first user.
+        var userWithRolesResponse = await httpClient.PostAsJsonAsync("/v1/api/users/" + registerResult?.Id + "/roles", roleContent);
+        userWithRolesResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Add role to user response status code was not OK.");
+
+        // Logout user
+        logoutResponse = await httpClient.PostAsync("/v1/api/users/logout", emptyContent);
+        logoutResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Logout response status code was not OK.");
+
+        // Login again to test role assignment
+        loginResponse = await httpClient.PostAsJsonAsync("/v1/api/users/login", loginModel, cancellationToken);
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Second login response status code was not OK.");
+
+        // Get all roles and verify
+        var getRolesResponse = await httpClient.GetFromJsonAsync<List<string>>("/v1/api/roles/all");
+        getRolesResponse.Should().NotBeNull("Get roles response was null.");
+        getRolesResponse.Should().Contain(OrganizationRolesEnum.EnterpriseAdmin.ToString(), "Get roles response did not contain the added role.");
+
+        //var applicationCookie = loginResponse.Headers.GetValues("Set-Cookie").FirstOrDefault(c => c.StartsWith(".AspNetCore.Identity.Application="));
+        //applicationCookie.Should().NotBeNullOrEmpty("Application cookie was not set.");
+        //var cookieValue = applicationCookie.Split('=')[1].Split(';')[0];
+        //cookieValue = Uri.UnescapeDataString(cookieValue);
+
+        // Get the data protection provider from the app services
+        
+        //var loginResult = await loginResponse.Content.ReadFromJsonAsync<LoginResultModel>(cancellationToken);
+        //loginResult.Should().NotBeNull("Login result was null.");
+        //loginResult!.Token.Should().NotBeNullOrEmpty("Login token was null or empty.");
     }
 }

@@ -26,7 +26,7 @@ public static class UserRolesEndpoints
         var v1 = app.MapGroup("/v1");
 
         #region Endpoints for user management
-        v1.MapPost("/api/login", async Task<IResult> (SignInManager<AppUser> signInManager, UserManager<AppUser> userManager, [FromBody] LoginModel model) =>
+        v1.MapPost("/api/users/login", async Task<IResult> (SignInManager<AppUser> signInManager, UserManager<AppUser> userManager, [FromBody] LoginModel model) =>
         {
             if (model is null)
             {
@@ -52,34 +52,7 @@ public static class UserRolesEndpoints
 
             await signInManager.SignInAsync(appUser, isPersistent: false);
 
-            var roles = await userManager.GetRolesAsync(appUser);
-            var httpContext = signInManager.Context;
-
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, appUser.Id),
-                new Claim(ClaimTypes.Name, appUser.UserName ?? appUser.Email ?? string.Empty),
-                new Claim(ClaimTypes.Email, appUser.Email ?? string.Empty)
-            };
-
-            foreach (var role in roles)
-            {
-                claims.Add(new Claim(ClaimTypes.Role, role));
-            }
-
-            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var principal = new ClaimsPrincipal(identity);
-
-            var authProperties = new AuthenticationProperties
-            {
-                IsPersistent = model.RememberMe,
-                AllowRefresh = true,
-                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(8),
-                IssuedUtc = DateTimeOffset.UtcNow,
-            };
-
-            await httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
-            return Results.Ok(new { appUser.Id, appUser.UserName, appUser.Email, Roles = roles });
+            return Results.Ok(new { appUser.Id, appUser.UserName, appUser.Email });
         }).AllowAnonymous();
 
         /// <summary>
@@ -141,7 +114,7 @@ public static class UserRolesEndpoints
         /// </summary>
         /// <param name="signInManager">SignInManager</param>
         /// <param name="empty">Empty object</param>
-        v1.MapPost("/api/logout", async (SignInManager<AppUser> signInManager, [FromBody] object empty) =>
+        v1.MapPost("/api/users/logout", async (SignInManager<AppUser> signInManager, [FromBody] object empty) =>
         {
             if (empty is not null)
             {
@@ -245,20 +218,41 @@ public static class UserRolesEndpoints
         /// <param name="roleManager">RoleManager</param>
         /// <param name="role">Role to add</param>
         /// <returns>Result</returns>
-        v1.MapPost("/api/roles", async Task<IResult> (ClaimsPrincipal user, RoleManager<IdentityRole> roleManager, [FromBody] string role) =>
+        v1.MapPost("/api/roles", async Task<IResult> (ClaimsPrincipal user, RoleManager<IdentityRole> roleManager, [FromBody] string[] role) =>
         {
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
                 var identity = (ClaimsIdentity)user.Identity;
                 var userRoles = identity.FindAll(identity.RoleClaimType);
 
-                if (userRoles.Any(c => c.Value == OrganizationRolesEnum.EnterpriseAdmin.ToString()))
+                if (!userRoles.Any())
                 {
-                    var result = await roleManager.CreateAsync(new IdentityRole(role));
-                    if (result.Succeeded)
+                    // If first time setup, create default roles
+                    if (!await roleManager.RoleExistsAsync(OrganizationRolesEnum.Member.ToString()))
                     {
+                        foreach (var r in Enum.GetNames(typeof(OrganizationRolesEnum)))
+                        {
+                            var result = await roleManager.CreateAsync(new IdentityRole(r));
+                            if (!result.Succeeded)
+                            {
+                                return Results.BadRequest(result.Errors);
+                            }
+                        }
                         return Results.Ok();
                     }
+                }
+
+                if (userRoles.Any(c => c.Value == OrganizationRolesEnum.EnterpriseAdmin.ToString()))
+                {
+                    foreach (var r in role)
+                    {
+                        var result = await roleManager.CreateAsync(new IdentityRole(r));
+                        if (!result.Succeeded)
+                        {
+                            return Results.BadRequest(result.Errors);
+                        }
+                    }
+                    return Results.Ok();
                 }
             }
             return Results.StatusCode(StatusCodes.Status403Forbidden);
@@ -335,6 +329,21 @@ public static class UserRolesEndpoints
             {
                 var identity = (ClaimsIdentity)user.Identity;
                 var userRoles = identity.FindAll(identity.RoleClaimType);
+
+                // Add roles to first time setup
+                if (!userRoles.Any())
+                {
+                    // If only one user exists, make the user an EnterpriseAdmin
+                    if (userManager.Users.Count() == 1 && roles.Contains(OrganizationRolesEnum.EnterpriseAdmin.ToString()))
+                    {
+                        var appUser = await userManager.FindByIdAsync(userId);
+                        if (appUser is not null)
+                        {
+                            await userManager.AddToRolesAsync(appUser, roles);
+                            return Results.Ok();
+                        }
+                    }
+                }
 
                 if (userRoles.Any(c => c.Value == OrganizationRolesEnum.EnterpriseAdmin.ToString()))
                 {

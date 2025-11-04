@@ -1,5 +1,6 @@
-using Organization.Web;
-using Organization.Web.Components;
+
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Organization.Shared.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +12,14 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddOutputCache();
+
+// register the custom state provider
+//var accountService = builder.Services.RemoveAll<IAccountService>();
+//builder.Services.AddScoped<AuthenticationStateProvider, CookieAuthenticationStateProvider>();
+
+// register the account management interface
+builder.Services.AddScoped(sp => (IAccountService)sp.GetRequiredService<AuthenticationStateProvider>());
+
 
 builder.Services.AddHttpClient<WeatherApiClient>(client =>
     {

@@ -43,6 +43,17 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
     options.SlidingExpiration = true;
 });
+
+// Add additional authentication schemes if needed
+// builder.Services.AddAuthentication()
+//     .AddCookie("Cookies", options =>
+//     {
+//         options.LoginPath = "/Account/Login";
+//         options.LogoutPath = "/Account/Logout";
+//         options.AccessDeniedPath = "/Account/AccessDenied";
+//         options.ExpireTimeSpan = TimeSpan.FromHours(8);
+//         options.SlidingExpiration = true;
+//     });
 #endregion
 
 var app = builder.Build();
