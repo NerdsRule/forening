@@ -3,7 +3,7 @@ namespace Organization.Infrastructure.SqlDb;
 
 public class RootDbReadWrite : IRootDbReadWrite
 {
-#region Constructor and properties
+    #region Constructor and properties
     /// <summary>
     /// Constructor with injected service
     /// </summary>
@@ -17,6 +17,19 @@ public class RootDbReadWrite : IRootDbReadWrite
     private AppDbContext Db { get; init; }
     #endregion
 
+    #region Users and Identity and Roles
+    /// <summary>
+    /// Get TAppUserOrganization by user id
+    /// </summary>
+    /// <param name="userId">User Id</param>
+    /// <returns>List of TAppUserOrganization</returns>
+    public async Task<List<TAppUserOrganization>> GetUserOrganizationsAsync(string userId, CancellationToken ct)
+    {
+        var dbSet = Db.Set<TAppUserOrganization>();
+        return await dbSet.AsNoTracking().Where(c => c.AppUserId == userId).ToListAsync<TAppUserOrganization>(ct);
+    }
+    #endregion
+    
     #region Generic CRUD
     /// <summary>
     /// Gets the row asynchronous.
@@ -24,10 +37,10 @@ public class RootDbReadWrite : IRootDbReadWrite
     /// <typeparam name="T">Type of row to get.</typeparam>
     /// <param name="value">The value with Id to search for.</param>
     /// <returns>Row found based on Id from <see cref="TBaseTable"/> class.</returns>
-    public async Task<T?> GetRowAsync<T>(int id, int timeoutSeconds = 60) where T : TBaseTable
+    public async Task<T?> GetRowAsync<T>(int id, CancellationToken ct) where T : TBaseTable
     {
         var dbSet = Db.Set<T>();
-        return await dbSet.AsNoTracking().FirstOrDefaultAsync<T>(c => c.Id == id);
+        return await dbSet.AsNoTracking().FirstOrDefaultAsync<T>(c => c.Id == id, ct);
     }
 
     /// <summary>
@@ -35,10 +48,10 @@ public class RootDbReadWrite : IRootDbReadWrite
     /// </summary>
     /// <typeparam name="T">Type of table</typeparam>
     /// <returns>List of rows</returns>
-    public async Task<List<T>> GetRowsAsync<T>() where T : TBaseTable
+    public async Task<List<T>> GetRowsAsync<T>(CancellationToken ct) where T : TBaseTable
     {
         var dbSet = Db.Set<T>();
-        return await dbSet.AsNoTracking().Select(c => c).ToListAsync<T>();
+        return await dbSet.AsNoTracking().Select(c => c).ToListAsync<T>(ct);
     }
 
     /// <summary>

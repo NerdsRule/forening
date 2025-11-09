@@ -1,4 +1,6 @@
 
+using System.Security.Claims;
+
 namespace Organization.Shared.Identity;
 
 /// <summary>
@@ -15,4 +17,14 @@ public class UserModel
     /// User name
     /// </summary>
     public string UserName { get; set; } = null!;
+
+    /// <summary>
+    /// Email of the user
+    /// </summary>
+    public string Email { get; set; } = null!;
+
+    /// <summary>
+    /// Claims associated with the user
+    /// </summary>
+    public List<Claim> Claims { get; set; } = [];
 }

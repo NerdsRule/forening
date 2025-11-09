@@ -21,8 +21,34 @@ namespace Organization.ApiService.V1;
 
 public static class UserRolesEndpoints
 {
+    /// <summary>
+    /// Checks if the user is authorized for the specified organization and role.
+    /// </summary>
+    /// <param name="user"></param>
+    /// <param name="organizationId"></param>
+    /// <param name="role"></param>
+    /// <param name="db"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    private static async Task<bool> IsUserAuthorizedForOrganizationAsync(ClaimsPrincipal user, int organizationId, List<OrganizationRolesEnum> roles, IRootDbReadWrite db, CancellationToken cancellationToken)
+            {
+                if (user.Identity is not null && user.Identity.IsAuthenticated)
+                {
+                    var identity = (ClaimsIdentity)user.Identity;
+                    var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                    
+                    if (userId is null) return false;
+                    
+                    // get user roles from TAppUserOrganization
+                    var userOrgRoles = await db.GetUserOrganizationsAsync(userId, cancellationToken);
+                    return userOrgRoles.Any(c => c.OrganizationId == organizationId && roles.Contains(c.Role));
+                }                
+                return false;
+            }
+
     public static void MapUserRolesEndpoints(this WebApplication app)
     {
+        
         var v1 = app.MapGroup("/v1");
 
         #region Endpoints for user management
@@ -52,7 +78,7 @@ public static class UserRolesEndpoints
 
             await signInManager.SignInAsync(appUser, isPersistent: false);
 
-            return Results.Ok(new { appUser.Id, appUser.UserName, appUser.Email });
+            return Results.Ok(new UserModel { Id = appUser.Id, UserName = appUser.UserName ?? string.Empty, Email = appUser.Email ?? string.Empty });
         }).AllowAnonymous();
 
         /// <summary>
@@ -62,8 +88,13 @@ public static class UserRolesEndpoints
         /// <param name="roleManager">RoleManager</param>
         /// <param name="model">RegisterModel</param>
         /// <returns>Result</returns>
-        v1.MapPost("/api/users/register", async Task<IResult> (UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager, IRootDbReadWrite db, CancellationToken cancellationToken, [FromBody] RegisterModel model) =>
+        v1.MapPost("/api/users/register", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager, IRootDbReadWrite db, CancellationToken cancellationToken, [FromBody] RegisterModel model) =>
         {
+            if (!await IsUserAuthorizedForOrganizationAsync(user, model.OrganizationId, [OrganizationRolesEnum.Admin, OrganizationRolesEnum.EnterpriseAdmin], db, cancellationToken))
+            {
+                return Results.Forbid();
+            }
+            // Validate input
             if (model is null)
             {
                 return Results.BadRequest(new { Error = "Request body is required." });
@@ -80,13 +111,13 @@ public static class UserRolesEndpoints
                 return Results.Conflict(new { Error = "Email already in use." });
             }
 
-            var user = new AppUser
+            var newUser = new AppUser
             {
                 UserName = string.IsNullOrWhiteSpace(model.UserName) ? model.Email : model.UserName,
                 Email = model.Email
             };
 
-            var createResult = await userManager.CreateAsync(user, model.Password);
+            var createResult = await userManager.CreateAsync(newUser, model.Password);
             if (!createResult.Succeeded)
             {
                 return Results.BadRequest(new { Errors = createResult.Errors.Select(e => e.Description) });
@@ -95,17 +126,17 @@ public static class UserRolesEndpoints
             // Add default role "User" if it exists
             if (await roleManager.RoleExistsAsync(OrganizationRolesEnum.Member.ToString()))
             {
-                await userManager.AddToRoleAsync(user, OrganizationRolesEnum.Member.ToString());
+                await userManager.AddToRoleAsync(newUser, OrganizationRolesEnum.Member.ToString());
             }
 
             var org = await db.AddRowAsync<TAppUserOrganization>(new TAppUserOrganization
             {
-                AppUserId = user.Id,
+                AppUserId = newUser.Id,
                 OrganizationId = model.OrganizationId,
                 Role = OrganizationRolesEnum.Member
             }, cancellationToken);
 
-            return Results.Ok(new UserModel { Id = user.Id, UserName = user.UserName });
+            return Results.Ok(new UserModel { Id = newUser.Id, UserName = newUser.UserName, Email = newUser.Email } );
         }).AllowAnonymous();
 
 
@@ -345,11 +376,11 @@ public static class UserRolesEndpoints
                     }
                 }
 
-                if (userRoles.Any(c => c.Value == OrganizationRolesEnum.EnterpriseAdmin.ToString()))
+                if (userRoles.Any(c => c.Value == OrganizationRolesEnum.EnterpriseAdmin.ToString() || c.Value == OrganizationRolesEnum.Admin.ToString()))
                 {
                     // Only administrators can add the administrator role
                     if (roles.Contains(OrganizationRolesEnum.Admin.ToString()) && !userRoles.Any(c => c.Value == OrganizationRolesEnum.Admin.ToString())
-                       || roles.Contains(OrganizationRolesEnum.EnterpriseAdmin.ToString()) && !userRoles.Any(c => c.Value == OrganizationRolesEnum.EnterpriseAdmin.ToString()))
+                    && !userRoles.Any(c => c.Value == OrganizationRolesEnum.EnterpriseAdmin.ToString()))
                     {
                         return Results.Forbid();
                     }
@@ -459,5 +490,52 @@ public static class UserRolesEndpoints
         }).RequireAuthorization();
         #endregion
 
+        #region Test
+        v1.MapGet("/api/users/test/{organizationId:int}", async Task<IResult> (UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager, IRootDbReadWrite db, CancellationToken cancellationToken, int organizationId) =>
+        {
+            // Create test user
+            var testUser = new AppUser
+            {
+                UserName = "testuser@example.com",
+                Email = "testuser@example.com"
+            };
+
+            var createUserResult = await userManager.CreateAsync(testUser, "TestPassword123!");
+            if (!createUserResult.Succeeded)
+            {
+                return Results.BadRequest(new { Errors = createUserResult.Errors.Select(e => e.Description) });
+            }
+
+            // Create all roles from enum
+            var roleNames = Enum.GetNames(typeof(OrganizationRolesEnum));
+            foreach (var roleName in roleNames)
+            {
+                if (!await roleManager.RoleExistsAsync(roleName))
+                {
+                    var createRoleResult = await roleManager.CreateAsync(new IdentityRole(roleName));
+                    if (!createRoleResult.Succeeded)
+                    {
+                        return Results.BadRequest(new { Errors = createRoleResult.Errors.Select(e => e.Description) });
+                    }
+                }
+            }
+
+            // Add user to all roles
+            var addToRolesResult = await userManager.AddToRolesAsync(testUser, roleNames);
+            if (!addToRolesResult.Succeeded)
+            {
+                return Results.BadRequest(new { Errors = addToRolesResult.Errors.Select(e => e.Description) });
+            }
+
+            var org = await db.AddRowAsync<TAppUserOrganization>(new TAppUserOrganization
+            {
+                AppUserId = testUser.Id,
+                OrganizationId = organizationId,
+                Role = OrganizationRolesEnum.EnterpriseAdmin
+            }, cancellationToken);
+
+            return Results.Ok( new UserModel { Id = testUser.Id, UserName = testUser.UserName, Email = testUser.Email } );
+        }).AllowAnonymous();
+        #endregion
     }
 }

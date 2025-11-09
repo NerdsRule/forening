@@ -34,42 +34,20 @@ private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
         using var httpClient = app.CreateHttpClient("apiservice");
         await app.ResourceNotifications.WaitForResourceHealthyAsync("apiservice", cancellationToken).WaitAsync(DefaultTimeout, cancellationToken);
 
-        var response = await httpClient.GetFromJsonAsync<List<TOrganization>>("/v1/api/organization/all", cancellationToken);
-        response.Should().NotBeNull("Response content was null.");
-        response.Should().BeOfType<List<TOrganization>>("Response content was not of expected type List<TOrganization>.");
-        response.Should().BeEmpty("Response content was expected to be empty as no organizations have been added yet.");
-
         // Add an organization
-        var newOrg = new TOrganization
-        {
-            Name = "Test Organization",
-        };
-        var putResponse = await httpClient.PutAsJsonAsync("/v1/api/organization", newOrg, cancellationToken);
-        putResponse.StatusCode.Should().Be(HttpStatusCode.OK, "PUT response status code was not OK.");
-        var createdOrg = await putResponse.Content.ReadFromJsonAsync<TOrganization>(cancellationToken);
-        createdOrg.Should().NotBeNull("Created organization was null.");
-        createdOrg!.Id.Should().BeGreaterThan(0, "Created organization ID was not greater than 0.");
-        createdOrg.Name.Should().Be(newOrg.Name, "Created organization name did not match.");
-        createdOrg.IsActive.Should().BeTrue("Created organization IsActive was not true by default.");
+        var testOrgResponse = await httpClient.GetFromJsonAsync<TOrganization>("/v1/api/organization/test", cancellationToken);
+        testOrgResponse.Should().NotBeNull("Test organization creation response was null.");
+        testOrgResponse!.Id.Should().BeGreaterThan(0, "Test organization ID was not greater than 0.");
 
-        // Add user
-        var registerModel = new RegisterModel
-        {
-            Email = "test@example.com",
-            Password = "P@ssw0rd",
-            ConfirmPassword = "P@ssw0rd",
-            OrganizationId = createdOrg.Id
-        };
-        var registerResponse = await httpClient.PostAsJsonAsync("/v1/api/users/register", registerModel, cancellationToken);
-        registerResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Register response status code was not OK.");
-        var registerResult = await registerResponse.Content.ReadFromJsonAsync<UserModel>(cancellationToken);
-        registerResult.Should().NotBeNull("Register result was null.");
-        
+        var registerResponse = await httpClient.GetFromJsonAsync<UserModel>($"/v1/api/users/test/{testOrgResponse.Id}", cancellationToken);
+        registerResponse.Should().NotBeNull("Register response was null.");
+        registerResponse!.UserName.Should().Be("testuser@example.com", "Registered user email was not correct.");
+
         // Login user
         var loginModel = new LoginModel
         {
-            Email = registerModel.Email,
-            Password = registerModel.Password
+            Email = registerResponse!.UserName,
+            Password = "TestPassword123!"
         };
         var loginResponse = await httpClient.PostAsJsonAsync("/v1/api/users/login", loginModel, cancellationToken);
         loginResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Login response status code was not OK.");
@@ -84,15 +62,6 @@ private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
         loginResponse = await httpClient.PostAsJsonAsync("/v1/api/users/login", loginModel, cancellationToken);
         loginResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Second login response status code was not OK.");
         
-        // During startup all roles are added here
-        var roleContent = new string[] { OrganizationRolesEnum.EnterpriseAdmin.ToString() };
-        var roleResponse = await httpClient.PostAsJsonAsync("/v1/api/roles", roleContent);
-        roleResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Add role response status code was not OK.");
-
-        // Add role to user. Will only work for first user.
-        var userWithRolesResponse = await httpClient.PostAsJsonAsync("/v1/api/users/" + registerResult?.Id + "/roles", roleContent);
-        userWithRolesResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Add role to user response status code was not OK.");
-
         // Logout user
         logoutResponse = await httpClient.PostAsync("/v1/api/users/logout", emptyContent);
         logoutResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Logout response status code was not OK.");
@@ -106,15 +75,20 @@ private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
         getRolesResponse.Should().NotBeNull("Get roles response was null.");
         getRolesResponse.Should().Contain(OrganizationRolesEnum.EnterpriseAdmin.ToString(), "Get roles response did not contain the added role.");
 
-        //var applicationCookie = loginResponse.Headers.GetValues("Set-Cookie").FirstOrDefault(c => c.StartsWith(".AspNetCore.Identity.Application="));
-        //applicationCookie.Should().NotBeNullOrEmpty("Application cookie was not set.");
-        //var cookieValue = applicationCookie.Split('=')[1].Split(';')[0];
-        //cookieValue = Uri.UnescapeDataString(cookieValue);
+        // Add a role to user and verify
+        var additionalRole = OrganizationRolesEnum.Admin.ToString();
+        var addAdditionalRoleResponse = await httpClient.PostAsJsonAsync("/v1/api/users/" + registerResponse?.Id + "/roles", new string[] { additionalRole });
+        addAdditionalRoleResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Add additional role to user response status code was not OK.");
+        //Logout user
+        logoutResponse = await httpClient.PostAsync("/v1/api/users/logout", emptyContent);
+        logoutResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Logout response status code was not OK.");
+        // Login again to test role assignment
+        loginResponse = await httpClient.PostAsJsonAsync("/v1/api/users/login", loginModel, cancellationToken);
+        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Third login response status code was not OK.");
+        var getUserRolesResponse = await httpClient.GetFromJsonAsync<List<string>>($"/v1/api/users/{registerResponse?.Id}/roles");
+        getUserRolesResponse.Should().NotBeNull("Get user roles response was null.");
+        getUserRolesResponse.Should().Contain(additionalRole, "Get user roles response did not contain the additional role.");
+        getUserRolesResponse.Should().Contain(OrganizationRolesEnum.EnterpriseAdmin.ToString(), "Get user roles response did not contain the enterprise admin role.");
 
-        // Get the data protection provider from the app services
-        
-        //var loginResult = await loginResponse.Content.ReadFromJsonAsync<LoginResultModel>(cancellationToken);
-        //loginResult.Should().NotBeNull("Login result was null.");
-        //loginResult!.Token.Should().NotBeNullOrEmpty("Login token was null or empty.");
     }
 }

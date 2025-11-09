@@ -48,27 +48,39 @@ public static class OrganizationEndpoints
     {
         var v1 = app.MapGroup("/v1");
 
-        v1.MapGet("/api/organization/all", async Task<IResult> (IRootDbReadWrite db) =>
+        v1.MapGet("/api/organization/all", async Task<IResult> (ClaimsPrincipal user, IRootDbReadWrite db, CancellationToken ct) =>
         {
-            var organizations = await db.GetRowsAsync<TOrganization>();
+             if (user.Identity is not null && user.Identity.IsAuthenticated)
+            {
+                var identity = (ClaimsIdentity)user.Identity;
+                var userRoles = identity.FindAll(identity.RoleClaimType);
+
+                if (!userRoles.Any(c => c.Value == OrganizationRolesEnum.EnterpriseAdmin.ToString()))
+                {
+                    return Results.Forbid();
+                }
+            }
+            var organizations = await db.GetRowsAsync<TOrganization>(ct);
             if (organizations is not null) 
                 return Results.Ok(organizations);
             return Results.NotFound();
         }).Produces<List<TOrganization>>(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status404NotFound);
+        .Produces(StatusCodes.Status404NotFound)
+        .RequireAuthorization();
 
         /// <summary>
         /// Maps organization-related HTTP endpoints to the provided <see cref="WebApplication"/> instance.
         /// </summary>
         /// <param name="app">The <see cref="WebApplication"/> instance to which endpoints will be mapped.</param>
         /// <remarks>
-        v1.MapGet("/api/organization/{id:int}", async Task<IResult> (int id, IRootDbReadWrite db) =>
+        v1.MapGet("/api/organization/{id:int}", async Task<IResult> (int id, IRootDbReadWrite db, CancellationToken ct) =>
         {
-            var organization = await db.GetRowAsync<TOrganization>(id);
+            var organization = await db.GetRowAsync<TOrganization>(id, ct);
             return organization is null ? Results.NotFound() : Results.Ok(organization);
         })
         .Produces<TOrganization>(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status404NotFound);
+        .Produces(StatusCodes.Status404NotFound)
+        .RequireAuthorization();
 
         /// <summary>
         /// Creates a new organization.
@@ -95,7 +107,8 @@ public static class OrganizationEndpoints
         .Accepts<TOrganization>("application/json")
         .Produces<TOrganization>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
-        .Produces(StatusCodes.Status404NotFound);
+        .Produces(StatusCodes.Status404NotFound)
+        .RequireAuthorization();
 
         /// <summary>
         /// Deletes an organization by its ID.
@@ -109,7 +122,7 @@ public static class OrganizationEndpoints
         {
             try
             {
-                var organization = await db.GetRowAsync<TOrganization>(id);
+                var organization = await db.GetRowAsync<TOrganization>(id, ct);
                 if (organization is null)
                     return Results.NotFound();
 
@@ -122,6 +135,44 @@ public static class OrganizationEndpoints
             }
         })
         .Produces(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status404NotFound);
+        .Produces(StatusCodes.Status404NotFound)
+        .RequireAuthorization();
+
+        /// <summary>
+        /// Creates a test organization if none exist.
+        /// </summary>
+        /// <param name="db">The database service for data access.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>The created test organization with a 201 Created status,
+        /// a message indicating existing organizations with a 200 OK status,
+        /// or 500 Internal Server Error if an exception occurs.</returns>
+        v1.MapGet("/api/organization/test", async Task<IResult> (IRootDbReadWrite db, CancellationToken ct) =>
+        {
+            try
+            {
+                var existingOrganizations = await db.GetRowsAsync<TOrganization>(ct);
+                
+                if (existingOrganizations != null && existingOrganizations.Any())
+                {
+                    return Results.Ok("Organizations already exist in the database.");
+                }
+
+                var testOrganization = new TOrganization
+                {
+                    Name = "Test Organization",
+                    IsActive = true
+                };
+
+                var created = await db.AddUpdateRowAsync(testOrganization, ct);
+                return created is null ? Results.Problem("Failed to create test organization") : Results.Created($"/api/organization/{created.Id}", created);
+            }
+            catch (Exception e)
+            {
+                return Results.Problem(detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
+            }
+        })
+        .Produces<TOrganization>(StatusCodes.Status201Created)
+        .Produces<string>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status500InternalServerError);
     }
 }

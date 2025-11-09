@@ -6,7 +6,7 @@ global using System.Net.Http.Json;
 global using System.Text.Json;
 
 global using Organization.Shared;
-
+global using Organization.Shared.Identity;
 
 namespace Organization.Test;
 

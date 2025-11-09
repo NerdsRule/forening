@@ -38,21 +38,32 @@ namespace Organization.Shared.Interfaces;
 
 public interface IRootDbReadWrite
 {
-#region Generic CRUD
+    #region Users and Identity and Roles
+    /// <summary>
+    /// Get TAppUserOrganization by user id
+    /// </summary>
+    /// <param name="userId">User Id</param>
+    /// <returns>List of TAppUserOrganization</returns>
+    public Task<List<TAppUserOrganization>> GetUserOrganizationsAsync(string userId, CancellationToken ct);
+    #endregion
+
+    #region Generic CRUD
     /// <summary>
     /// Gets the row asynchronous.
     /// </summary>
     /// <typeparam name="T">Type of row to get.</typeparam>
-    /// <param name="value">The value with Id to search for.</param>
+    /// <param name="id">The value with Id to search for.</param>
+    /// <param name="ct">Cancellation token</param>
     /// <returns>Row found based on Id from <see cref="TBaseTable"/> class.</returns>
-    public Task<T?> GetRowAsync<T>(int id, int timeoutSeconds = 60) where T : TBaseTable;
+    public Task<T?> GetRowAsync<T>(int id, CancellationToken ct) where T : TBaseTable;
 
     /// <summary>
     /// Return all rows from T table.
     /// </summary>
     /// <typeparam name="T">Type of table</typeparam>
+    /// <param name="ct">Cancellation token</param>
     /// <returns>List of rows</returns>
-    public Task<List<T>> GetRowsAsync<T>() where T : TBaseTable;
+    public Task<List<T>> GetRowsAsync<T>(CancellationToken ct) where T : TBaseTable;
     /// <summary>
     /// Adds or updates row asynchronous.
     /// </summary>
