@@ -16,8 +16,8 @@ builder.Services.AddEndpointsApiExplorer();
 
 #region Database
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase("TestDb"));
-//builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
+//builder.Services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase("TestDb"));
+builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
 //builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
 
 
@@ -64,6 +64,8 @@ app.UseExceptionHandler();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    await using var scope = app.Services.CreateAsyncScope();
+    await SeedData.InitializeAsync(scope.ServiceProvider);
 }
 
 // Ensure authentication/authorization middleware are in place.

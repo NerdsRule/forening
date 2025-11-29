@@ -55,7 +55,7 @@ public static class OrganizationEndpoints
                 var identity = (ClaimsIdentity)user.Identity;
                 var userRoles = identity.FindAll(identity.RoleClaimType);
 
-                if (!userRoles.Any(c => c.Value == OrganizationRolesEnum.EnterpriseAdmin.ToString()))
+                if (!userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
                 {
                     return Results.Forbid();
                 }

@@ -30,7 +30,7 @@ public static class UserRolesEndpoints
     /// <param name="db"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    private static async Task<bool> IsUserAuthorizedForOrganizationAsync(ClaimsPrincipal user, int organizationId, List<OrganizationRolesEnum> roles, IRootDbReadWrite db, CancellationToken cancellationToken)
+    private static async Task<bool> IsUserAuthorizedForOrganizationAsync(ClaimsPrincipal user, int organizationId, List<RolesEnum> roles, IRootDbReadWrite db, CancellationToken cancellationToken)
             {
                 if (user.Identity is not null && user.Identity.IsAuthenticated)
                 {
@@ -77,6 +77,7 @@ public static class UserRolesEndpoints
             }
 
             await signInManager.SignInAsync(appUser, isPersistent: false);
+            
 
             return Results.Ok(new UserModel { Id = appUser.Id, UserName = appUser.UserName ?? string.Empty, Email = appUser.Email ?? string.Empty });
         }).AllowAnonymous();
@@ -90,7 +91,7 @@ public static class UserRolesEndpoints
         /// <returns>Result</returns>
         v1.MapPost("/api/users/register", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager, IRootDbReadWrite db, CancellationToken cancellationToken, [FromBody] RegisterModel model) =>
         {
-            if (!await IsUserAuthorizedForOrganizationAsync(user, model.OrganizationId, [OrganizationRolesEnum.Admin, OrganizationRolesEnum.EnterpriseAdmin], db, cancellationToken))
+            if (!await IsUserAuthorizedForOrganizationAsync(user, model.OrganizationId, [RolesEnum.DepartmentAdmin, RolesEnum.EnterpriseAdmin], db, cancellationToken))
             {
                 return Results.Forbid();
             }
@@ -124,16 +125,16 @@ public static class UserRolesEndpoints
             }
 
             // Add default role "User" if it exists
-            if (await roleManager.RoleExistsAsync(OrganizationRolesEnum.Member.ToString()))
+            if (await roleManager.RoleExistsAsync(RolesEnum.DepartmentMember.ToString()))
             {
-                await userManager.AddToRoleAsync(newUser, OrganizationRolesEnum.Member.ToString());
+                await userManager.AddToRoleAsync(newUser, RolesEnum.DepartmentMember.ToString());
             }
 
             var org = await db.AddRowAsync<TAppUserOrganization>(new TAppUserOrganization
             {
                 AppUserId = newUser.Id,
                 OrganizationId = model.OrganizationId,
-                Role = OrganizationRolesEnum.Member
+                Role = RolesEnum.DepartmentMember
             }, cancellationToken);
 
             return Results.Ok(new UserModel { Id = newUser.Id, UserName = newUser.UserName, Email = newUser.Email } );
@@ -200,10 +201,10 @@ public static class UserRolesEndpoints
                 var identity = (ClaimsIdentity)user.Identity;
                 var userRoles = identity.FindAll(identity.RoleClaimType);
 
-                if (userRoles.Any(c => c.Value == OrganizationRolesEnum.EnterpriseAdmin.ToString()))
+                if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
                 {
                     // Only administrators can remove the administrator role
-                    if (roles.Contains(OrganizationRolesEnum.Admin.ToString()) && !userRoles.Any(c => c.Value == OrganizationRolesEnum.Admin.ToString()))
+                    if (roles.Contains(RolesEnum.DepartmentAdmin.ToString()) && !userRoles.Any(c => c.Value == RolesEnum.DepartmentAdmin.ToString()))
                     {
                         return Results.Forbid();
                     }
@@ -232,7 +233,7 @@ public static class UserRolesEndpoints
                 var identity = (ClaimsIdentity)user.Identity;
                 var userRoles = identity.FindAll(identity.RoleClaimType);
 
-                if (userRoles.Any(c => c.Value == OrganizationRolesEnum.EnterpriseAdmin.ToString()))
+                if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
                 {
                     var roles = roleManager.Roles.Select(r => r.Name);
 
@@ -256,24 +257,7 @@ public static class UserRolesEndpoints
                 var identity = (ClaimsIdentity)user.Identity;
                 var userRoles = identity.FindAll(identity.RoleClaimType);
 
-                if (!userRoles.Any())
-                {
-                    // If first time setup, create default roles
-                    if (!await roleManager.RoleExistsAsync(OrganizationRolesEnum.Member.ToString()))
-                    {
-                        foreach (var r in Enum.GetNames(typeof(OrganizationRolesEnum)))
-                        {
-                            var result = await roleManager.CreateAsync(new IdentityRole(r));
-                            if (!result.Succeeded)
-                            {
-                                return Results.BadRequest(result.Errors);
-                            }
-                        }
-                        return Results.Ok();
-                    }
-                }
-
-                if (userRoles.Any(c => c.Value == OrganizationRolesEnum.EnterpriseAdmin.ToString()))
+                if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
                 {
                     foreach (var r in role)
                     {
@@ -303,7 +287,7 @@ public static class UserRolesEndpoints
                 var identity = (ClaimsIdentity)user.Identity;
                 var userRoles = identity.FindAll(identity.RoleClaimType);
 
-                if (userRoles.Any(c => c.Value == OrganizationRolesEnum.EnterpriseAdmin.ToString()))
+                if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
                 {
                     var roleToDelete = await roleManager.FindByNameAsync(role);
                     if (roleToDelete is not null)
@@ -331,7 +315,7 @@ public static class UserRolesEndpoints
                 var identity = (ClaimsIdentity)user.Identity;
                 var userRoles = identity.FindAll(identity.RoleClaimType);
 
-                if (userRoles.Any(c => c.Value == OrganizationRolesEnum.EnterpriseAdmin.ToString()))
+                if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
                 {
                     var appUser = await userManager.FindByIdAsync(userId);
                     if (appUser is not null)
@@ -365,7 +349,7 @@ public static class UserRolesEndpoints
                 if (!userRoles.Any())
                 {
                     // If only one user exists, make the user an EnterpriseAdmin
-                    if (userManager.Users.Count() == 1 && roles.Contains(OrganizationRolesEnum.EnterpriseAdmin.ToString()))
+                    if (userManager.Users.Count() == 1 && roles.Contains(RolesEnum.EnterpriseAdmin.ToString()))
                     {
                         var appUser = await userManager.FindByIdAsync(userId);
                         if (appUser is not null)
@@ -376,11 +360,11 @@ public static class UserRolesEndpoints
                     }
                 }
 
-                if (userRoles.Any(c => c.Value == OrganizationRolesEnum.EnterpriseAdmin.ToString() || c.Value == OrganizationRolesEnum.Admin.ToString()))
+                if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString() || c.Value == RolesEnum.DepartmentAdmin.ToString()))
                 {
                     // Only administrators can add the administrator role
-                    if (roles.Contains(OrganizationRolesEnum.Admin.ToString()) && !userRoles.Any(c => c.Value == OrganizationRolesEnum.Admin.ToString())
-                    && !userRoles.Any(c => c.Value == OrganizationRolesEnum.EnterpriseAdmin.ToString()))
+                    if (roles.Contains(RolesEnum.DepartmentAdmin.ToString()) && !userRoles.Any(c => c.Value == RolesEnum.DepartmentAdmin.ToString())
+                    && !userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
                     {
                         return Results.Forbid();
                     }
@@ -414,7 +398,7 @@ public static class UserRolesEndpoints
                 var identity = (ClaimsIdentity)user.Identity;
                 var userRoles = identity.FindAll(identity.RoleClaimType);
 
-                if (userRoles.Any(c => c.Value == OrganizationRolesEnum.EnterpriseAdmin.ToString()))
+                if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
                 {
                     var users = userManager.Users.Select(u => new { u.Id, u.UserName });
 
@@ -438,7 +422,7 @@ public static class UserRolesEndpoints
                 var identity = (ClaimsIdentity)user.Identity;
                 var userRoles = identity.FindAll(identity.RoleClaimType);
 
-                if (userRoles.Any(c => c.Value == OrganizationRolesEnum.EnterpriseAdmin.ToString()))
+                if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
                 {
                     var appUser = await userManager.FindByIdAsync(userId);
                     if (appUser is not null && appUser.NormalizedUserName != "LASSE.TARP@SPACE4IT.DK")
@@ -507,7 +491,7 @@ public static class UserRolesEndpoints
             }
 
             // Create all roles from enum
-            var roleNames = Enum.GetNames(typeof(OrganizationRolesEnum));
+            var roleNames = Enum.GetNames(typeof(RolesEnum));
             foreach (var roleName in roleNames)
             {
                 if (!await roleManager.RoleExistsAsync(roleName))
@@ -531,7 +515,7 @@ public static class UserRolesEndpoints
             {
                 AppUserId = testUser.Id,
                 OrganizationId = organizationId,
-                Role = OrganizationRolesEnum.EnterpriseAdmin
+                Role = RolesEnum.EnterpriseAdmin
             }, cancellationToken);
 
             return Results.Ok( new UserModel { Id = testUser.Id, UserName = testUser.UserName, Email = testUser.Email } );

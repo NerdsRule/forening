@@ -30,3 +30,9 @@ Open source forening system med primært fokus på opgaver til medlemmer
 - Roller kan tildeles til medlemmer.
 # Test
 - https://localhost:xxxx/openapi/v1.json
+
+# Migrations
+To create a new migration, run the following command in the terminal from the `Organization.ApiService` project directory:
+```dotnet ef migrations add Initial --context AppDbContext --project ../Organization.Infrastructure/Organization.Infrastructure.csproj --verbose```
+- To apply migrations to the database, run:
+```dotnet ef database update --context AppDbContext --project ../Organization.Infrastructure/Organization.Infrastructure.csproj --verbose```

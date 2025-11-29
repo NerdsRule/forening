@@ -73,10 +73,10 @@ private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
         // Get all roles and verify
         var getRolesResponse = await httpClient.GetFromJsonAsync<List<string>>("/v1/api/roles/all");
         getRolesResponse.Should().NotBeNull("Get roles response was null.");
-        getRolesResponse.Should().Contain(OrganizationRolesEnum.EnterpriseAdmin.ToString(), "Get roles response did not contain the added role.");
+        getRolesResponse.Should().Contain(RolesEnum.EnterpriseAdmin.ToString(), "Get roles response did not contain the added role.");
 
         // Add a role to user and verify
-        var additionalRole = OrganizationRolesEnum.Admin.ToString();
+        var additionalRole = RolesEnum.DepartmentAdmin.ToString();
         var addAdditionalRoleResponse = await httpClient.PostAsJsonAsync("/v1/api/users/" + registerResponse?.Id + "/roles", new string[] { additionalRole });
         addAdditionalRoleResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Add additional role to user response status code was not OK.");
         //Logout user
@@ -88,7 +88,7 @@ private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
         var getUserRolesResponse = await httpClient.GetFromJsonAsync<List<string>>($"/v1/api/users/{registerResponse?.Id}/roles");
         getUserRolesResponse.Should().NotBeNull("Get user roles response was null.");
         getUserRolesResponse.Should().Contain(additionalRole, "Get user roles response did not contain the additional role.");
-        getUserRolesResponse.Should().Contain(OrganizationRolesEnum.EnterpriseAdmin.ToString(), "Get user roles response did not contain the enterprise admin role.");
+        getUserRolesResponse.Should().Contain(RolesEnum.EnterpriseAdmin.ToString(), "Get user roles response did not contain the enterprise admin role.");
 
     }
 }

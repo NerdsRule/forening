@@ -41,5 +41,5 @@ public class TAppUserOrganization : TBaseTable
     /// <summary>
     /// Role of the user within the organization.
     /// </summary>
-    public OrganizationRolesEnum Role { get; set; } = OrganizationRolesEnum.Member;
+    public RolesEnum Role { get; set; } = RolesEnum.OrganizationMember;
 }
