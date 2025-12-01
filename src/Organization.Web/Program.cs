@@ -7,6 +7,30 @@ var builder = WebApplication.CreateBuilder(args);
 // Add service defaults & Aspire client integrations.
 builder.AddServiceDefaults();
 
+// register the cookie handler
+builder.Services.AddTransient<CookieHandler>();
+
+// set up authorization
+builder.Services.AddAuthorizationCore();
+
+// register the custom state provider
+var accountService = builder.Services.RemoveAll<IAccountService>();
+builder.Services.AddScoped<AuthenticationStateProvider, CookieAuthenticationStateProvider>();
+
+// register the account management interface
+builder.Services.AddScoped(sp => (IAccountService)sp.GetRequiredService<AuthenticationStateProvider>());
+
+// To make AuthorizeView work in WASM
+builder.Services.AddCascadingAuthenticationState();
+
+// configure client for auth interactions
+builder.Services.AddHttpClient("Auth", client =>
+{
+    client.BaseAddress = new Uri(builder.Environment.ContentRootPath);
+    client.Timeout = TimeSpan.FromMinutes(1);
+}).AddHttpMessageHandler<CookieHandler>();
+
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
