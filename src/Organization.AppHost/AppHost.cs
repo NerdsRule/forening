@@ -9,4 +9,10 @@ builder.AddProject<Projects.Organization_Web>("webfrontend")
     .WithReference(apiService)
     .WaitFor(apiService);
 
+builder.AddProject<Projects.Organization_Blazor>("blazorfrontend")
+    .WithExternalHttpEndpoints()
+    .WithHttpHealthCheck("/health")
+    .WithReference(apiService)
+    .WaitFor(apiService);
+
 builder.Build().Run();

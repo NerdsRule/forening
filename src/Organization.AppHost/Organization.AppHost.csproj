@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Organization.ApiService\Organization.ApiService.csproj" />
+    <ProjectReference Include="..\Organization.Blazor\Organization.Blazor.csproj" />
     <ProjectReference Include="..\Organization.Web\Organization.Web.csproj" />
   </ItemGroup>
 
