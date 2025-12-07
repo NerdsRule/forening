@@ -24,7 +24,27 @@ public class UserModel
     public string Email { get; set; } = null!;
 
     /// <summary>
-    /// Claims associated with the user
+    /// Points accumulated by the user.
     /// </summary>
-    public List<Claim> Claims { get; set; } = [];
+    public int Points { get; set; }
+
+    /// <summary>
+    /// Used points by the user.
+    /// </summary>
+    public int UsedPoints { get; set; }
+
+    /// <summary>
+    /// Member number associated with the user.
+    /// </summary>
+    public string? MemberNumber { get; set; }
+
+    /// <summary>
+    /// Organizations the user is associated with.
+    /// </summary>
+    public List<TAppUserOrganization> AppUserOrganizations { get; set; } = [];
+
+    /// <summary>
+    /// Department the user is associated with.
+    /// </summary>
+    public List<TAppUserDepartment> AppUserDepartments { get; set; } = [];
 }

@@ -25,8 +25,23 @@ public class RootDbReadWrite : IRootDbReadWrite
     /// <returns>List of TAppUserOrganization</returns>
     public async Task<List<TAppUserOrganization>> GetUserOrganizationsAsync(string userId, CancellationToken ct)
     {
-        var dbSet = Db.Set<TAppUserOrganization>();
-        return await dbSet.AsNoTracking().Where(c => c.AppUserId == userId).ToListAsync<TAppUserOrganization>(ct);
+        var res = Db.AppUserOrganizations.Where(c  => c.AppUserId == userId).Include(c => c.Organization).AsNoTracking();
+        if (res is null)
+            return [];
+        return await res.ToListAsync<TAppUserOrganization>(ct);
+    }
+    
+    /// <summary>
+    /// Get TAppUserDepartment by user id
+    /// </summary>
+    /// <param name="userId">User Id</param>
+    /// <returns>List of TAppUserDepartment</returns>
+    public async Task<List<TAppUserDepartment>> GetUserDepartmentsAsync(string userId, CancellationToken ct)
+    {
+        var res = Db.AppUserDepartments.Where(c  => c.AppUserId == userId).Include(c => c.Department).AsNoTracking();
+        if (res is null)
+            return [];
+        return await res.ToListAsync<TAppUserDepartment>(ct);
     }
     #endregion
     

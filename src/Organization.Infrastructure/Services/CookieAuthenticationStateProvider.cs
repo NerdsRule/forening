@@ -195,55 +195,34 @@ namespace Organization.Infrastructure.Services;
 
             // default to not authenticated
             var user = unauthenticated;
-
+            StaticUserInfoBlazor.User = null;
+            StaticUserInfoBlazor.SelectedOrganization = null;
             try
             {
                 // the user info endpoint is secured, so if the user isn't logged in this will fail
-                var userResponse = await httpClient.GetAsync("/v1/api/manage/info");
-
-                // throw if user info wasn't retrieved
-                userResponse.EnsureSuccessStatusCode();
-
-                // user is authenticated,so let's build their authenticated identity
-                var userJson = await userResponse.Content.ReadAsStringAsync();
-                var userInfo = JsonSerializer.Deserialize<UserInfo>(userJson, jsonSerializerOptions);
+                CancellationToken cancellationToken = new CancellationTokenSource(TimeSpan.FromSeconds(30)).Token;
+                var userInfo = await httpClient.GetFromJsonAsync<UserModel?>("v1/api/users/info", cancellationToken);
 
                 if (userInfo != null)
                 {
                     // in this example app, name and email are the same
                     var claims = new List<Claim>
                     {
-                        new(ClaimTypes.Name, userInfo.Email),
+                        new(ClaimTypes.Name, userInfo.UserName),
                         new(ClaimTypes.Email, userInfo.Email),
                     };
 
-                    // add any additional claims
-                    claims.AddRange(
-                        userInfo.Claims.Where(c => c.Key != ClaimTypes.Name && c.Key != ClaimTypes.Email)
-                            .Select(c => new Claim(c.Key, c.Value)));
-
-                    // request the roles endpoint for the user's roles
-                    var rolesResponse = await httpClient.GetAsync("roles");
-
-                    // throw if request fails
-                    rolesResponse.EnsureSuccessStatusCode();
-
-                    // read the response into a string
-                    var rolesJson = await rolesResponse.Content.ReadAsStringAsync();
-
-                    // deserialize the roles string into an array
-                    var roles = JsonSerializer.Deserialize<RoleClaim[]>(rolesJson, jsonSerializerOptions);
-
-                    // add any roles to the claims collection
-                    if (roles?.Length > 0)
+                    // store static user info for Blazor client
+                    StaticUserInfoBlazor.User = userInfo;
+                    if (userInfo.AppUserOrganizations.Count > 0)
                     {
-                        foreach (var role in roles)
-                        {
-                            if (!string.IsNullOrEmpty(role.Type) && !string.IsNullOrEmpty(role.Value))
-                            {
-                                claims.Add(new Claim(role.Type, role.Value, role.ValueType, role.Issuer, role.OriginalIssuer));
-                            }
-                        }
+                        StaticUserInfoBlazor.SelectedOrganization = userInfo.AppUserOrganizations[0];
+                        claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.OrganizationRole.ToString()));
+                    }
+                    if (userInfo.AppUserDepartments.Count > 0)
+                    {
+                        StaticUserInfoBlazor.SelectedDepartment = userInfo.AppUserDepartments[0];
+                        claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.DepartmentRole.ToString()));
                     }
 
                     // set the principal
@@ -251,6 +230,11 @@ namespace Organization.Infrastructure.Services;
                     user = new ClaimsPrincipal(id);
                     authenticated = true;
                 }
+            }
+            catch (HttpRequestException httpEx) when (httpEx.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                // not authenticated - this is expected if the user is not logged in
+                logger.LogInformation("User is not authenticated.");
             }
             catch (Exception ex)
             {

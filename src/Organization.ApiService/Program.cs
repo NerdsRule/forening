@@ -10,14 +10,31 @@ builder.Services.AddProblemDetails();
 // Enable authorization services - policies can be added here as needed
 builder.Services.AddAuthorization();
 
+// Add CORS support for Blazor WebAssembly
+builder.Services.AddCors(options =>
+{
+    
+    options.AddPolicy("AllowLocalhost", policy =>
+    {
+        policy.WithOrigins("https://localhost:*", "http://localhost:*")
+                    .SetIsOriginAllowedToAllowWildcardSubdomains()
+                    .AllowAnyHeader()
+                    .WithMethods("GET", "PUT", "DELETE", "POST")
+                    .AllowCredentials();
+    });
+});
+
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 
 #region Database
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-//builder.Services.AddDbContext<AppDbContext>(options => options.UseInMemoryDatabase("TestDb"));
-builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
+builder.Services.AddDbContext<AppDbContext>(options => 
+{
+    options.UseInMemoryDatabase("TestDb");
+});
+//builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
 //builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
 
 
@@ -67,6 +84,9 @@ if (app.Environment.IsDevelopment())
     await using var scope = app.Services.CreateAsyncScope();
     await SeedData.InitializeAsync(scope.ServiceProvider);
 }
+
+// Enable CORS
+app.UseCors("AllowLocalhost");
 
 // Ensure authentication/authorization middleware are in place.
 // Authentication must run before Authorization and before endpoint routing that requires it.

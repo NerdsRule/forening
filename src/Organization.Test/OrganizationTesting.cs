@@ -6,13 +6,13 @@ namespace Organization.Test;
 public class OrganizationTesting
 {
 
-    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(120);
 
     [Fact]
     public async Task GetApiService_GetOrganization()
     {
         // Arrange
-        var cancellationToken = CancellationToken.None;
+        var cancellationToken = new CancellationTokenSource(DefaultTimeout).Token;
         var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Organization_AppHost>(cancellationToken);
         appHost.Services.AddLogging(logging =>
         {
@@ -22,6 +22,7 @@ public class OrganizationTesting
         appHost.Services.ConfigureHttpClientDefaults(clientBuilder =>
         {
             clientBuilder.AddStandardResilienceHandler();
+            clientBuilder.SetHandlerLifetime(TimeSpan.FromMinutes(5));
         });
 
         await using var app = await appHost.BuildAsync(cancellationToken).WaitAsync(DefaultTimeout, cancellationToken);

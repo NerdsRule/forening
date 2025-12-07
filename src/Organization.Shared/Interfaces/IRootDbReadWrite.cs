@@ -45,6 +45,13 @@ public interface IRootDbReadWrite
     /// <param name="userId">User Id</param>
     /// <returns>List of TAppUserOrganization</returns>
     public Task<List<TAppUserOrganization>> GetUserOrganizationsAsync(string userId, CancellationToken ct);
+
+    /// <summary>
+    /// Get TAppUserDepartment by user id
+    /// </summary>
+    /// <param name="userId">User Id</param>
+    /// <returns>List of TAppUserDepartment</returns>
+    public Task<List<TAppUserDepartment>> GetUserDepartmentsAsync(string userId, CancellationToken ct);
     #endregion
 
     #region Generic CRUD

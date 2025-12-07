@@ -31,20 +31,49 @@ public static class UserRolesEndpoints
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     private static async Task<bool> IsUserAuthorizedForOrganizationAsync(ClaimsPrincipal user, int organizationId, List<RolesEnum> roles, IRootDbReadWrite db, CancellationToken cancellationToken)
+    {
+        if (user.Identity is not null && user.Identity.IsAuthenticated)
+        {
+            var identity = (ClaimsIdentity)user.Identity;
+            var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
+            if (userId is null) return false;
+            
+            // get user roles from TAppUserOrganization
+            var userOrgRoles = await db.GetUserOrganizationsAsync(userId, cancellationToken);
+            return userOrgRoles.Any(c => c.OrganizationId == organizationId && roles.Contains(c.Role));
+        }                
+        return false;
+    }
+
+    /// <summary>
+    /// Get user information
+    /// </summary>
+    /// <param name="user">Instance of ClaimsPrincipal representing the authenticated user.</param>
+    /// <param name="userManager">Instance of UserManager for managing user-related operations.</param>
+    /// <param name="db">Instance of IRootDbReadWrite for database operations.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>Returns a UserModel containing user information if authenticated; otherwise, returns an Unauthorized result.</returns>
+    public static async Task<UserModel?> GetUserInfoAsync(string userId, UserManager<AppUser> userManager, IRootDbReadWrite db,  CancellationToken cancellationToken)
+    {
+            var appUser = await userManager.FindByIdAsync(userId);
+            if (appUser is null) return null;
+
+            var userOrgs = await db.GetUserOrganizationsAsync(userId, cancellationToken);
+            var userDepts = await db.GetUserDepartmentsAsync(userId, cancellationToken);
+
+            return new()
             {
-                if (user.Identity is not null && user.Identity.IsAuthenticated)
-                {
-                    var identity = (ClaimsIdentity)user.Identity;
-                    var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                    
-                    if (userId is null) return false;
-                    
-                    // get user roles from TAppUserOrganization
-                    var userOrgRoles = await db.GetUserOrganizationsAsync(userId, cancellationToken);
-                    return userOrgRoles.Any(c => c.OrganizationId == organizationId && roles.Contains(c.Role));
-                }                
-                return false;
-            }
+                Id = appUser.Id,
+                UserName = appUser.UserName ?? string.Empty,
+                Email = appUser.Email ?? string.Empty,
+                Points = appUser.Points,
+                UsedPoints = appUser.UsedPoints,
+                MemberNumber = appUser.MemberNumber,
+                AppUserOrganizations = userOrgs,
+                AppUserDepartments = userDepts
+            };
+    }
 
     public static void MapUserRolesEndpoints(this WebApplication app)
     {
@@ -52,7 +81,37 @@ public static class UserRolesEndpoints
         var v1 = app.MapGroup("/v1");
 
         #region Endpoints for user management
-        v1.MapPost("/api/users/login", async Task<IResult> (SignInManager<AppUser> signInManager, UserManager<AppUser> userManager, [FromBody] LoginModel model) =>
+        /// <summary>
+        /// Get user info endpoint
+        /// </summary>
+        /// <param name="user">ClaimsPrincipal</param>
+        /// <param name="userManager">UserManager</param>
+        /// <param name="db">IRootDbReadWrite</param>
+        /// <param name="cancellationToken">CancellationToken</param>
+        /// <returns>Result</returns>
+        v1.MapGet("/api/users/info", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, IRootDbReadWrite db, CancellationToken cancellationToken) =>
+        {
+            if (user.Identity is not null && user.Identity.IsAuthenticated)
+            {
+                var identity = (ClaimsIdentity)user.Identity;
+                var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId is null) return Results.Unauthorized();
+                
+                var userInfo = await GetUserInfoAsync(userId, userManager, db, cancellationToken);
+                if (userInfo is null) return Results.Unauthorized();
+                return Results.Ok(userInfo);
+            }
+            return Results.Unauthorized();
+        }).AllowAnonymous();
+
+        /// <summary>
+        /// Login endpoint
+        /// </summary>
+        /// <param name="signInManager">SignInManager</param>
+        /// <param name="userManager">UserManager</param>
+        /// <param name="model">LoginModel</param>
+        /// <returns>Result</returns>
+        v1.MapPost("/api/users/login", async Task<IResult> (SignInManager<AppUser> signInManager, UserManager<AppUser> userManager, IRootDbReadWrite db, CancellationToken cancellationToken, [FromBody] LoginModel model) =>
         {
             if (model is null)
             {
@@ -77,9 +136,9 @@ public static class UserRolesEndpoints
             }
 
             await signInManager.SignInAsync(appUser, isPersistent: false);
-            
-
-            return Results.Ok(new UserModel { Id = appUser.Id, UserName = appUser.UserName ?? string.Empty, Email = appUser.Email ?? string.Empty });
+            var userInfo = await GetUserInfoAsync(appUser.Id, userManager, db, cancellationToken);
+            if (userInfo is null) return Results.Unauthorized();
+            return Results.Ok(userInfo);
         }).AllowAnonymous();
 
         /// <summary>

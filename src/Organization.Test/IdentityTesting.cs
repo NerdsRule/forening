@@ -39,6 +39,17 @@ private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
         testOrgResponse.Should().NotBeNull("Test organization creation response was null.");
         testOrgResponse!.Id.Should().BeGreaterThan(0, "Test organization ID was not greater than 0.");
 
+        // Test GetInfo before user registration where 401 is expected
+        try
+        {
+            var getInfoResponse = await httpClient.GetFromJsonAsync<UserModel?>($"/v1/api/users/info", cancellationToken);
+            getInfoResponse.Should().BeNull("GetInfo response before registration should be null (unauthenticated).");
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            // Expected exception for unauthenticated request
+        }
+        
         var registerResponse = await httpClient.GetFromJsonAsync<UserModel>($"/v1/api/users/test/{testOrgResponse.Id}", cancellationToken);
         registerResponse.Should().NotBeNull("Register response was null.");
         registerResponse!.UserName.Should().Be("testuser@example.com", "Registered user email was not correct.");

@@ -35,7 +35,11 @@ public enum RolesEnum
     /// <summary>
     /// User with enterprise-wide administrative privileges.
     /// </summary>
-    EnterpriseAdmin = 12
+    EnterpriseAdmin = 12,
+    /// <summary>
+    /// No specific role assigned.
+    /// </summary>
+    None = 99
 
 }
 
