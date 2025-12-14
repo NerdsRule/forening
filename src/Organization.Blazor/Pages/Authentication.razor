@@ -1,7 +1,68 @@
 ﻿@page "/authentication/{action}"
-@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
-<RemoteAuthenticatorView Action="@Action" />
 
-@code{
-    [Parameter] public string? Action { get; set; }
-}
+<div class="container mt-4">
+    @if (Action?.ToLowerInvariant() == "login")
+    {
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Login</h3>
+                    </div>
+                    <div class="card-body">
+                        <EditForm Model="loginModel" OnValidSubmit="HandleLogin">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary />
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <InputText class="form-control" @bind-Value="loginModel.Email" />
+                                <ValidationMessage For="@(() => loginModel.Email)" />
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Password</label>
+                                <InputText type="password" class="form-control" @bind-Value="loginModel.Password" />
+                                <ValidationMessage For="@(() => loginModel.Password)" />
+                            </div>
+                            
+                            @if (!string.IsNullOrEmpty(errorMessage))
+                            {
+                                <div class="alert alert-danger">@errorMessage</div>
+                            }
+                            
+                            <button type="submit" class="btn btn-primary" disabled="@isLoading">
+                                @if (isLoading)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                Login
+                            </button>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (Action?.ToLowerInvariant() == "logout")
+    {
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h4>Logging out...</h4>
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning">
+            Invalid authentication action: @Action
+        </div>
+    }
+</div>

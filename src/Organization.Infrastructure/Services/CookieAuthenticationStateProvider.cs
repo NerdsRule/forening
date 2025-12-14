@@ -100,20 +100,19 @@ namespace Organization.Infrastructure.Services;
         /// <summary>
         /// User login.
         /// </summary>
-        /// <param name="email">The user's email address.</param>
-        /// <param name="password">The user's password.</param>
+        /// <param name="model">The login model containing email and password.</param>
         /// <returns>The result of the login request serialized to a <see cref="FormResult"/>.</returns>
-        public async Task<FormResult> LoginAsync(string email, string password)
+        public async Task<FormResult> LoginAsync(LoginModel model)
         {
+            var email = model.Email ?? string.Empty;
+            var password = model.Password ?? string.Empty;
+
+            // make the request
             try
             {
+                CancellationToken cancellationToken = new CancellationTokenSource(TimeSpan.FromSeconds(30)).Token;
                 // login with cookies
-                var result = await httpClient.PostAsJsonAsync("/v1/api/login", new LoginModel
-                {
-                    Email = email,
-                    Password = password,
-                    RememberMe = true                            
-                });
+                var result = await httpClient.PostAsJsonAsync("/v1/api/users/login", model, cancellationToken);
 
                 // success?
                 if (result.IsSuccessStatusCode)
@@ -137,6 +136,7 @@ namespace Organization.Infrastructure.Services;
                 ErrorList = [ "Invalid email and/or password." ]
             };
         }
+        
 
         /// <summary>
         /// Change the user's password.
@@ -201,10 +201,15 @@ namespace Organization.Infrastructure.Services;
             {
                 // the user info endpoint is secured, so if the user isn't logged in this will fail
                 CancellationToken cancellationToken = new CancellationTokenSource(TimeSpan.FromSeconds(30)).Token;
-                var userInfo = await httpClient.GetFromJsonAsync<UserModel?>("v1/api/users/info", cancellationToken);
-
-                if (userInfo != null)
+                var response = await httpClient.GetAsync("v1/api/users/info", cancellationToken);
+                //var userInfo = await httpClient.GetFromJsonAsync<UserModel?>("v1/api/users/info", cancellationToken);
+                if (response.IsSuccessStatusCode)
                 {
+                    var userInfo = await response.Content.ReadFromJsonAsync<UserModel>(jsonSerializerOptions, cancellationToken);
+                    if (userInfo == null)
+                    {
+                        return new AuthenticationState(unauthenticated);
+                    }
                     // in this example app, name and email are the same
                     var claims = new List<Claim>
                     {
@@ -229,6 +234,10 @@ namespace Organization.Infrastructure.Services;
                     var id = new ClaimsIdentity(claims, nameof(CookieAuthenticationStateProvider));
                     user = new ClaimsPrincipal(id);
                     authenticated = true;
+                } else
+                {
+                    // not authenticated
+                    return new AuthenticationState(unauthenticated);
                 }
             }
             catch (HttpRequestException httpEx) when (httpEx.StatusCode == System.Net.HttpStatusCode.Unauthorized)

@@ -9,10 +9,9 @@ public interface IAccountService
 /// <summary>
         /// Login service.
         /// </summary>
-        /// <param name="email">User's email.</param>
-        /// <param name="password">User's password.</param>
+        /// <param name="model">The login model containing email and password.</param>
         /// <returns>The result of the request serialized to <see cref="FormResult"/>.</returns>
-        public Task<FormResult> LoginAsync(string email, string password);
+        public Task<FormResult> LoginAsync(LoginModel model);
 
         /// <summary>
         /// Change the user's password.

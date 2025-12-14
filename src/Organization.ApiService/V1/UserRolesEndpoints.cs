@@ -101,6 +101,7 @@ public static class UserRolesEndpoints
                 if (userInfo is null) return Results.Unauthorized();
                 return Results.Ok(userInfo);
             }
+            //return Results.Ok();
             return Results.Unauthorized();
         }).AllowAnonymous();
 
