@@ -141,20 +141,14 @@ namespace Organization.Infrastructure.Services;
         /// <summary>
         /// Change the user's password.
         /// </summary>
-        /// <param name="currentPassword">The user's current password.</param>
-        /// <param name="newPassword">The user's new password.</param>
+        /// <param name="model">The change password model containing current and new password.</param>
         /// <returns>The result of the password change request serialized to a <see cref="FormResult"/>.</returns>
-        public async Task<FormResult> ChangePasswordAsync(string currentPassword, string newPassword)
+        public async Task<FormResult> ChangePasswordAsync(ChangePasswordModel model)
         {
             try
             {
                 // make the request
-                var result = await httpClient.PostAsJsonAsync(
-                    "/v1/api/users/password", new ChangePasswordModel
-                    {
-                        CurrentPassword = currentPassword,
-                        NewPassword = newPassword
-                    });
+                var result = await httpClient.PostAsJsonAsync("/v1/api/users/password", model);
 
                 // success?
                 if (result.IsSuccessStatusCode)
@@ -197,6 +191,7 @@ namespace Organization.Infrastructure.Services;
             var user = unauthenticated;
             StaticUserInfoBlazor.User = null;
             StaticUserInfoBlazor.SelectedOrganization = null;
+            StaticUserInfoBlazor.SelectedDepartment = null;
             try
             {
                 // the user info endpoint is secured, so if the user isn't logged in this will fail
@@ -244,10 +239,12 @@ namespace Organization.Infrastructure.Services;
             {
                 // not authenticated - this is expected if the user is not logged in
                 logger.LogInformation("User is not authenticated.");
+                return new AuthenticationState(unauthenticated);
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "App error");
+                return new AuthenticationState(unauthenticated);
             }
 
             // return the state
@@ -258,7 +255,7 @@ namespace Organization.Infrastructure.Services;
         {
             const string Empty = "{}";
             var emptyContent = new StringContent(Empty, Encoding.UTF8, "application/json");
-            await httpClient.PostAsync("/v1/api/logout", emptyContent);
+            await httpClient.PostAsync("/v1/api/users/logout", emptyContent);
             NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
         }
 

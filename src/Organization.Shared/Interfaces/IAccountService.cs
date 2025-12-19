@@ -16,10 +16,9 @@ public interface IAccountService
         /// <summary>
         /// Change the user's password.
         /// </summary>
-        /// <param name="currentPassword">The user's current password.</param>
-        /// <param name="newPassword">The user's new password.</param>
+        /// <param name="model">The change password model containing current and new password.</param>
         /// <returns>The result of the password change request serialized to a <see cref="FormResult"/>.</returns>
-        public Task<FormResult> ChangePasswordAsync(string currentPassword, string newPassword);
+        public Task<FormResult> ChangePasswordAsync(ChangePasswordModel model);
 
         /// <summary>
         /// Log out the logged in user.

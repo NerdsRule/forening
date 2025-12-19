@@ -25,8 +25,8 @@ public class RootDbReadWrite : IRootDbReadWrite
     /// <returns>List of TAppUserOrganization</returns>
     public async Task<List<TAppUserOrganization>> GetUserOrganizationsAsync(string userId, CancellationToken ct)
     {
-        var res = Db.AppUserOrganizations.Where(c  => c.AppUserId == userId).Include(c => c.Organization).AsNoTracking();
-        if (res is null)
+        var res = Db.AppUserOrganizations.Where(c  => c.AppUserId == userId && c.Organization != null).Include(c => c.Organization).AsNoTracking();
+        if (res is null || !res.Any())
             return [];
         return await res.ToListAsync<TAppUserOrganization>(ct);
     }
@@ -38,8 +38,8 @@ public class RootDbReadWrite : IRootDbReadWrite
     /// <returns>List of TAppUserDepartment</returns>
     public async Task<List<TAppUserDepartment>> GetUserDepartmentsAsync(string userId, CancellationToken ct)
     {
-        var res = Db.AppUserDepartments.Where(c  => c.AppUserId == userId).Include(c => c.Department).AsNoTracking();
-        if (res is null)
+        var res = Db.AppUserDepartments.Where(c  => c.AppUserId == userId && c.Department != null).Include(c => c.Department).AsNoTracking();
+        if (res is null || !res.Any())
             return [];
         return await res.ToListAsync<TAppUserDepartment>(ct);
     }

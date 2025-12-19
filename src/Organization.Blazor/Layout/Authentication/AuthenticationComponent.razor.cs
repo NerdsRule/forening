@@ -1,17 +1,11 @@
 
-using System.ComponentModel.DataAnnotations;
-using Organization.Shared.Interfaces;
-using Organization.Shared.Identity;
+namespace Organization.Blazor.Layout.Authentication;
 
-namespace Organization.Blazor.Pages;
-
-partial class Authentication : ComponentBase
+partial class AuthenticationComponent : ComponentBase
 {
 [Parameter] public string? Action { get; set; }
     
     private LoginModel loginModel = new();
-    private string _currentPassword = string.Empty;
-    private string _newPassword = string.Empty;
     private string errorMessage = string.Empty;
     private bool isLoading = false;
     
@@ -64,38 +58,6 @@ partial class Authentication : ComponentBase
         catch (Exception)
         {
             Navigation.NavigateTo("/", forceLoad: true);
-        }
-    }
-
-    private async Task HandleChangePassword()
-    {
-
-        isLoading = true;
-        errorMessage = string.Empty;
-        StateHasChanged();
-        try
-        {
-            var result = await AccountService.ChangePasswordAsync(new ChangePasswordModel{
-                CurrentPassword = _currentPassword,
-                NewPassword = _newPassword
-            });
-            if (result.Succeeded)
-            {
-                Navigation.NavigateTo("/", forceLoad: true);
-            }
-            else
-            {
-                errorMessage = string.Join(", ", result.ErrorList);
-            }
-        }
-        catch (Exception ex)
-        {
-            errorMessage = "An error occurred during password change. " + ex.Message;
-        }
-        finally
-        {
-            isLoading = false;
-            StateHasChanged();
         }
     }
 

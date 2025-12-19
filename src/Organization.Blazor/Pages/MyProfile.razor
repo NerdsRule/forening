@@ -1,0 +1,16 @@
+@page "/myprofile"
+
+<PageTitle>My profile</PageTitle>
+
+<AuthorizeView>
+    <Authorized>
+        <h3>My Profile</h3>
+        <p>
+            Welcome to your profile page, @context.User.Identity?.Name!
+        </p>
+        <!-- Additional profile details can be added here -->
+    </Authorized>
+    <NotAuthorized>
+        <AuthenticationComponent/>
+    </NotAuthorized>
+</AuthorizeView>
