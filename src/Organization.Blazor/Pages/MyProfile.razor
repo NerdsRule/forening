@@ -4,11 +4,17 @@
 
 <AuthorizeView>
     <Authorized>
-        <h3>My Profile</h3>
-        <p>
-            Welcome to your profile page, @context.User.Identity?.Name!
-        </p>
-        <!-- Additional profile details can be added here -->
+        <div class="container">
+            <h3>My Profile - @context.User.Identity?.Name!</h3>
+            <p><button class="btn btn-success" @onclick="NavigateToChangePassword">Change Password</button></p>
+            <div class="section">
+                <h3>Organization</h3>
+                <p>Name: @StaticUserInfoBlazor.SelectedOrganization</p>
+                <h3>Department</h3>
+                <p>Name: @StaticUserInfoBlazor.SelectedDepartment</p>
+            </div>
+            <!-- Additional profile details can be added here -->
+        </div>
     </Authorized>
     <NotAuthorized>
         <AuthenticationComponent/>

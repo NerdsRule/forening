@@ -1,7 +1,4 @@
 
-using System.ComponentModel.DataAnnotations;
-using Organization.Shared.Interfaces;
-using Organization.Shared.Identity;
 
 namespace Organization.Blazor.Pages;
 
@@ -9,10 +6,8 @@ partial class Authentication : ComponentBase
 {
 [Parameter] public string? Action { get; set; }
     
-    private LoginModel loginModel = new();
-    private string _currentPassword = string.Empty;
-    private string _newPassword = string.Empty;
     private string errorMessage = string.Empty;
+    private ChangePasswordModel changePasswordModel = new ChangePasswordModel{ CurrentPassword = string.Empty, NewPassword = string.Empty };
     private bool isLoading = false;
     
     protected override async Task OnInitializedAsync()
@@ -20,37 +15,6 @@ partial class Authentication : ComponentBase
         if (Action?.ToLowerInvariant() == "logout")
         {
             await HandleLogout();
-        }
-    }
-    
-    private async Task HandleLogin()
-    {
-        isLoading = true;
-        errorMessage = string.Empty;
-        StateHasChanged();
-        
-        try
-        {
-            loginModel.RememberMe = true;
-            var result = await AccountService.LoginAsync(loginModel);
-            
-            if (result.Succeeded)
-            {
-                Navigation.NavigateTo("/", forceLoad: true);
-            }
-            else
-            {
-                errorMessage = string.Join(", ", result.ErrorList);
-            }
-        }
-        catch (Exception ex)
-        {
-            errorMessage = "An error occurred during login. " + ex.Message;
-        }
-        finally
-        {
-            isLoading = false;
-            StateHasChanged();
         }
     }
     
@@ -69,16 +33,12 @@ partial class Authentication : ComponentBase
 
     private async Task HandleChangePassword()
     {
-
         isLoading = true;
         errorMessage = string.Empty;
         StateHasChanged();
         try
         {
-            var result = await AccountService.ChangePasswordAsync(new ChangePasswordModel{
-                CurrentPassword = _currentPassword,
-                NewPassword = _newPassword
-            });
+            var result = await AccountService.ChangePasswordAsync(changePasswordModel);
             if (result.Succeeded)
             {
                 Navigation.NavigateTo("/", forceLoad: true);

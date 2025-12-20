@@ -25,11 +25,19 @@ public class ChangePasswordModel
     /// <summary>
     /// The user's current password used to validate identity before allowing a password change.
     /// </summary>
+    [Required]
+    [DataType(DataType.Password)]
+    [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$", 
+        ErrorMessage = "Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one special character.")]
     public required string CurrentPassword { get; set; }
 
     /// <summary>
     /// The new password to assign to the user's account.
     /// </summary>
+    [Required]
+    [DataType(DataType.Password)]
+    [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$", 
+        ErrorMessage = "Password must be at least 8 characters long and contain at least one lowercase letter, one uppercase letter, one number, and one special character.")]
     public required string NewPassword { get; set; }
 
 }
