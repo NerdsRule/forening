@@ -5,9 +5,69 @@ namespace Organization.Blazor.Pages;
 partial class MyProfile 
 {
 
+    /// <summary>
+    /// Form where user change selected department or organization
+    /// </summary>
+    private OrganizationDepartmentForm _organizationDepartmentForm { get; set; } = new();
+
+    private bool _showSuccessMessage = false;
+
+    /// <summary>
+    /// Handle valid form submission
+    /// </summary>
+    public void HandleValidSubmit()
+    {
+        StaticUserInfoBlazor.SelectedOrganization = StaticUserInfoBlazor.User!.AppUserOrganizations.FirstOrDefault(o => o.OrganizationId == _organizationDepartmentForm.SelectedOrganizationId);
+        StaticUserInfoBlazor.SelectedDepartment = StaticUserInfoBlazor.User!.AppUserDepartments.FirstOrDefault(d => d.DepartmentId == _organizationDepartmentForm.SelectedDepartmentId);
+        _showSuccessMessage = true;
+    }
+
+    /// <summary>
+    /// Update _organizationDepartmentForm.Departments when organization is changed
+    /// </summary>
+    private void OnOrganizationChanged()
+    {
+        _showSuccessMessage = false;
+        _organizationDepartmentForm.SelectedDepartmentId = null;
+        _organizationDepartmentForm.SelectedDepartment = null;
+        if (_organizationDepartmentForm.SelectedOrganizationId != null)
+        {
+            var orgId = _organizationDepartmentForm.SelectedOrganizationId.Value;                
+            _organizationDepartmentForm.Departments = [.. StaticUserInfoBlazor.User!.AppUserDepartments
+                .Where(d => d.AppUserId == StaticUserInfoBlazor.User.Id && d.Department!.OrganizationId == orgId)
+                .Select(c => c.Department!)];
+        }
+        else
+        {
+            _organizationDepartmentForm.Departments = [];
+        }
+    }
+
+    /// <summary>
+    /// Navigate to change password page
+    /// </summary>
     private void NavigateToChangePassword()
     {
         Navigation.NavigateTo("/Authentication/ChangePassword");
+    }
+
+    /// <summary>
+    /// Load data from the API after the component is initialized
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        if (StaticUserInfoBlazor.User is null)
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+        _organizationDepartmentForm.SelectedOrganization = StaticUserInfoBlazor.SelectedOrganization?.Organization;
+        _organizationDepartmentForm.SelectedDepartment = StaticUserInfoBlazor.SelectedDepartment?.Department;
+        _organizationDepartmentForm.SelectedOrganizationId = StaticUserInfoBlazor.SelectedOrganization?.OrganizationId;
+        _organizationDepartmentForm.SelectedDepartmentId = StaticUserInfoBlazor.SelectedDepartment?.Id;
+        _organizationDepartmentForm.Organizations = [.. StaticUserInfoBlazor.User.AppUserOrganizations.Select(c => c.Organization!)];
+        _organizationDepartmentForm.Departments = [.. StaticUserInfoBlazor.User.AppUserDepartments.Where(d => d.AppUserId == StaticUserInfoBlazor.User.Id).Select(c => c.Department!)];
+        await base.OnInitializedAsync();
     }
     [Inject] NavigationManager Navigation { get; set; } = null!;
 }

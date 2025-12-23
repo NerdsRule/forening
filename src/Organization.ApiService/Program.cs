@@ -30,11 +30,8 @@ builder.Services.AddEndpointsApiExplorer();
 
 #region Database
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<AppDbContext>(options => 
-{
-    options.UseInMemoryDatabase("TestDb");
-});
-//builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
+//builder.Services.AddDbContext<AppDbContext>(options => {options.UseInMemoryDatabase("TestDb");});
+builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
 //builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
 
 

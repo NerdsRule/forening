@@ -2,21 +2,57 @@
 
 <PageTitle>My profile</PageTitle>
 
-<AuthorizeView>
-    <Authorized>
         <div class="container">
-            <h3>My Profile - @context.User.Identity?.Name!</h3>
+            <h3>My Profile - @StaticUserInfoBlazor.User?.UserName</h3>
             <p><button class="btn btn-success" @onclick="NavigateToChangePassword">Change Password</button></p>
             <div class="section">
+                <h3>Change Organization & Department</h3>
+                <EditForm Model="_organizationDepartmentForm" OnValidSubmit="HandleValidSubmit">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    
+                    <div class="form-group">
+                        <label for="organization">Organization:</label>
+                        <InputSelect id="organization" @bind-Value="_organizationDepartmentForm.SelectedOrganizationId" class="form-control" @bind-Value:after="OnOrganizationChanged">
+                            <option value="">Select Organization</option>
+                                @foreach (var org in _organizationDepartmentForm.Organizations)
+                                {
+                                    <option value="@org.Id">@org.Name</option>
+                                }
+                        </InputSelect>
+                        <ValidationMessage For="@(() => _organizationDepartmentForm.SelectedOrganizationId)" />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="department">Department:</label>
+                        <InputSelect id="department" @bind-Value="_organizationDepartmentForm.SelectedDepartmentId" class="form-control">
+                            <option value="">Select Department</option>
+                                @foreach (var dept in _organizationDepartmentForm.Departments)
+                                {
+                                    <option value="@dept.Id">@dept.Name</option>
+                                }
+                        </InputSelect>
+                        <ValidationMessage For="@(() => _organizationDepartmentForm.SelectedDepartmentId)" />
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Update</button>
+                    @if (_showSuccessMessage)
+                    {
+                        <div class="alert alert-success mt-2" role="alert">
+                            Profile updated successfully!
+                        </div>
+                    }
+                </EditForm>
+            </div>
+
+            
+            <div class="section">
                 <h3>Organization</h3>
-                <p>Name: @StaticUserInfoBlazor.SelectedOrganization</p>
+                <p>Name: @StaticUserInfoBlazor.SelectedOrganization?.Organization?.Name</p>
+                <p>Role: @StaticUserInfoBlazor.SelectedOrganization?.Role</p>
                 <h3>Department</h3>
-                <p>Name: @StaticUserInfoBlazor.SelectedDepartment</p>
+                <p>Name: @StaticUserInfoBlazor.SelectedDepartment?.Department?.Name</p>
+                <p>Role: @StaticUserInfoBlazor.SelectedDepartment?.Role</p>
             </div>
             <!-- Additional profile details can be added here -->
         </div>
-    </Authorized>
-    <NotAuthorized>
-        <AuthenticationComponent/>
-    </NotAuthorized>
-</AuthorizeView>

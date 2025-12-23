@@ -1,5 +1,4 @@
 
-using System.Security.Claims;
 
 namespace Organization.Shared.Identity;
 
@@ -39,12 +38,12 @@ public class UserModel
     public string? MemberNumber { get; set; }
 
     /// <summary>
-    /// Organizations the user is associated with.
+    /// TAppUserOrganizations the user is associated with.
     /// </summary>
     public List<TAppUserOrganization> AppUserOrganizations { get; set; } = [];
 
     /// <summary>
-    /// Department the user is associated with.
+    /// TAppUserDepartments the user is associated with.
     /// </summary>
     public List<TAppUserDepartment> AppUserDepartments { get; set; } = [];
 }

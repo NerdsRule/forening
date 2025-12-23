@@ -30,4 +30,5 @@ public static class StaticUserInfoBlazor
     /// Department role of the selected department
     /// </summary>
     public static RolesEnum DepartmentRole => SelectedDepartment != null ? SelectedDepartment.Role : RolesEnum.None;
+
 }

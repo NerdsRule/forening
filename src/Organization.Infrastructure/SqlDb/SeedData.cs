@@ -45,7 +45,7 @@ public class SeedData
         }
 
         using var userManager = serviceProvider.GetRequiredService<UserManager<AppUser>>();
-
+        // Create users
         foreach (var user in seedUsers)
         {
             var hashed = password.HashPassword(user, "ChangeMeFast1!");
@@ -61,6 +61,45 @@ public class SeedData
                     await userManager.AddToRolesAsync(appUser, user.RoleList);
                 }
             }
+        }
+
+        // Add Organzation seed data if needed
+        var organization = new TOrganization
+        {
+            Name = "Space4IT",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        var org = await context.Organizations.AddAsync(organization);
+
+        // Add Department seed data if needed
+        var department = new TDepartment
+        {
+            Name = "Development",
+            OrganizationId = org.Entity.Id,
+            IsActive = true,
+        };
+        var dept = await context.Departments.AddAsync(department);
+
+        // Assign first user to Organization and Department as EnterpriseAdmin
+        var firstUser = await userManager.FindByEmailAsync(seedUsers.First().Email!);
+        if (firstUser is not null)
+        {
+            var userOrg = new TAppUserOrganization
+            {
+                AppUserId = firstUser.Id,
+                OrganizationId = org.Entity.Id,
+                Role = RolesEnum.EnterpriseAdmin
+            };
+            await context.AppUserOrganizations.AddAsync(userOrg);
+
+            var userDept = new TAppUserDepartment
+            {
+                AppUserId = firstUser.Id,
+                DepartmentId = dept.Entity.Id,
+                Role = RolesEnum.DepartmentAdmin
+            };
+            await context.AppUserDepartments.AddAsync(userDept);
         }
 
         await context.SaveChangesAsync();

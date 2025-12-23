@@ -59,8 +59,8 @@ public static class UserRolesEndpoints
             var appUser = await userManager.FindByIdAsync(userId);
             if (appUser is null) return null;
 
-            var userOrgs = await db.GetUserOrganizationsAsync(userId, cancellationToken);
-            var userDepts = await db.GetUserDepartmentsAsync(userId, cancellationToken);
+            var userAppUserOrgs = await db.GetUserOrganizationsAsync(userId, cancellationToken);
+            var userAppUserDeps = await db.GetUserDepartmentsAsync(userId, cancellationToken);
 
             return new()
             {
@@ -70,8 +70,8 @@ public static class UserRolesEndpoints
                 Points = appUser.Points,
                 UsedPoints = appUser.UsedPoints,
                 MemberNumber = appUser.MemberNumber,
-                AppUserOrganizations = userOrgs,
-                AppUserDepartments = userDepts
+                AppUserOrganizations = userAppUserOrgs,
+                AppUserDepartments = userAppUserDeps
             };
     }
 
