@@ -1,4 +1,6 @@
 
+using Blazored.LocalStorage;
+
 namespace Organization.Infrastructure.Services;
 
     /// <summary>
@@ -8,7 +10,7 @@ namespace Organization.Infrastructure.Services;
     /// Create a new instance of the auth provider.
     /// </remarks>
     /// <param name="httpClientFactory">Factory to retrieve auth client.</param>
-    public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFactory, ILogger<CookieAuthenticationStateProvider> logger) : AuthenticationStateProvider, IAccountService
+    public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFactory, ILogger<CookieAuthenticationStateProvider> logger, ILocalStorageService localStorageService) : AuthenticationStateProvider, IAccountService
     {
         /// <summary>
         /// Map the JavaScript-formatted properties to C#-formatted classes.
@@ -23,6 +25,8 @@ namespace Organization.Infrastructure.Services;
         /// Special auth client.
         /// </summary>
         private readonly HttpClient httpClient = httpClientFactory.CreateClient("Auth");
+
+        private readonly ILocalStorageService _localStorageService = localStorageService;
 
         /// <summary>
         /// Authentication state.
@@ -212,18 +216,65 @@ namespace Organization.Infrastructure.Services;
                         new(ClaimTypes.Email, userInfo.Email),
                     };
 
-                    // store static user info for Blazor client
                     StaticUserInfoBlazor.User = userInfo;
-                    if (userInfo.AppUserOrganizations.Count > 0)
+                    // Read user settings from local storage
+                    try
                     {
-                        StaticUserInfoBlazor.SelectedOrganization = userInfo.AppUserOrganizations[0];
-                        claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.OrganizationRole.ToString()));
-                    }
-                    if (userInfo.AppUserDepartments.Count > 0)
+                        var userLocalStorage = await _localStorageService.GetItemAsync<UserLocalStorage>(StaticUserInfoBlazor.UserLocalStorageKey);
+                        if (userLocalStorage != null)
                     {
-                        StaticUserInfoBlazor.SelectedDepartment = userInfo.AppUserDepartments[0];
-                        claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.DepartmentRole.ToString()));
+                        if (userLocalStorage.SelectedOrganizationId != 0)
+                        {
+                            StaticUserInfoBlazor.SelectedOrganization = userInfo.AppUserOrganizations.FirstOrDefault(o => o.OrganizationId == userLocalStorage.SelectedOrganizationId);
+                            if (StaticUserInfoBlazor.SelectedOrganization != null)
+                            {
+                                claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.OrganizationRole.ToString()));
+                            }
+                            else
+                            {
+                                StaticUserInfoBlazor.SelectedOrganization = userInfo.AppUserOrganizations.FirstOrDefault();
+                                if (StaticUserInfoBlazor.SelectedOrganization != null)
+                                {
+                                    claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.OrganizationRole.ToString()));
+                                }
+                            }
+                        }
+                        if (userLocalStorage.SelectedDepartmentId != 0)
+                        {
+                            StaticUserInfoBlazor.SelectedDepartment = userInfo.AppUserDepartments.FirstOrDefault(d => d.DepartmentId == userLocalStorage.SelectedDepartmentId);
+                            if (StaticUserInfoBlazor.SelectedDepartment != null)
+                            {
+                                claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.DepartmentRole.ToString()));
+                            }
+                            else
+                            {
+                                StaticUserInfoBlazor.SelectedDepartment = userInfo.AppUserDepartments.FirstOrDefault();
+                                if (StaticUserInfoBlazor.SelectedDepartment != null)
+                                {
+                                    claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.DepartmentRole.ToString()));
+                                }
+                            }
+                        }
+                    } else {
+                        // store static user info for Blazor client
+                        if (userInfo.AppUserOrganizations.Count > 0)
+                        {
+                            StaticUserInfoBlazor.SelectedOrganization = userInfo.AppUserOrganizations[0];
+                            claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.OrganizationRole.ToString()));
+                        }
+                        if (userInfo.AppUserDepartments.Count > 0)
+                        {
+                            StaticUserInfoBlazor.SelectedDepartment = userInfo.AppUserDepartments[0];
+                            claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.DepartmentRole.ToString()));
+                        }
                     }
+                    } catch (Exception ex)
+                    {
+                        logger.LogError(ex, "Error reading user local storage");
+                        await _localStorageService.RemoveItemAsync(StaticUserInfoBlazor.UserLocalStorageKey);
+                    }
+                    
+                    
 
                     // set the principal
                     var id = new ClaimsIdentity(claims, nameof(CookieAuthenticationStateProvider));
@@ -256,7 +307,7 @@ namespace Organization.Infrastructure.Services;
             const string Empty = "{}";
             var emptyContent = new StringContent(Empty, Encoding.UTF8, "application/json");
             await httpClient.PostAsync("/v1/api/users/logout", emptyContent);
-            NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+            //NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
         }
 
         public async Task<bool> CheckAuthenticatedAsync()

@@ -9,6 +9,7 @@ global using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 global using Microsoft.AspNetCore.Components;
 global using System.Security.Claims;
 global using Microsoft.AspNetCore.Components.Authorization;
+global using Blazored.LocalStorage;
 
 global using Organization.Shared.Interfaces;
 global using Organization.Shared.Identity;

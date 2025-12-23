@@ -20,6 +20,13 @@ partial class MyProfile
         StaticUserInfoBlazor.SelectedOrganization = StaticUserInfoBlazor.User!.AppUserOrganizations.FirstOrDefault(o => o.OrganizationId == _organizationDepartmentForm.SelectedOrganizationId);
         StaticUserInfoBlazor.SelectedDepartment = StaticUserInfoBlazor.User!.AppUserDepartments.FirstOrDefault(d => d.DepartmentId == _organizationDepartmentForm.SelectedDepartmentId);
         _showSuccessMessage = true;
+        // save to local storage
+        var userLocalStorage = new UserLocalStorage
+        {
+            SelectedOrganizationId = _organizationDepartmentForm.SelectedOrganizationId ?? 0,
+            SelectedDepartmentId = _organizationDepartmentForm.SelectedDepartmentId ?? 0,
+        };
+        LocalStorageService.SetItemAsync(StaticUserInfoBlazor.UserLocalStorageKey, userLocalStorage);
     }
 
     /// <summary>
@@ -70,4 +77,5 @@ partial class MyProfile
         await base.OnInitializedAsync();
     }
     [Inject] NavigationManager Navigation { get; set; } = null!;
+    [Inject] ILocalStorageService LocalStorageService { get; set; } = null!;
 }

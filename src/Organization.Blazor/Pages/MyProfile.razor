@@ -17,7 +17,7 @@
                             <option value="">Select Organization</option>
                                 @foreach (var org in _organizationDepartmentForm.Organizations)
                                 {
-                                    <option value="@org.Id">@org.Name</option>
+                                    <option value="@org.Id">@org.Name (@StaticUserInfoBlazor.OrganizationRole)</option>
                                 }
                         </InputSelect>
                         <ValidationMessage For="@(() => _organizationDepartmentForm.SelectedOrganizationId)" />
@@ -29,7 +29,7 @@
                             <option value="">Select Department</option>
                                 @foreach (var dept in _organizationDepartmentForm.Departments)
                                 {
-                                    <option value="@dept.Id">@dept.Name</option>
+                                    <option value="@dept.Id">@dept.Name (@StaticUserInfoBlazor.DepartmentRole)</option>
                                 }
                         </InputSelect>
                         <ValidationMessage For="@(() => _organizationDepartmentForm.SelectedDepartmentId)" />
@@ -44,15 +44,4 @@
                     }
                 </EditForm>
             </div>
-
-            
-            <div class="section">
-                <h3>Organization</h3>
-                <p>Name: @StaticUserInfoBlazor.SelectedOrganization?.Organization?.Name</p>
-                <p>Role: @StaticUserInfoBlazor.SelectedOrganization?.Role</p>
-                <h3>Department</h3>
-                <p>Name: @StaticUserInfoBlazor.SelectedDepartment?.Department?.Name</p>
-                <p>Role: @StaticUserInfoBlazor.SelectedDepartment?.Role</p>
-            </div>
-            <!-- Additional profile details can be added here -->
         </div>

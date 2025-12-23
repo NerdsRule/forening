@@ -20,6 +20,7 @@ partial class Authentication : ComponentBase
     
     private async Task HandleLogout()
     {
+        Console.WriteLine("Authentication: Handling logout...");
         try
         {
             await AccountService.LogoutAsync();

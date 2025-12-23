@@ -31,4 +31,9 @@ public static class StaticUserInfoBlazor
     /// </summary>
     public static RolesEnum DepartmentRole => SelectedDepartment != null ? SelectedDepartment.Role : RolesEnum.None;
 
+    /// <summary>
+    /// Key used for local storage and user settings
+    /// </summary>
+    public const string UserLocalStorageKey = "UserInfo";
+
 }
