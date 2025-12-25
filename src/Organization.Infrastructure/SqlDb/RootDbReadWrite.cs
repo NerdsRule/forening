@@ -11,7 +11,7 @@ public class RootDbReadWrite : IRootDbReadWrite
     public RootDbReadWrite(IServiceCollection injectedService)
     {
         var ServiceProvider = injectedService.BuildServiceProvider();
-        Db = ServiceProvider.GetRequiredService<AppDbContext>();        
+        Db = ServiceProvider.GetRequiredService<AppDbContext>();   
     }
 
     private AppDbContext Db { get; init; }

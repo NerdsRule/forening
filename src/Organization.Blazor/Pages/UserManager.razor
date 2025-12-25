@@ -1,0 +1,23 @@
+@page "/usermanager"
+@attribute [Authorize(Roles = "OrganizationAdmin,EnterpriseAdmin")]
+
+<title>User Manager</title>
+
+<div class="container mt-4">
+    <div class="mb-3">
+        <label for="userDropdown" class="form-label">Select User</label>
+        <select id="userDropdown" class="form-select" @bind="selectedUserId">
+            <option value="">-- Select a user --</option>
+            @if (_users != null)
+            {
+                @foreach (var user in _users)
+                {
+                    <option value="@user.Id">@user.UserName (@user.Email)</option>
+                }
+            }
+        </select>
+    </div>
+
+    
+    
+</div>

@@ -11,6 +11,10 @@
     font-size: 1.1rem;
 }
 
+.nav-spacer {
+    margin-right: 10px;
+}
+
 .bi {
     display: inline-block;
     position: relative;

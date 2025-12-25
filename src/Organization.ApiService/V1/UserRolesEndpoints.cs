@@ -460,9 +460,19 @@ public static class UserRolesEndpoints
 
                 if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
                 {
-                    var users = userManager.Users.Select(u => new { u.Id, u.UserName });
-
+                    var users = userManager.Users.Select(u => new UserModel
+                    {
+                        Id = u.Id,
+                        UserName = u.UserName ?? string.Empty,
+                        Email = u.Email ?? string.Empty,
+                        Points = u.Points,
+                        UsedPoints = u.UsedPoints,
+                        MemberNumber = u.MemberNumber
+                    }).ToList();
                     return TypedResults.Json(users);
+                } else if (userRoles.Any(c => c.Value == RolesEnum.OrganizationAdmin.ToString()))
+                {
+                    // TODO Find user that are in the same organization as the authenticated user
                 }
             }
             return Results.StatusCode(StatusCodes.Status403Forbidden);
