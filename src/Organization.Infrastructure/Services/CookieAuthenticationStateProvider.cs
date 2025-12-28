@@ -384,6 +384,23 @@ namespace Organization.Infrastructure.Services;
         }
 
         /// <summary>
+        /// Get user by Id
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <returns>UserModel</returns>
+        public async Task<UserModel?> GetUserByIdAsync(string userId)
+        {
+            var userResponse = await httpClient.GetAsync($"/v1/api/users/{userId}");
+            if (!userResponse.IsSuccessStatusCode)
+            {
+                return null;
+            }
+            var userJson = await userResponse.Content.ReadAsStringAsync();
+            var user = JsonSerializer.Deserialize<UserModel>(userJson, jsonSerializerOptions);
+            return user;
+        }
+
+        /// <summary>
         /// Delete user
         /// </summary>
         /// <param name="userId">User Id</param>

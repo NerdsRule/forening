@@ -510,6 +510,36 @@ public static class UserRolesEndpoints
         }).RequireAuthorization();
 
         /// <summary>
+        /// Get a user by Id if authenticated user is an administrator
+        /// </summary>
+        /// <param name="user">ClaimsPrincipal</param>
+        /// <param name="userManager">UserManager</param>
+        /// <param name="db">IRootDbReadWrite</param>
+        /// <param name="userId">User Id</param>
+        /// <returns>UserModel</returns>
+        v1.MapGet("/api/users/{userId}", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, IRootDbReadWrite db, string userId) =>
+        {
+            if (user.Identity is not null && user.Identity.IsAuthenticated)
+            {
+                var identity = (ClaimsIdentity)user.Identity;
+                var userRoles = identity.FindAll(identity.RoleClaimType);
+                if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
+                {
+                    var appUser = await GetUserInfoAsync(userId, userManager, db, CancellationToken.None);
+                    if (appUser is not null)
+                    {
+                        return Results.Ok(appUser);
+                    }
+                    else
+                    {
+                        return Results.NotFound();
+                    }
+                }
+            }
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }).RequireAuthorization();
+
+        /// <summary>
         /// Change password for a user
         /// </summary>
         /// <param name="user">ClaimsPrincipal</param>
@@ -538,6 +568,50 @@ public static class UserRolesEndpoints
                         return Results.BadRequest(formResult);
                     }
 
+                }
+            }
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }).RequireAuthorization();
+        
+        /// <summary>
+        /// Update user info
+        /// </summary>
+        /// <param name="user">ClaimsPrincipal</param>
+        /// <param name="userManager">UserManager</param>
+        /// <param name="model">UserModel</param>
+        /// <returns>Result</returns>
+        v1.MapPut("/api/users", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, [FromBody] UserModel model) =>
+        {
+            if (user.Identity is not null && user.Identity.IsAuthenticated)
+            {
+                var identity = (ClaimsIdentity)user.Identity;
+                var userRoles = identity.FindAll(identity.RoleClaimType);
+
+                if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
+                {
+                    var appUser = await userManager.FindByIdAsync(model.Id);
+                    if (appUser is not null)
+                    {
+                        appUser.UserName = model.UserName;
+                        appUser.Email = model.Email;
+                        appUser.Points = model.Points;
+                        appUser.UsedPoints = model.UsedPoints;
+                        appUser.MemberNumber = model.MemberNumber;
+                        var result = await userManager.UpdateAsync(appUser);
+                        if (result.Succeeded)
+                        {
+                            return Results.Ok(new FormResult { Succeeded = true });
+                        }
+                        else
+                        {
+                            FormResult formResult = new()
+                            {
+                                Succeeded = false,
+                                ErrorList = [.. result.Errors.Select(e => e.Description)]
+                            };
+                            return Results.BadRequest(formResult);
+                        }
+                    }
                 }
             }
             return Results.StatusCode(StatusCodes.Status403Forbidden);

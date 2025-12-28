@@ -1,5 +1,5 @@
 
-namespace Organization.Blazor.Layout.Authentication;
+namespace Organization.Blazor.Layout.User;
 
 partial class AuthenticationComponent : ComponentBase
 {

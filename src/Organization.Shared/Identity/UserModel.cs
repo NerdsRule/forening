@@ -15,6 +15,7 @@ public class UserModel
     /// <summary>
     /// User name
     /// </summary>
+    [Required(ErrorMessage = "User name is required")]
     public string UserName { get; set; } = null!;
 
     /// <summary>
