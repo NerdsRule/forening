@@ -34,6 +34,10 @@ public interface IAccountService
         /// <returns>The result of the request serialized to <see cref="FormResult"/>.</returns>
         public Task<FormResult> RegisterAsync(RegisterModel model);
 
+        /// <summary>
+        /// Check if the user is authenticated.
+        /// </summary>
+        /// <returns>True if authenticated</returns>
         public Task<bool> CheckAuthenticatedAsync();
 
         /// <summary>
@@ -84,4 +88,11 @@ public interface IAccountService
         /// <param name="userId">User Id</param>
         /// <returns>UserModel</returns>
         public Task<UserModel?> GetUserByIdAsync(string userId);
+
+        /// <summary>
+        /// Update user
+        /// </summary>
+        /// <param name="user">User model</param>
+        /// <returns>FormResult</returns>
+        public Task<FormResult> UpdateUserAsync(UserModel user);
 }

@@ -310,6 +310,10 @@ namespace Organization.Infrastructure.Services;
             //NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
         }
 
+        /// <summary>
+        /// Check if user is authenticated
+        /// </summary>
+        /// <returns>True if authenticated</returns>
         public async Task<bool> CheckAuthenticatedAsync()
         {
             await GetAuthenticationStateAsync();
@@ -409,5 +413,34 @@ namespace Organization.Infrastructure.Services;
         {
             var response = await httpClient.DeleteAsync($"/v1/api/users/{userId}");
             return response.IsSuccessStatusCode;
+        }
+
+        /// <summary>
+        /// Update user
+        /// </summary>
+        /// <param name="user">User model</param>
+        /// <returns>FormResult</returns>
+        public async Task<FormResult> UpdateUserAsync(UserModel user)
+        {
+            try
+            {
+                var response = await httpClient.PutAsJsonAsync($"/v1/api/users/", user);
+                if (response.IsSuccessStatusCode)
+                {
+                    return new FormResult { Succeeded = true };
+                } else if (response.StatusCode != System.Net.HttpStatusCode.Forbidden)
+                {
+                    // Get FormResult from response and return it
+                    var details = await response.Content.ReadAsStringAsync();
+                    var problemDetails = JsonHelpers.JsonDeSerialize<FormResult>(details);
+                    return problemDetails ?? new FormResult { Succeeded = false, ErrorList = [ "An unknown error prevented the user update from succeeding." ] };
+                    
+                }
+                    return new FormResult { Succeeded = false, ErrorList = [ "Forbidden" ] };
+            }
+            catch (Exception ex)
+            {
+                return new FormResult { Succeeded = false, ErrorList = [ ex.Message ] };
+            }
         }
     }
