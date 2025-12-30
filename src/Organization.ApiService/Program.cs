@@ -94,6 +94,8 @@ WeatherEndpoints.MapWeatherEndpoints(app);
 WeatherEndpointsV2.MapWeatherEndpointsV2(app);
 OrganizationEndpoints.MapOrganizationEndpoints(app);
 UserRolesEndpoints.MapUserRolesEndpoints(app);
+AppUserOrganizationEndpoints.MapAppUserOrganizationEndpoints(app);
+AppUserDepartmentEndpoints.MapAppUserDepartmentEndpoints(app);
 
 app.MapDefaultEndpoints();
 

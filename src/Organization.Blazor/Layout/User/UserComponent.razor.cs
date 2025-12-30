@@ -5,6 +5,8 @@ namespace Organization.Blazor.Layout.User;
 partial class UserComponent
 {
     private FormResult? _formResult;
+    private Dictionary<int, OrganizationComponent> _userOrganizationsDict = new();
+    
 
     /// <summary>
     /// Handle submit user

@@ -95,4 +95,34 @@ public interface IAccountService
         /// <param name="user">User model</param>
         /// <returns>FormResult</returns>
         public Task<FormResult> UpdateUserAsync(UserModel user);
+
+        #region TAppUserOrganization
+        /// <summary>
+        /// Add or update TAppUserOrganization
+        /// </summary>
+        /// <param name="appUserOrganization">TAppUserOrganization model</param>
+        /// <returns>Updated TAppUserOrganization</returns>
+        public Task<(TAppUserOrganization?, FormResult?)> AddUpdateAppUserOrganizationAsync(TAppUserOrganization appUserOrganization);
+        /// <summary>
+        /// Delete TAppUserOrganization
+        /// </summary>
+        /// <param name="appUserOrganization">TAppUserOrganization model</param>
+        /// <returns>FormResult</returns>
+        public Task<FormResult> DeleteAppUserOrganizationAsync(TAppUserOrganization appUserOrganization);
+        #endregion
+
+        #region TAppUserDepartment
+        /// <summary>
+        /// Add or update TAppUserDepartment
+        /// </summary>
+        /// <param name="appUserDepartment">TAppUserDepartment model</param>
+        /// <returns>Updated TAppUserDepartment</returns>
+        public Task<(TAppUserDepartment?, FormResult?)> AddUpdateAppUserDepartmentAsync(TAppUserDepartment appUserDepartment);
+        /// <summary>
+        /// Delete TAppUserDepartment
+        /// </summary>
+        /// <param name="appUserDepartment">TAppUserDepartment model</param>
+        /// <returns>FormResult</returns>
+        public Task<FormResult> DeleteAppUserDepartmentAsync(TAppUserDepartment appUserDepartment);
+        #endregion
 }

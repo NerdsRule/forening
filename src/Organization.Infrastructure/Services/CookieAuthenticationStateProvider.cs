@@ -443,4 +443,106 @@ namespace Organization.Infrastructure.Services;
                 return new FormResult { Succeeded = false, ErrorList = [ ex.Message ] };
             }
         }
+
+        #region TAppUserOrganization
+        /// <summary>
+        /// Add or update TAppUserOrganization
+        /// </summary>
+        /// <param name="appUserOrganization">TAppUserOrganization model</param>
+        /// <returns>Updated TAppUserOrganization</returns>
+        public async Task<(TAppUserOrganization?, FormResult?)> AddUpdateAppUserOrganizationAsync(TAppUserOrganization appUserOrganization)
+        {
+            var response = await httpClient.PostAsJsonAsync($"/v1/api/AppUserOrganization", appUserOrganization);
+            if (response.IsSuccessStatusCode)
+            {
+                var updatedJson = await response.Content.ReadAsStringAsync();
+                var updated = JsonSerializer.Deserialize<TAppUserOrganization>(updatedJson, jsonSerializerOptions);
+                return (updated, null);
+            }
+            else
+            {
+                var errorJson = await response.Content.ReadAsStringAsync();
+                var error = JsonSerializer.Deserialize<FormResult>(errorJson, jsonSerializerOptions);
+                return (null, error);
+            }
+        }
+        /// <summary>
+        /// Delete TAppUserOrganization
+        /// </summary>
+        /// <param name="appUserOrganization">TAppUserOrganization model</param>
+        /// <returns>FormResult</returns>
+        public async Task<FormResult> DeleteAppUserOrganizationAsync(TAppUserOrganization appUserOrganization)
+        {
+            try
+            {
+                var response = await httpClient.DeleteAsync($"/v1/api/AppUserOrganization/{appUserOrganization.Id}");
+                if (response.IsSuccessStatusCode)
+                {
+                    return new FormResult { Succeeded = true };
+                }
+                else
+                {
+                    var errorJson = await response.Content.ReadAsStringAsync();
+                    var error = JsonSerializer.Deserialize<FormResult>(errorJson, jsonSerializerOptions);
+                    return error ?? new FormResult { Succeeded = false, ErrorList = [ "An unknown error occurred while deleting the user organization." ] };
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error deleting AppUserOrganization");
+                return new FormResult { Succeeded = false, ErrorList = [ ex.Message ] };
+            }
+        }
+        #endregion
+
+        #region TAppUserDepartment
+        /// <summary>
+        /// Add or update TAppUserDepartment
+        /// </summary>
+        /// <param name="appUserDepartment">TAppUserDepartment model</param>
+        /// <returns>Updated TAppUserDepartment</returns>
+        public async Task<(TAppUserDepartment?, FormResult?)> AddUpdateAppUserDepartmentAsync(TAppUserDepartment appUserDepartment)
+        {
+            var response = await httpClient.PostAsJsonAsync($"/v1/api/AppUserDepartment", appUserDepartment);
+            if (response.IsSuccessStatusCode)
+            {
+                var updatedJson = await response.Content.ReadAsStringAsync();
+                var updated = JsonSerializer.Deserialize<TAppUserDepartment>(updatedJson, jsonSerializerOptions);
+                return (updated, null);
+            }
+            else
+            {
+                var errorJson = await response.Content.ReadAsStringAsync();
+                var error = JsonSerializer.Deserialize<FormResult>(errorJson, jsonSerializerOptions);
+                return (null, error);
+            }
+        }
+        /// <summary>
+        /// Delete TAppUserDepartment
+        /// </summary>
+        /// <param name="appUserDepartment">TAppUserDepartment model</param>
+        /// <returns>FormResult</returns>
+        public async Task<FormResult> DeleteAppUserDepartmentAsync(TAppUserDepartment appUserDepartment)
+        {
+            try
+            {
+                var response = await httpClient.DeleteAsync($"/v1/api/AppUserDepartment/{appUserDepartment.Id}");
+                if (response.IsSuccessStatusCode)
+                {
+                    return new FormResult { Succeeded = true };
+                }
+                else
+                {
+                    var errorJson = await response.Content.ReadAsStringAsync();
+                    var error = JsonSerializer.Deserialize<FormResult>(errorJson, jsonSerializerOptions);
+                    return error ?? new FormResult { Succeeded = false, ErrorList = [ "An unknown error occurred while deleting the user department." ] };
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error deleting AppUserDepartment");
+                return new FormResult { Succeeded = false, ErrorList = [ ex.Message ] };
+            }
+        }
+        #endregion
     }

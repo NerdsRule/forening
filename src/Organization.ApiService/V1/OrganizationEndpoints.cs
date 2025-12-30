@@ -48,6 +48,13 @@ public static class OrganizationEndpoints
     {
         var v1 = app.MapGroup("/v1");
 
+        /// <summary>
+        /// Retrieves all organizations.
+        /// </summary>
+        /// <param name="user">The claims principal representing the authenticated user.</param>
+        /// <param name="db">The database service for data access.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>A list of organizations with a 200 OK status, or 403 Forbidden if the user lacks permissions.</returns>
         v1.MapGet("/api/organization/all", async Task<IResult> (ClaimsPrincipal user, IRootDbReadWrite db, CancellationToken ct) =>
         {
              if (user.Identity is not null && user.Identity.IsAuthenticated)
@@ -73,7 +80,7 @@ public static class OrganizationEndpoints
         /// </summary>
         /// <param name="app">The <see cref="WebApplication"/> instance to which endpoints will be mapped.</param>
         /// <remarks>
-        v1.MapGet("/api/organization/{id:int}", async Task<IResult> (int id, IRootDbReadWrite db, CancellationToken ct) =>
+        v1.MapGet("/api/organization/{id:int}", async Task<IResult> (ClaimsPrincipal user, int id, IRootDbReadWrite db, CancellationToken ct) =>
         {
             var organization = await db.GetRowAsync<TOrganization>(id, ct);
             return organization is null ? Results.NotFound() : Results.Ok(organization);
@@ -85,15 +92,25 @@ public static class OrganizationEndpoints
         /// <summary>
         /// Creates a new organization.
         /// </summary>
+        /// <param name="user">The claims principal representing the authenticated user.</param>
         /// <param name="payload">The organization data to create.</param>
         /// <param name="db">The database service for data access.</param>
         /// <param name="ct">Cancellation token.</param>
         /// <returns>The created organization with a 201 Created status, or 400 Bad Request if the payload is invalid.</returns>
-        v1.MapPut("/api/organization", async Task<IResult> (TOrganization payload, IRootDbReadWrite db, CancellationToken ct) =>
+        v1.MapPut("/api/organization", async Task<IResult> (ClaimsPrincipal user, TOrganization payload, IRootDbReadWrite db, CancellationToken ct) =>
         {
             if (payload is null)
                 return Results.BadRequest();
+            if (user.Identity is not null && user.Identity.IsAuthenticated)
+            {
+                var identity = (ClaimsIdentity)user.Identity;
+                var userRoles = identity.FindAll(identity.RoleClaimType);
 
+                if (!userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
+                {
+                    return Results.Forbid();
+                }
+            }
             try
             {
                 var updated = await db.AddUpdateRowAsync(payload, ct);
@@ -113,13 +130,24 @@ public static class OrganizationEndpoints
         /// <summary>
         /// Deletes an organization by its ID.
         /// </summary>
+        /// <param name="user">The claims principal representing the authenticated user.</param>
         /// <param name="id">The ID of the organization to delete.</param>
         /// <param name="db">The database service for data access.</param>
         /// <param name="ct">Cancellation token.</param>
         /// <returns>A 200 OK status if deletion is successful, or 404 Not Found
         /// if the organization does not exist.</returns>
-        v1.MapDelete("/api/organization/{id:int}", async Task<IResult> (int id, IRootDbReadWrite db, CancellationToken ct) =>
+        v1.MapDelete("/api/organization/{id:int}", async Task<IResult> (ClaimsPrincipal user, int id, IRootDbReadWrite db, CancellationToken ct) =>
         {
+            if (user.Identity is not null && user.Identity.IsAuthenticated)
+            {
+                var identity = (ClaimsIdentity)user.Identity;
+                var userRoles = identity.FindAll(identity.RoleClaimType);
+
+                if (!userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
+                {
+                    return Results.Forbid();
+                }
+            }
             try
             {
                 var organization = await db.GetRowAsync<TOrganization>(id, ct);

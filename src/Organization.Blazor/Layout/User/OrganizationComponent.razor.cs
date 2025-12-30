@@ -1,0 +1,45 @@
+
+namespace Organization.Blazor.Layout.User;
+
+partial class OrganizationComponent
+{
+    private FormResult? _updateResult;
+    private Dictionary<int, DepartmentComponent> _userDepartmentsDict = new();
+    private async Task HandleUpdateRoleAsync()
+    {
+        _updateResult = null;
+        if (AppUserOrganization != null)
+        {
+            var result = await AccountService.AddUpdateAppUserOrganizationAsync(AppUserOrganization);
+            if (result.Item1 != null)
+            {
+                AppUserOrganization = result.Item1;
+                _updateResult = new FormResult { Succeeded = true, ErrorList = ["Data updated successfully"] };
+            } else
+            {
+                _updateResult = result.Item2;
+            }
+        }
+    }
+
+    private async Task HandleDeleteAsync()
+    {
+        _updateResult = null;
+        if (AppUserOrganization != null)
+        {
+            var result = await AccountService.DeleteAppUserOrganizationAsync(AppUserOrganization);
+            if (result.Succeeded)
+            {
+                AppUserOrganization = null;
+                AppUserDepartments = null;
+            } else
+            {
+                _updateResult = result;
+            }
+        }
+    }
+
+    [Parameter] public TAppUserOrganization? AppUserOrganization { get; set; }
+    [Parameter] public List<TAppUserDepartment>? AppUserDepartments { get; set; }
+    [Inject] private IAccountService AccountService { get; set; } = default!;
+}

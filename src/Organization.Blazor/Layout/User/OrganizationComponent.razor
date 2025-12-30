@@ -1,0 +1,60 @@
+﻿@if (AppUserOrganization != null)
+{
+
+    <EditForm Model="@AppUserOrganization" OnValidSubmit="@HandleUpdateRoleAsync">
+        <div class="row rounded rounded-1 my-1 p-2 border border-1 border-secondary">
+            <div class="col-12 col-md-2">
+                <strong>Organization:</strong>
+            </div>
+            <div class="col-12 col-md-3">
+                @AppUserOrganization.Organization!.Name
+            </div>
+            <div class="col-12 col-md-1">
+                <strong>Role:</strong>
+            </div>
+            <div class="col-12 col-md-3">
+                <InputSelect @bind-Value="AppUserOrganization.Role" class="form-select">
+                    @foreach (var role in RoleHelper.GetOrganizationRoles())
+                    {
+                        <option value="@role">@role.ToString()</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="col-12 col-md-2">
+                <button type="submit" class="btn btn-primary btn-sm">Update</button>
+            </div>
+            <div class="col-12 col-md-1">
+                <button type="button" class="btn btn-danger btn-sm" @onclick="HandleDeleteAsync">Delete</button>
+            </div>
+        </div>
+    </EditForm>
+    @if (_updateResult != null)
+    {
+        @if (_updateResult.Succeeded)
+        {
+            <div class="alert alert-success" role="alert">
+                @foreach (var msg in _updateResult.ErrorList)
+                {
+                    <div>@msg</div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-danger" role="alert">
+                @foreach (var error in _updateResult.ErrorList)
+                {
+                    <div>@error</div>
+                }
+            </div>
+        }
+    }
+    <h5>Departments</h5>
+    @if (AppUserDepartments != null && AppUserDepartments.Any())
+    {
+        @foreach (var dept in AppUserDepartments)
+        {
+            <DepartmentComponent @ref="_userDepartmentsDict[dept.Id]" AppUserDepartment="dept" />
+        }
+    }
+}

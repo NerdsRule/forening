@@ -47,6 +47,22 @@ public class RootDbReadWrite : IRootDbReadWrite
     }
     #endregion
     
+    #region Organizations and Departments
+    /// <summary>
+    /// Get organization and its departments by organization id
+    /// </summary>
+    /// <param name="organizationId">Organization Id</param>
+    /// <returns>Organization with departments</returns>
+    public async Task<TOrganization?> GetOrganizationWithDepartmentsAsync(int organizationId, CancellationToken ct)
+    {
+        var res = Db.Organizations
+            .Where(c => c.Id == organizationId)
+            .Include(c => c.Departments)
+            .AsNoTracking();
+        return await res.FirstOrDefaultAsync<TOrganization>(ct);
+    }
+    #endregion
+
     #region Generic CRUD
     /// <summary>
     /// Gets the row asynchronous.

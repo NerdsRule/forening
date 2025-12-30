@@ -59,5 +59,10 @@ public class TOrganization : TBaseTable
     /// </summary>
     public DateTime? UpdatedAt { get; set; }
 
+    /// <summary>
+    /// Navigation property for the departments associated with this organization.
+    /// </summary>
+    public virtual ICollection<TDepartment> Departments { get; set; } = new List<TDepartment>();
+
     
 }
