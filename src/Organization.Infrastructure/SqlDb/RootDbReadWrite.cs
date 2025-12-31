@@ -49,17 +49,14 @@ public class RootDbReadWrite : IRootDbReadWrite
     
     #region Organizations and Departments
     /// <summary>
-    /// Get organization and its departments by organization id
+    /// Get departments by organization id
     /// </summary>
     /// <param name="organizationId">Organization Id</param>
     /// <returns>Organization with departments</returns>
-    public async Task<TOrganization?> GetOrganizationWithDepartmentsAsync(int organizationId, CancellationToken ct)
+    public async Task<List<TDepartment>?> GetDepartmentsAsync(int organizationId, CancellationToken ct)
     {
-        var res = Db.Organizations
-            .Where(c => c.Id == organizationId)
-            .Include(c => c.Departments)
-            .AsNoTracking();
-        return await res.FirstOrDefaultAsync<TOrganization>(ct);
+        var res = Db.Departments.Where(c => c.OrganizationId == organizationId).AsNoTracking();
+        return await res.ToListAsync(ct);
     }
     #endregion
 

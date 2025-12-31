@@ -85,7 +85,7 @@ public static class OrganizationEndpoints
             var organization = await db.GetRowAsync<TOrganization>(id, ct);
             return organization is null ? Results.NotFound() : Results.Ok(organization);
         })
-        .Produces<TOrganization>(StatusCodes.Status200OK)
+        .Produces<List<TDepartment>>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound)
         .RequireAuthorization();
 
@@ -145,7 +145,7 @@ public static class OrganizationEndpoints
 
                 if (!userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
                 {
-                    return Results.Forbid();
+                    return Results.BadRequest(new FormResult{Succeeded = false, ErrorList = ["User does not have permission to delete organization"]});
                 }
             }
             try

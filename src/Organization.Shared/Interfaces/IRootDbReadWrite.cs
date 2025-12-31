@@ -56,11 +56,11 @@ public interface IRootDbReadWrite
 
     #region Organizations and Departments
     /// <summary>
-    /// Get organization and its departments by organization id
+    /// Get departments by organization id
     /// </summary>
     /// <param name="organizationId">Organization Id</param>
     /// <returns>Organization with departments</returns>
-    public Task<TOrganization?> GetOrganizationWithDepartmentsAsync(int organizationId, CancellationToken ct);
+    public Task<List<TDepartment>?> GetDepartmentsAsync(int organizationId, CancellationToken ct);
     #endregion
 
     #region Generic CRUD

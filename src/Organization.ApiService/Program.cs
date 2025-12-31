@@ -96,6 +96,7 @@ OrganizationEndpoints.MapOrganizationEndpoints(app);
 UserRolesEndpoints.MapUserRolesEndpoints(app);
 AppUserOrganizationEndpoints.MapAppUserOrganizationEndpoints(app);
 AppUserDepartmentEndpoints.MapAppUserDepartmentEndpoints(app);
+DepartmentEndpoint.MapDepartmentEndpoints(app);
 
 app.MapDefaultEndpoints();
 

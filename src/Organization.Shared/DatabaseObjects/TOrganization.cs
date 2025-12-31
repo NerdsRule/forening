@@ -58,11 +58,5 @@ public class TOrganization : TBaseTable
     /// The date and time when the organization record was last updated.
     /// </summary>
     public DateTime? UpdatedAt { get; set; }
-
-    /// <summary>
-    /// Navigation property for the departments associated with this organization.
-    /// </summary>
-    public virtual ICollection<TDepartment> Departments { get; set; } = new List<TDepartment>();
-
     
 }

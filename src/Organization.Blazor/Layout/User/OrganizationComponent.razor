@@ -50,6 +50,37 @@
         }
     }
     <h5>Departments</h5>
+    @if (_departments != null && _departments.Any())
+    {
+        <EditForm Model="@_newAppUserDepartment" OnValidSubmit="@HandleAddDepartmentAsync">
+            <div class="row rounded rounded-1 my-1 p-2 border border-1 border-light">
+                <div class="col-12 col-md-3">
+                    <InputSelect @bind-Value="_newAppUserDepartment.DepartmentId" class="form-select">
+                        <option value="">Select Department</option>
+                        @if (_departments != null)
+                        {
+                            @foreach (var dept in _departments)
+                            {
+                                <option value="@dept.Id">@dept.Name</option>
+                            }
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-12 col-md-3">
+                    <InputSelect @bind-Value="_newAppUserDepartment.Role" class="form-select">
+                        <option value="">Select Role</option>
+                        @foreach (var role in RoleHelper.GetDepartmentRoles())
+                        {
+                            <option value="@role">@role.ToString()</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-12 col-md-2">
+                    <button type="submit" class="btn btn-success btn-sm">Add</button>
+                </div>
+            </div>
+        </EditForm>
+    }
     @if (AppUserDepartments != null && AppUserDepartments.Any())
     {
         @foreach (var dept in AppUserDepartments)
