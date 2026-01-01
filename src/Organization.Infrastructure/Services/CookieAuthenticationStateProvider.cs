@@ -54,39 +54,8 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
             // make the request
             var result = await httpClient.PostAsJsonAsync("/v1/api/users/register", model);
 
-            // successful?
-            if (result.IsSuccessStatusCode)
-            {
-                return new FormResult { Succeeded = true };
-            }
-
-            // body should contain details about why it failed
-            var details = await result.Content.ReadAsStringAsync();
-            var problemDetails = JsonDocument.Parse(details);
-            var errors = new List<string>();
-            var errorList = problemDetails.RootElement.GetProperty("errors");
-
-            foreach (var errorEntry in errorList.EnumerateObject())
-            {
-                if (errorEntry.Value.ValueKind == JsonValueKind.String)
-                {
-                    errors.Add(errorEntry.Value.GetString()!);
-                }
-                else if (errorEntry.Value.ValueKind == JsonValueKind.Array)
-                {
-                    errors.AddRange(
-                        errorEntry.Value.EnumerateArray().Select(
-                            e => e.GetString() ?? string.Empty)
-                        .Where(e => !string.IsNullOrEmpty(e)));
-                }
-            }
-
-            // return the error list
-            return new FormResult
-            {
-                Succeeded = false,
-                ErrorList = problemDetails == null ? defaultDetail : [.. errors]
-            };
+            var success = await result.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<FormResult>(success, jsonSerializerOptions) ?? new FormResult { Succeeded = true, ErrorList = ["Registration succeeded."] };
         }
         catch (Exception ex)
         {
@@ -409,10 +378,12 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
     /// </summary>
     /// <param name="userId">User Id</param>
     /// <returns>True if successful</returns>
-    public async Task<bool> DeleteUserAsync(string userId)
+    public async Task<FormResult> DeleteUserAsync(string userId)
     {
         var response = await httpClient.DeleteAsync($"/v1/api/users/{userId}");
-        return response.IsSuccessStatusCode;
+        var details = await response.Content.ReadAsStringAsync();
+        var formResult = JsonSerializer.Deserialize<FormResult>(details, jsonSerializerOptions);
+        return formResult ?? new FormResult { Succeeded = response.IsSuccessStatusCode };
     }
 
     /// <summary>

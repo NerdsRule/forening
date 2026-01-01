@@ -80,7 +80,7 @@ public interface IAccountService
     /// </summary>
     /// <param name="userId">User Id</param>
     /// <returns>True if successful</returns>
-    public Task<bool> DeleteUserAsync(string userId);
+    public Task<FormResult> DeleteUserAsync(string userId);
 
     // <summary>
     /// Get user by Id

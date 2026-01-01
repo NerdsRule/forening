@@ -63,17 +63,21 @@ public class RegisterModel
     /// Gets or sets the email address for the new account.
     /// Expected to be a valid email format and unique within the system.
     /// </summary>
+    [EmailAddress, Required(ErrorMessage = "Email is required.")]
     public string? Email { get; set; }
     /// <summary>
     /// Gets or sets the password for the new account.
     /// Must meet configured password complexity rules. Treat this value as sensitive.
     /// </summary>
-    public required string Password { get; set; }
+    [Required(ErrorMessage = "Password is required.")]
+    public string? Password { get; set; }
     /// <summary>
     /// Gets or sets the confirmation of the Password.
     /// Used to verify that the user entered the intended password correctly.
     /// </summary>
-    public required string ConfirmPassword { get; set; }
+    [Required(ErrorMessage = "Confirm Password is required.")]
+    [Compare("Password", ErrorMessage = "Password and confirmation password do not match.")]
+    public string? ConfirmPassword { get; set; }
     /// <summary>
     /// Gets or sets the user's given name (first name).
     /// </summary>
@@ -91,6 +95,7 @@ public class RegisterModel
     /// Gets or sets the optional identifier of the organization the user belongs to.
     /// Null or empty when the user is not associated with any organization.
     /// </summary>
+    [Required(ErrorMessage = "OrganizationId is required."), Range(1, int.MaxValue, ErrorMessage = "OrganizationId must be a positive integer.")]
     public int OrganizationId { get; set; }
     /// <summary>
     /// Gets or sets a value indicating whether the user has accepted the terms and conditions.

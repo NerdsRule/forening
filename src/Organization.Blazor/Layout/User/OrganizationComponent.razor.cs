@@ -59,7 +59,7 @@ partial class OrganizationComponent
         {
             var ct = new CancellationTokenSource(TimeSpan.FromSeconds(60)).Token;
             _departments = (await AccountService.GetDepartmentsByOrganizationIdAsync(AppUserOrganization.OrganizationId, ct)).departments ?? new List<TDepartment>();
-            _newAppUserDepartment.AppUserId = StaticUserInfoBlazor.User!.Id;
+            _newAppUserDepartment.AppUserId = AppUserOrganization.AppUserId;
         }
         await base.OnInitializedAsync();
     }

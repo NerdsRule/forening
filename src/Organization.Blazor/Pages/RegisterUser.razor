@@ -1,0 +1,56 @@
+﻿@page "/register-user"
+@attribute [Authorize(Roles = "OrganizationAdmin,EnterpriseAdmin")]
+
+<div class="container mt-4">
+<h3>Register User</h3>
+<EditForm Model="@_registerModel" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <InputText id="email" class="form-control" @bind-Value="_registerModel.Email" />
+        <ValidationMessage For="@(() => _registerModel.Email)" />
+    </div>
+
+    <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <InputText id="password" type="password" class="form-control" @bind-Value="_registerModel.Password" />
+        <ValidationMessage For="@(() => _registerModel.Password)" />
+    </div>
+
+    <div class="mb-3">
+        <label for="confirmPassword" class="form-label">Confirm Password</label>
+        <InputText id="confirmPassword" type="password" class="form-control" @bind-Value="_registerModel.ConfirmPassword" />
+        <ValidationMessage For="@(() => _registerModel.ConfirmPassword)" />
+    </div>
+
+    <div class="mb-3">
+        <label for="organization" class="form-label">Organization</label>
+        <input id="organization" class="form-control" value='@(StaticUserInfoBlazor.SelectedOrganization?.Organization?.Name ?? "")' readonly />
+    </div>
+    <button type="submit" class="btn btn-primary">Register</button>
+</EditForm>
+@if (_formResult != null)
+    {
+        @if (_formResult.Succeeded)
+        {
+            <div class="alert alert-success" role="alert">
+                @foreach (var msg in _formResult.ErrorList)
+                {
+                    <div>@msg</div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-danger" role="alert">
+                @foreach (var error in _formResult.ErrorList)
+                {
+                    <div>@error</div>
+                }
+            </div>
+        }
+    }
+</div>
+

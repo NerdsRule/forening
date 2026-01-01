@@ -146,14 +146,13 @@ public static class UserRolesEndpoints
         /// Registration endpoint
         /// </summary>
         /// <param name="userManager">UserManager</param>
-        /// <param name="roleManager">RoleManager</param>
         /// <param name="model">RegisterModel</param>
         /// <returns>Result</returns>
-        v1.MapPost("/api/users/register", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager, IRootDbReadWrite db, CancellationToken cancellationToken, [FromBody] RegisterModel model) =>
+        v1.MapPost("/api/users/register", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, IRootDbReadWrite db, CancellationToken cancellationToken, [FromBody] RegisterModel model) =>
         {
             if (!await IsUserAuthorizedForOrganizationAsync(user, model.OrganizationId, [RolesEnum.DepartmentAdmin, RolesEnum.EnterpriseAdmin], db, cancellationToken))
             {
-                return Results.Forbid();
+                return Results.BadRequest(new FormResult{ Succeeded = false, ErrorList = [ "You are not authorized to add users to this organization." ] });
             }
             // Validate input
             if (model is null)
@@ -163,13 +162,13 @@ public static class UserRolesEndpoints
 
             if (string.IsNullOrWhiteSpace(model.Email) || string.IsNullOrWhiteSpace(model.Password))
             {
-                return Results.BadRequest(new { Error = "Email and password are required." });
+                return Results.BadRequest(new FormResult{ Succeeded = false, ErrorList = [ "Email and password are required." ] });
             }
 
             var existing = await userManager.FindByEmailAsync(model.Email);
             if (existing is not null)
             {
-                return Results.Conflict(new { Error = "Email already in use." });
+                return Results.Conflict(new FormResult{ Succeeded = false, ErrorList = [ "Email already in use." ] });
             }
 
             var newUser = new AppUser
@@ -181,23 +180,17 @@ public static class UserRolesEndpoints
             var createResult = await userManager.CreateAsync(newUser, model.Password);
             if (!createResult.Succeeded)
             {
-                return Results.BadRequest(new { Errors = createResult.Errors.Select(e => e.Description) });
+                return Results.BadRequest(new FormResult{ Succeeded = false, ErrorList = createResult.Errors.Select(e => e.Description).ToArray() });
             }
-
-            // Add default role "User" if it exists
-            if (await roleManager.RoleExistsAsync(RolesEnum.DepartmentMember.ToString()))
-            {
-                await userManager.AddToRoleAsync(newUser, RolesEnum.DepartmentMember.ToString());
-            }
-
+            // Assign default role
             var org = await db.AddRowAsync<TAppUserOrganization>(new TAppUserOrganization
             {
                 AppUserId = newUser.Id,
                 OrganizationId = model.OrganizationId,
-                Role = RolesEnum.DepartmentMember
+                Role = RolesEnum.OrganizationMember
             }, cancellationToken);
 
-            return Results.Ok(new UserModel { Id = newUser.Id, UserName = newUser.UserName, Email = newUser.Email } );
+            return Results.Ok(new FormResult { Succeeded = true, ErrorList = ["User registered successfully."] });
         }).AllowAnonymous();
 
 
@@ -354,11 +347,11 @@ public static class UserRolesEndpoints
                     {
                         await roleManager.DeleteAsync(roleToDelete);
 
-                        return Results.Ok();
+                        return Results.Ok(new FormResult { Succeeded = true });
                     }
                 }
             }
-            return Results.StatusCode(StatusCodes.Status403Forbidden);
+            return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [ "Role not found." ] });
         }).RequireAuthorization();
 
         /// <summary>
@@ -498,15 +491,15 @@ public static class UserRolesEndpoints
                     if (appUser is not null && appUser.NormalizedUserName != "LASSE.TARP@SPACE4IT.DK")
                     {
                         await userManager.DeleteAsync(appUser);
-                        return Results.Ok();
+                        return Results.Ok(new FormResult { Succeeded = true });
                     }
                     else
                     {
-                        return Results.NotFound();
+                        return Results.NotFound(new FormResult { Succeeded = false, ErrorList = [ "User not found." ] });
                     }
                 }
             }
-            return Results.StatusCode(StatusCodes.Status403Forbidden);
+            return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [ "You are not authorized to delete this user." ] });
         }).RequireAuthorization();
 
         /// <summary>

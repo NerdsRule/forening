@@ -20,6 +20,19 @@ partial class UserComponent
             _formResult = await AccountService.UpdateUserAsync(User);
         }
     }
+
+    /// <summary>
+    /// Delete user
+    /// </summary>
+    /// <returns></returns>
+    private async Task HandleDeleteUserAsync()
+    {
+        _formResult = null;
+        if (User != null)
+        {
+            _formResult = await AccountService.DeleteUserAsync(User.Id);
+        }
+    }
     [Parameter] public UserModel? User { get; set; }
     [Inject] private IAccountService AccountService { get; set; } = default!;
 }
