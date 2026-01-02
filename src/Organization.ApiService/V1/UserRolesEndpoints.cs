@@ -533,6 +533,52 @@ public static class UserRolesEndpoints
         }).RequireAuthorization();
 
         /// <summary>
+        /// Update user info
+        /// </summary>
+        /// <param name="user">ClaimsPrincipal</param>
+        /// <param name="userManager">UserManager</param>
+        /// <param name="model">UserModel</param>
+        /// <returns>Result</returns>
+        v1.MapPut("/api/users", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, [FromBody] UserModel model) =>
+        {
+            if (user.Identity is not null && user.Identity.IsAuthenticated)
+            {
+                var identity = (ClaimsIdentity)user.Identity;
+                var userRoles = identity.FindAll(identity.RoleClaimType);
+
+                if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
+                {
+                    var appUser = await userManager.FindByIdAsync(model.Id);
+                    if (appUser is not null)
+                    {
+                        appUser.UserName = model.UserName;
+                        appUser.Email = model.Email;
+                        appUser.Points = model.Points;
+                        appUser.UsedPoints = model.UsedPoints;
+                        appUser.MemberNumber = model.MemberNumber;
+                        var result = await userManager.UpdateAsync(appUser);
+                        if (result.Succeeded)
+                        {
+                            return Results.Ok(new FormResult { Succeeded = true });
+                        }
+                        else
+                        {
+                            FormResult formResult = new()
+                            {
+                                Succeeded = false,
+                                ErrorList = [.. result.Errors.Select(e => e.Description)]
+                            };
+                            return Results.BadRequest(formResult);
+                        }
+                    }
+                }
+            }
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }).RequireAuthorization();
+        #endregion
+
+        #region Password management
+        /// <summary>
         /// Change password for a user
         /// </summary>
         /// <param name="user">ClaimsPrincipal</param>
@@ -565,15 +611,15 @@ public static class UserRolesEndpoints
             }
             return Results.StatusCode(StatusCodes.Status403Forbidden);
         }).RequireAuthorization();
-        
+
         /// <summary>
-        /// Update user info
+        /// Reset password for a user
         /// </summary>
         /// <param name="user">ClaimsPrincipal</param>
         /// <param name="userManager">UserManager</param>
-        /// <param name="model">UserModel</param>
+        /// <param name="model">ResetPasswordModel</param>
         /// <returns>Result</returns>
-        v1.MapPut("/api/users", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, [FromBody] UserModel model) =>
+        v1.MapPost("/api/users/password/reset", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, [FromBody] ResetPasswordModel model) =>
         {
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
@@ -582,18 +628,14 @@ public static class UserRolesEndpoints
 
                 if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
                 {
-                    var appUser = await userManager.FindByIdAsync(model.Id);
+                    var appUser = await userManager.FindByIdAsync(model.UserId!);
                     if (appUser is not null)
                     {
-                        appUser.UserName = model.UserName;
-                        appUser.Email = model.Email;
-                        appUser.Points = model.Points;
-                        appUser.UsedPoints = model.UsedPoints;
-                        appUser.MemberNumber = model.MemberNumber;
-                        var result = await userManager.UpdateAsync(appUser);
+                        var resetToken = await userManager.GeneratePasswordResetTokenAsync(appUser);
+                        IdentityResult result = await userManager.ResetPasswordAsync(appUser, resetToken, model.Password!);
                         if (result.Succeeded)
                         {
-                            return Results.Ok(new FormResult { Succeeded = true });
+                            return Results.Ok(new FormResult { Succeeded = true, ErrorList = [ "Password has been reset successfully." ] });
                         }
                         else
                         {

@@ -14,13 +14,6 @@ public interface IAccountService
     public Task<FormResult> LoginAsync(LoginModel model);
 
     /// <summary>
-    /// Change the user's password.
-    /// </summary>
-    /// <param name="model">The change password model containing current and new password.</param>
-    /// <returns>The result of the password change request serialized to a <see cref="FormResult"/>.</returns>
-    public Task<FormResult> ChangePasswordAsync(ChangePasswordModel model);
-
-    /// <summary>
     /// Log out the logged in user.
     /// </summary>
     /// <returns>The asynchronous task.</returns>
@@ -95,6 +88,22 @@ public interface IAccountService
     /// <param name="user">User model</param>
     /// <returns>FormResult</returns>
     public Task<FormResult> UpdateUserAsync(UserModel user);
+
+    #region Password Management
+    /// <summary>
+    /// Change the user's password.
+    /// </summary>
+    /// <param name="model">The change password model containing current and new password.</param>
+    /// <returns>The result of the password change request serialized to a <see cref="FormResult"/>.</returns>
+    public Task<FormResult> ChangePasswordAsync(ChangePasswordModel model);
+
+    /// <summary>
+    /// Reset password for user
+    /// </summary>
+    /// <param name="model">ResetPasswordModel</param>
+    /// <returns>FormResult</returns>
+    public Task<FormResult> ResetPasswordAsync(ResetPasswordModel model);
+    #endregion
 
     #region TAppUserOrganization
     /// <summary>

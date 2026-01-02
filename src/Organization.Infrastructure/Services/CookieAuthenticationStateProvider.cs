@@ -110,44 +110,6 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
         };
     }
     
-
-    /// <summary>
-    /// Change the user's password.
-    /// </summary>
-    /// <param name="model">The change password model containing current and new password.</param>
-    /// <returns>The result of the password change request serialized to a <see cref="FormResult"/>.</returns>
-    public async Task<FormResult> ChangePasswordAsync(ChangePasswordModel model)
-    {
-        try
-        {
-            // make the request
-            var result = await httpClient.PostAsJsonAsync("/v1/api/users/password", model);
-
-            // success?
-            if (result.IsSuccessStatusCode)
-            {
-                // success!
-                return new FormResult { Succeeded = true };
-            }
-
-            // body should contain details about why it failed
-            var details = await result.Content.ReadAsStringAsync();
-            var problemDetails = JsonHelpers.JsonDeSerialize<FormResult>(details);
-            return problemDetails ?? new FormResult { Succeeded = false, ErrorList = [ "An unknown error prevented the password change from succeeding." ] };
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "App error");
-        }
-
-        // unknown error
-        return new FormResult
-        {
-            Succeeded = false,
-            ErrorList = [ "An unknown error prevented the password change from succeeding." ]
-        };
-    }
-
     /// <summary>
     /// Get authentication state.
     /// </summary>
@@ -414,6 +376,74 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
             return new FormResult { Succeeded = false, ErrorList = [ ex.Message ] };
         }
     }
+
+    #region Password Management
+    /// <summary>
+    /// Change the user's password.
+    /// </summary>
+    /// <param name="model">The change password model containing current and new password.</param>
+    /// <returns>The result of the password change request serialized to a <see cref="FormResult"/>.</returns>
+    public async Task<FormResult> ChangePasswordAsync(ChangePasswordModel model)
+    {
+        try
+        {
+            // make the request
+            var result = await httpClient.PostAsJsonAsync("/v1/api/users/password", model);
+
+            // success?
+            if (result.IsSuccessStatusCode)
+            {
+                // success!
+                return new FormResult { Succeeded = true };
+            }
+
+            // body should contain details about why it failed
+            var details = await result.Content.ReadAsStringAsync();
+            var problemDetails = JsonHelpers.JsonDeSerialize<FormResult>(details);
+            return problemDetails ?? new FormResult { Succeeded = false, ErrorList = [ "An unknown error prevented the password change from succeeding." ] };
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "App error");
+        }
+
+        // unknown error
+        return new FormResult
+        {
+            Succeeded = false,
+            ErrorList = [ "An unknown error prevented the password change from succeeding." ]
+        };
+    }
+
+    /// <summary>
+    /// Reset password for user
+    /// </summary>
+    /// <param name="model">ResetPasswordModel</param>
+    /// <returns>FormResult</returns>
+    public async Task<FormResult> ResetPasswordAsync(ResetPasswordModel model)
+    {
+        try
+        {
+            // make the request
+            var result = await httpClient.PostAsJsonAsync("/v1/api/users/password/reset", model);
+            // body should contain details about why it failed
+            var details = await result.Content.ReadAsStringAsync();
+            var problemDetails = JsonHelpers.JsonDeSerialize<FormResult>(details);
+            return problemDetails ?? new FormResult { Succeeded = false, ErrorList = [ "An unknown error prevented the password reset from succeeding." ] };
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "App error");
+        }
+
+        // unknown error
+        return new FormResult
+        {
+            Succeeded = false,
+            ErrorList = [ "An unknown error prevented the password reset from succeeding." ]
+        };
+    }
+    #endregion
 
     #region TAppUserOrganization
     /// <summary>
