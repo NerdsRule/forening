@@ -49,5 +49,7 @@ public class AppDbContext : IdentityDbContext<AppUser>
     public DbSet<TDepartment> Departments { get; set; } = null!;
     public DbSet<TAppUserOrganization> AppUserOrganizations { get; set; } = null!;
     public DbSet<TAppUserDepartment> AppUserDepartments { get; set; } = null!;
+    public DbSet<TTask> Tasks { get; set; } = null!;
+    public DbSet<TPrize> Prizes { get; set; } = null!;
     #endregion
 }

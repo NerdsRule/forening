@@ -179,6 +179,65 @@ namespace Organization.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "TPrizes",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
+                    Description = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: true),
+                    Amount = table.Column<double>(type: "REAL", nullable: false),
+                    DepartmentId = table.Column<int>(type: "INTEGER", nullable: false),
+                    CreatorUserId = table.Column<string>(type: "TEXT", nullable: false),
+                    AssignedUserId = table.Column<string>(type: "TEXT", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TPrizes", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_TPrizes_AspNetUsers_AssignedUserId",
+                        column: x => x.AssignedUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_TPrizes_AspNetUsers_CreatorUserId",
+                        column: x => x.CreatorUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TTasks",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
+                    Description = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: true),
+                    EstimatedTimeMinutes = table.Column<double>(type: "REAL", nullable: false),
+                    DueDateUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    DepartmentId = table.Column<int>(type: "INTEGER", nullable: false),
+                    CreatorUserId = table.Column<string>(type: "TEXT", nullable: false),
+                    AssignedUserId = table.Column<string>(type: "TEXT", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TTasks", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_TTasks_AspNetUsers_AssignedUserId",
+                        column: x => x.AssignedUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_TTasks_AspNetUsers_CreatorUserId",
+                        column: x => x.CreatorUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "TAppUserOrganizations",
                 columns: table => new
                 {
@@ -213,7 +272,7 @@ namespace Organization.Infrastructure.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     Name = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
                     Code = table.Column<string>(type: "TEXT", maxLength: 20, nullable: true),
-                    Description = table.Column<string>(type: "TEXT", maxLength: 1000, nullable: true),
+                    Description = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: true),
                     IsActive = table.Column<bool>(type: "INTEGER", nullable: false),
                     OrganizationId = table.Column<int>(type: "INTEGER", nullable: false)
                 },
@@ -318,6 +377,26 @@ namespace Organization.Infrastructure.Migrations
                 name: "IX_TDepartments_OrganizationId",
                 table: "TDepartments",
                 column: "OrganizationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TPrizes_AssignedUserId",
+                table: "TPrizes",
+                column: "AssignedUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TPrizes_CreatorUserId",
+                table: "TPrizes",
+                column: "CreatorUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TTasks_AssignedUserId",
+                table: "TTasks",
+                column: "AssignedUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TTasks_CreatorUserId",
+                table: "TTasks",
+                column: "CreatorUserId");
         }
 
         /// <inheritdoc />
@@ -343,6 +422,12 @@ namespace Organization.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "TAppUserOrganizations");
+
+            migrationBuilder.DropTable(
+                name: "TPrizes");
+
+            migrationBuilder.DropTable(
+                name: "TTasks");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");

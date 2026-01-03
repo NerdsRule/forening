@@ -90,13 +90,14 @@ app.UseCors("AllowLocalhost");
 app.UseAuthentication();
 app.UseAuthorization();
 
-WeatherEndpoints.MapWeatherEndpoints(app);
 WeatherEndpointsV2.MapWeatherEndpointsV2(app);
 OrganizationEndpoints.MapOrganizationEndpoints(app);
 UserRolesEndpoints.MapUserRolesEndpoints(app);
 AppUserOrganizationEndpoints.MapAppUserOrganizationEndpoints(app);
 AppUserDepartmentEndpoints.MapAppUserDepartmentEndpoints(app);
 DepartmentEndpoint.MapDepartmentEndpoints(app);
+PrizeEndpoint.MapPrizeEndpoints(app);
+TaskEndpoint.MapTaskEndpoints(app);
 
 app.MapDefaultEndpoints();
 

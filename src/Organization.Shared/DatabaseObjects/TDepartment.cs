@@ -29,7 +29,7 @@ public class TDepartment : TBaseTable
     /// <summary>
     /// Optional longer description of the department.
     /// </summary>
-    [MaxLength(1000)]
+    [MaxLength(2000)]
     public string? Description { get; set; }
 
     /// <summary>

@@ -33,7 +33,6 @@ partial class OrganizationComponent
             if (result.Succeeded)
             {
                 AppUserOrganization = null;
-                AppUserDepartments = null;
             } else
             {
                 _updateResult = result;

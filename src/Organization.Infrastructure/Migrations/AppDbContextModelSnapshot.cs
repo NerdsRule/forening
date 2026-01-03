@@ -208,7 +208,7 @@ namespace Organization.Infrastructure.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(1000)
+                        .HasMaxLength(2000)
                         .HasColumnType("TEXT");
 
                     b.Property<bool>("IsActive")
@@ -264,6 +264,83 @@ namespace Organization.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("TOrganizations");
+                });
+
+            modelBuilder.Entity("Organization.Shared.DatabaseObjects.TPrize", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("Amount")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("AssignedUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatorUserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DepartmentId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedUserId");
+
+                    b.HasIndex("CreatorUserId");
+
+                    b.ToTable("TPrizes");
+                });
+
+            modelBuilder.Entity("Organization.Shared.DatabaseObjects.TTask", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AssignedUserId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CreatorUserId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DepartmentId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("DueDateUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("EstimatedTimeMinutes")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssignedUserId");
+
+                    b.HasIndex("CreatorUserId");
+
+                    b.ToTable("TTasks");
                 });
 
             modelBuilder.Entity("Organization.Shared.Identity.AppUser", b =>
@@ -442,6 +519,40 @@ namespace Organization.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Organization");
+                });
+
+            modelBuilder.Entity("Organization.Shared.DatabaseObjects.TPrize", b =>
+                {
+                    b.HasOne("Organization.Shared.Identity.AppUser", "AssignedUser")
+                        .WithMany()
+                        .HasForeignKey("AssignedUserId");
+
+                    b.HasOne("Organization.Shared.Identity.AppUser", "CreatorUser")
+                        .WithMany()
+                        .HasForeignKey("CreatorUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AssignedUser");
+
+                    b.Navigation("CreatorUser");
+                });
+
+            modelBuilder.Entity("Organization.Shared.DatabaseObjects.TTask", b =>
+                {
+                    b.HasOne("Organization.Shared.Identity.AppUser", "AssignedUser")
+                        .WithMany()
+                        .HasForeignKey("AssignedUserId");
+
+                    b.HasOne("Organization.Shared.Identity.AppUser", "CreatorUser")
+                        .WithMany()
+                        .HasForeignKey("CreatorUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("AssignedUser");
+
+                    b.Navigation("CreatorUser");
                 });
 #pragma warning restore 612, 618
         }

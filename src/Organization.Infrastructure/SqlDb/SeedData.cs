@@ -51,22 +51,12 @@ public class SeedData
             var hashed = password.HashPassword(user, "ChangeMeFast1!");
             user.PasswordHash = hashed;
             await userStore.CreateAsync(user);
-
-            if (user.Email is not null)
-            {
-                var appUser = await userManager.FindByEmailAsync(user.Email);
-
-                if (appUser is not null && user.RoleList is not null)
-                {
-                    await userManager.AddToRolesAsync(appUser, user.RoleList);
-                }
-            }
         }
 
         // Add Organzation seed data if needed
         var organization = new TOrganization
         {
-            Name = "Space4IT",
+            Name = "Organization One",
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
@@ -75,7 +65,7 @@ public class SeedData
         // Add Department seed data if needed
         var department = new TDepartment
         {
-            Name = "Development",
+            Name = "Department One",
             OrganizationId = org.Entity.Id,
             IsActive = true,
         };
