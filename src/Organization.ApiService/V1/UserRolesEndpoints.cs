@@ -26,13 +26,14 @@ public static class UserRolesEndpoints
     /// </summary>
     /// <param name="user"></param>
     /// <param name="organizationId"></param>
+    /// <param name="departmentId"></param>
     /// <param name="role"></param>
     /// <param name="db"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    private static async Task<bool> IsUserAuthorizedForOrganizationAsync(ClaimsPrincipal user, int organizationId, List<RolesEnum> roles, IRootDbReadWrite db, CancellationToken cancellationToken)
+    private static async Task<bool> IsUserAuthorizedForOrganizationAsync(ClaimsPrincipal user, int organizationId, int departmentId, List<RolesEnum> roles, IRootDbReadWrite db, CancellationToken cancellationToken)
     {
-        if (user.Identity is not null && user.Identity.IsAuthenticated)
+        if (user.Identity is not null && user.Identity.IsAuthenticated && organizationId > 0)
         {
             var identity = (ClaimsIdentity)user.Identity;
             var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -41,7 +42,9 @@ public static class UserRolesEndpoints
             
             // get user roles from TAppUserOrganization
             var userOrgRoles = await db.GetUserOrganizationsAsync(userId, cancellationToken);
-            return userOrgRoles.Any(c => c.OrganizationId == organizationId && roles.Contains(c.Role));
+            var userDepRoles = await db.GetUserDepartmentsAsync(userId, cancellationToken);
+            return userOrgRoles.Any(c => c.OrganizationId == organizationId && roles.Contains(c.Role)) ||
+                   userDepRoles.Any(c => c.DepartmentId == departmentId && roles.Contains(c.Role));
         }                
         return false;
     }
@@ -150,7 +153,8 @@ public static class UserRolesEndpoints
         /// <returns>Result</returns>
         v1.MapPost("/api/users/register", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, IRootDbReadWrite db, CancellationToken cancellationToken, [FromBody] RegisterModel model) =>
         {
-            if (!await IsUserAuthorizedForOrganizationAsync(user, model.OrganizationId, [RolesEnum.DepartmentAdmin, RolesEnum.EnterpriseAdmin], db, cancellationToken))
+            // TODO: Check if the authenticated user has permission to add users to the organization
+            if (!await IsUserAuthorizedForOrganizationAsync(user, model.OrganizationId, 0, [RolesEnum.DepartmentAdmin, RolesEnum.EnterpriseAdmin], db, cancellationToken))
             {
                 return Results.BadRequest(new FormResult{ Succeeded = false, ErrorList = [ "You are not authorized to add users to this organization." ] });
             }
@@ -211,6 +215,7 @@ public static class UserRolesEndpoints
             return Results.Unauthorized();
         }).RequireAuthorization();
 
+        #region Role management endpoints (Should be deleted later)
         /// <summary>
         /// Get roles for the authenticated user
         /// </summary>
@@ -437,37 +442,33 @@ public static class UserRolesEndpoints
             }
             return Results.StatusCode(StatusCodes.Status403Forbidden);
         }).RequireAuthorization();
+        #endregion
 
         /// <summary>
         /// Get all users if authenticated user is an administrator
         /// </summary>
         /// <param name="user">ClaimsPrincipal</param>
         /// <param name="userManager">UserManager</param>
+        /// <param name="organizationId">Organization Id</param>
+        /// <param name="departmentId">Department Id</param>
         /// <returns>List of users</returns>
-        v1.MapGet("/api/users", (ClaimsPrincipal user, UserManager<AppUser> userManager) =>
+        v1.MapGet("/api/users/{organizationId}/{departmentId}/", async (ClaimsPrincipal user, UserManager<AppUser> userManager, IRootDbReadWrite rootDbReadWrite, int organizationId, int departmentId, CancellationToken cancellationToken) =>
         {
-            if (user.Identity is not null && user.Identity.IsAuthenticated)
-            {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
+            bool hasAccess = await IsUserAuthorizedForOrganizationAsync(user, organizationId, departmentId, [RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin], rootDbReadWrite, cancellationToken);
 
-                if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
+            if (hasAccess)
+            {
+                var users = userManager.Users.Select(u => new UserModel
                 {
-                    var users = userManager.Users.Select(u => new UserModel
-                    {
-                        Id = u.Id,
-                        UserName = u.UserName ?? string.Empty,
-                        Email = u.Email ?? string.Empty,
-                        Points = u.Points,
-                        UsedPoints = u.UsedPoints,
-                        MemberNumber = u.MemberNumber
-                    }).ToList();
-                    return TypedResults.Json(users);
-                } else if (userRoles.Any(c => c.Value == RolesEnum.OrganizationAdmin.ToString()))
-                {
-                    // TODO Find user that are in the same organization as the authenticated user
-                }
-            }
+                    Id = u.Id,
+                    UserName = u.UserName ?? string.Empty,
+                    Email = u.Email ?? string.Empty,
+                    Points = u.Points,
+                    UsedPoints = u.UsedPoints,
+                    MemberNumber = u.MemberNumber
+                }).ToList();
+                return TypedResults.Json(users);
+                } 
             return Results.StatusCode(StatusCodes.Status403Forbidden);
         }).RequireAuthorization();
 

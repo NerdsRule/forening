@@ -57,7 +57,7 @@ partial class OrganizationComponent
         if (AppUserOrganization != null)
         {
             var ct = new CancellationTokenSource(TimeSpan.FromSeconds(60)).Token;
-            _departments = (await AccountService.GetDepartmentsByOrganizationIdAsync(AppUserOrganization.OrganizationId, ct)).departments ?? new List<TDepartment>();
+            _departments = (await AccountService.GetDepartmentsByOrganizationIdAsync(AppUserOrganization.OrganizationId, ct)).departments ?? [];
             _newAppUserDepartment.AppUserId = AppUserOrganization.AppUserId;
         }
         await base.OnInitializedAsync();

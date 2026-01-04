@@ -36,7 +36,7 @@ partial class ResetPassword
             Navigation.NavigateTo("/");
             return;
         }
-        _users = await AccountService.GetUsersAsync();
+        _users = await AccountService.GetUsersAsync(StaticUserInfoBlazor.SelectedOrganization?.Id ?? 0, StaticUserInfoBlazor.SelectedDepartment?.Id ?? 0);
         await base.OnInitializedAsync();
     }
 

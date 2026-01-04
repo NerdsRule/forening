@@ -65,8 +65,10 @@ public interface IAccountService
     /// <summary>
     /// Get all users
     /// </summary>
+    /// <param name="organizationId">Organization Id</param>
+    /// <param name="departmentId">Department Id</param>
     /// <returns>List of UserModel</returns>
-    public Task<List<UserModel>> GetUsersAsync();
+    public Task<List<UserModel>> GetUsersAsync(int organizationId, int departmentId);
 
     /// <summary>
     /// Delete user

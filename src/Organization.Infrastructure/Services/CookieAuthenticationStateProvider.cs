@@ -251,6 +251,7 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
         return authenticated;
     }
 
+    #region User Role Management. Should be removed.
     /// <summary>
     /// Get the roles for a user.
     /// </summary>
@@ -304,14 +305,18 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
         });
         return response.IsSuccessStatusCode;
     }
+    #endregion
 
     /// <summary>
     /// Get all users
     /// </summary>
+    /// <param name="organizationId">Organization Id</param>
+    /// <param name="departmentId">Department Id</param>
     /// <returns>List of UserModel</returns>
-    public async Task<List<UserModel>> GetUsersAsync()
+    public async Task<List<UserModel>> GetUsersAsync(int organizationId, int departmentId)
     {
-        var usersResponse = await httpClient.GetAsync("/v1/api/users");
+        CancellationToken cancellationToken = new CancellationTokenSource(TimeSpan.FromSeconds(60)).Token;
+        var usersResponse = await httpClient.GetAsync($"/v1/api/users/{organizationId}/{departmentId}/", cancellationToken);
         usersResponse.EnsureSuccessStatusCode();
         var usersJson = await usersResponse.Content.ReadAsStringAsync();
         var users = JsonSerializer.Deserialize<List<UserModel>>(usersJson, jsonSerializerOptions);
