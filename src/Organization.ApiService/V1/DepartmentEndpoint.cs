@@ -22,21 +22,28 @@ public static class DepartmentEndpoint
         /// <param name="ct">Cancellation token.</param>
         /// <param name="id">The ID of the organization whose departments are to be retrieved.</param>
         /// <returns>A list of departments with a 200 OK status, or 403 Forbidden if the user lacks permissions.</returns>
-        v1.MapGet("/api/department/{id:int}", async Task<IResult> (ClaimsPrincipal user, IRootDbReadWrite db, CancellationToken ct, int id) =>    {
-             if (user.Identity is not null && user.Identity.IsAuthenticated)
+        v1.MapGet("/api/department/{id:int}", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, IRootDbReadWrite db, CancellationToken ct, int id) =>
+        {
+            if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
                 var identity = (ClaimsIdentity)user.Identity;
                 var userRoles = identity.FindAll(identity.RoleClaimType);
 
                 if (!userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
                 {
-                    return Results.BadRequest(new FormResult{Succeeded = false, ErrorList = ["User does not have permission to retrieve departments"]});
+                    return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["User does not have permission to retrieve departments"] });
                 }
+
+                var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (userId is null)
+                {
+                    return Results.Unauthorized();
+                }
+                var departments = await db.GetDepartmentsAsync(id, userId, ct);
+                if (departments is not null)
+                    return Results.Ok(departments);
             }
-            var departments = await db.GetDepartmentsAsync(id, ct);
-            if (departments is not null) 
-                return Results.Ok(departments);
-            return Results.BadRequest(new FormResult{Succeeded = false, ErrorList = ["Could not retrieve departments"]});
+            return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Could not retrieve departments"] });
         }).Produces<List<TDepartment>>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound)
         .RequireAuthorization();

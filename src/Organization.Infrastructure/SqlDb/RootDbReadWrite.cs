@@ -52,10 +52,15 @@ public class RootDbReadWrite : IRootDbReadWrite
     /// Get departments by organization id
     /// </summary>
     /// <param name="organizationId">Organization Id</param>
+    /// <param name="userId">User Id</param>
     /// <returns>Organization with departments</returns>
-    public async Task<List<TDepartment>?> GetDepartmentsAsync(int organizationId, CancellationToken ct)
+    public async Task<List<TDepartment>?> GetDepartmentsAsync(int organizationId, string userId, CancellationToken ct)
     {
-        var res = Db.Departments.Where(c => c.OrganizationId == organizationId).AsNoTracking();
+        // Check if user is part of organization
+        var org = Db.AppUserOrganizations.AsNoTracking().FirstOrDefault(user => user.AppUserId == userId && user.OrganizationId == organizationId);
+        if (org is null)
+            return [];
+        var res = Db.Departments.Where(department => department.OrganizationId == organizationId).AsNoTracking();
         return await res.ToListAsync(ct);
     }
     #endregion

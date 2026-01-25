@@ -59,8 +59,9 @@ public interface IRootDbReadWrite
     /// Get departments by organization id
     /// </summary>
     /// <param name="organizationId">Organization Id</param>
+    /// <param name="userId">User Id</param>
     /// <returns>Organization with departments</returns>
-    public Task<List<TDepartment>?> GetDepartmentsAsync(int organizationId, CancellationToken ct);
+    public Task<List<TDepartment>?> GetDepartmentsAsync(int organizationId, string userId, CancellationToken ct);
     #endregion
 
     #region Generic CRUD
