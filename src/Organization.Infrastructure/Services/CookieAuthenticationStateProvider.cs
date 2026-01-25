@@ -10,7 +10,9 @@ namespace Organization.Infrastructure.Services;
 /// Create a new instance of the auth provider.
 /// </remarks>
 /// <param name="httpClientFactory">Factory to retrieve auth client.</param>
-public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFactory, ILogger<CookieAuthenticationStateProvider> logger, ILocalStorageService localStorageService) : AuthenticationStateProvider, IAccountService
+/// <param name="privateLocalStorageService">Local storage service.</param>
+/// <param name="logger">Logger instance.</param>
+public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFactory, ILogger<CookieAuthenticationStateProvider> logger, IPrivateLocalStorageService privateLocalStorageService) : AuthenticationStateProvider, IAccountService
 {
     /// <summary>
     /// Map the JavaScript-formatted properties to C#-formatted classes.
@@ -26,7 +28,7 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
     /// </summary>
     private readonly HttpClient httpClient = httpClientFactory.CreateClient("Auth");
 
-    private readonly ILocalStorageService _localStorageService = localStorageService;
+    private readonly IPrivateLocalStorageService _localStorageService = privateLocalStorageService;
 
     /// <summary>
     /// Authentication state.
@@ -47,7 +49,7 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
     /// </returns>
     public async Task<FormResult> RegisterAsync(RegisterModel model)
     {
-        string[] defaultDetail = [ "An unknown error prevented registration from succeeding." ];
+        string[] defaultDetail = ["An unknown error prevented registration from succeeding."];
 
         try
         {
@@ -106,10 +108,10 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
         return new FormResult
         {
             Succeeded = false,
-            ErrorList = [ "Invalid email and/or password." ]
+            ErrorList = ["Invalid email and/or password."]
         };
     }
-    
+
     /// <summary>
     /// Get authentication state.
     /// </summary>
@@ -151,67 +153,80 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
                 // Read user settings from local storage
                 try
                 {
-                    var userLocalStorage = await _localStorageService.GetItemAsync<UserLocalStorage>(StaticUserInfoBlazor.UserLocalStorageKey);
+                    var userLocalStorage = await _localStorageService.GetUserSettingsAsync(StaticUserInfoBlazor.UserLocalStorageKey);
                     if (userLocalStorage != null)
-                {
-                    if (userLocalStorage.SelectedOrganizationId != 0)
                     {
-                        StaticUserInfoBlazor.SelectedOrganization = userInfo.AppUserOrganizations.FirstOrDefault(o => o.OrganizationId == userLocalStorage.SelectedOrganizationId);
-                        if (StaticUserInfoBlazor.SelectedOrganization != null)
+                        if (userLocalStorage.SelectedOrganizationId != 0)
                         {
-                            claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.OrganizationRole.ToString()));
-                        }
-                        else
-                        {
-                            StaticUserInfoBlazor.SelectedOrganization = userInfo.AppUserOrganizations.FirstOrDefault();
+                            StaticUserInfoBlazor.SelectedOrganization = userInfo.AppUserOrganizations.FirstOrDefault(o => o.OrganizationId == userLocalStorage.SelectedOrganizationId);
                             if (StaticUserInfoBlazor.SelectedOrganization != null)
                             {
                                 claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.OrganizationRole.ToString()));
                             }
+                            else
+                            {
+                                StaticUserInfoBlazor.SelectedOrganization = userInfo.AppUserOrganizations.FirstOrDefault();
+                                if (StaticUserInfoBlazor.SelectedOrganization != null)
+                                {
+                                    claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.OrganizationRole.ToString()));
+                                }
+                            }
                         }
-                    }
-                    if (userLocalStorage.SelectedDepartmentId != 0)
-                    {
-                        StaticUserInfoBlazor.SelectedDepartment = userInfo.AppUserDepartments.FirstOrDefault(d => d.DepartmentId == userLocalStorage.SelectedDepartmentId);
-                        if (StaticUserInfoBlazor.SelectedDepartment != null)
+                        if (userLocalStorage.SelectedDepartmentId != 0)
                         {
-                            claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.DepartmentRole.ToString()));
-                        }
-                        else
-                        {
-                            StaticUserInfoBlazor.SelectedDepartment = userInfo.AppUserDepartments.FirstOrDefault();
+                            StaticUserInfoBlazor.SelectedDepartment = userInfo.AppUserDepartments.FirstOrDefault(d => d.DepartmentId == userLocalStorage.SelectedDepartmentId);
                             if (StaticUserInfoBlazor.SelectedDepartment != null)
                             {
                                 claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.DepartmentRole.ToString()));
                             }
+                            else
+                            {
+                                StaticUserInfoBlazor.SelectedDepartment = userInfo.AppUserDepartments.FirstOrDefault();
+                                if (StaticUserInfoBlazor.SelectedDepartment != null)
+                                {
+                                    claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.DepartmentRole.ToString()));
+                                }
+                            }
                         }
                     }
-                } else {
-                    // store static user info for Blazor client
-                    if (userInfo.AppUserOrganizations.Count > 0)
+                    else
                     {
-                        StaticUserInfoBlazor.SelectedOrganization = userInfo.AppUserOrganizations[0];
-                        claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.OrganizationRole.ToString()));
-                    }
-                    if (userInfo.AppUserDepartments.Count > 0)
-                    {
-                        StaticUserInfoBlazor.SelectedDepartment = userInfo.AppUserDepartments[0];
-                        claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.DepartmentRole.ToString()));
+                        // store static user info for Blazor client
+                        if (userInfo.AppUserOrganizations.Count > 0)
+                        {
+                            StaticUserInfoBlazor.SelectedOrganization = userInfo.AppUserOrganizations[0];
+                            claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.OrganizationRole.ToString()));
+                        }
+                        if (userInfo.AppUserDepartments.Count > 0)
+                        {
+                            StaticUserInfoBlazor.SelectedDepartment = userInfo.AppUserDepartments[0];
+                            claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.DepartmentRole.ToString()));
+                        }
+                        if (StaticUserInfoBlazor.SelectedOrganization != null && StaticUserInfoBlazor.SelectedDepartment != null)
+                        {
+                            // save to local storage
+                            await _localStorageService.SaveUserSettingsAsync(new UserLocalStorage
+                            {
+                                SelectedOrganizationId = StaticUserInfoBlazor.SelectedOrganization?.OrganizationId ?? 0,
+                                SelectedDepartmentId = StaticUserInfoBlazor.SelectedDepartment?.DepartmentId ?? 0
+                            }, StaticUserInfoBlazor.UserLocalStorageKey);
+                        }
                     }
                 }
-                } catch (Exception ex)
+                catch (Exception ex)
                 {
                     logger.LogError(ex, "Error reading user local storage");
                     await _localStorageService.RemoveItemAsync(StaticUserInfoBlazor.UserLocalStorageKey);
                 }
-                
-                
+
+
 
                 // set the principal
                 var id = new ClaimsIdentity(claims, nameof(CookieAuthenticationStateProvider));
                 user = new ClaimsPrincipal(id);
                 authenticated = true;
-            } else
+            }
+            else
             {
                 // not authenticated
                 return new AuthenticationState(unauthenticated);
@@ -366,19 +381,20 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
             if (response.IsSuccessStatusCode)
             {
                 return new FormResult { Succeeded = true };
-            } else if (response.StatusCode != System.Net.HttpStatusCode.Forbidden)
+            }
+            else if (response.StatusCode != System.Net.HttpStatusCode.Forbidden)
             {
                 // Get FormResult from response and return it
                 var details = await response.Content.ReadAsStringAsync();
                 var problemDetails = JsonHelpers.JsonDeSerialize<FormResult>(details);
-                return problemDetails ?? new FormResult { Succeeded = false, ErrorList = [ "An unknown error prevented the user update from succeeding." ] };
-                
+                return problemDetails ?? new FormResult { Succeeded = false, ErrorList = ["An unknown error prevented the user update from succeeding."] };
+
             }
-                return new FormResult { Succeeded = false, ErrorList = [ "Forbidden" ] };
+            return new FormResult { Succeeded = false, ErrorList = ["Forbidden"] };
         }
         catch (Exception ex)
         {
-            return new FormResult { Succeeded = false, ErrorList = [ ex.Message ] };
+            return new FormResult { Succeeded = false, ErrorList = [ex.Message] };
         }
     }
 
@@ -405,7 +421,7 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
             // body should contain details about why it failed
             var details = await result.Content.ReadAsStringAsync();
             var problemDetails = JsonHelpers.JsonDeSerialize<FormResult>(details);
-            return problemDetails ?? new FormResult { Succeeded = false, ErrorList = [ "An unknown error prevented the password change from succeeding." ] };
+            return problemDetails ?? new FormResult { Succeeded = false, ErrorList = ["An unknown error prevented the password change from succeeding."] };
         }
         catch (Exception ex)
         {
@@ -416,7 +432,7 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
         return new FormResult
         {
             Succeeded = false,
-            ErrorList = [ "An unknown error prevented the password change from succeeding." ]
+            ErrorList = ["An unknown error prevented the password change from succeeding."]
         };
     }
 
@@ -434,7 +450,7 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
             // body should contain details about why it failed
             var details = await result.Content.ReadAsStringAsync();
             var problemDetails = JsonHelpers.JsonDeSerialize<FormResult>(details);
-            return problemDetails ?? new FormResult { Succeeded = false, ErrorList = [ "An unknown error prevented the password reset from succeeding." ] };
+            return problemDetails ?? new FormResult { Succeeded = false, ErrorList = ["An unknown error prevented the password reset from succeeding."] };
         }
         catch (Exception ex)
         {
@@ -445,7 +461,7 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
         return new FormResult
         {
             Succeeded = false,
-            ErrorList = [ "An unknown error prevented the password reset from succeeding." ]
+            ErrorList = ["An unknown error prevented the password reset from succeeding."]
         };
     }
     #endregion
@@ -490,13 +506,13 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
             {
                 var errorJson = await response.Content.ReadAsStringAsync();
                 var error = JsonSerializer.Deserialize<FormResult>(errorJson, jsonSerializerOptions);
-                return error ?? new FormResult { Succeeded = false, ErrorList = [ "An unknown error occurred while deleting the user organization." ] };
+                return error ?? new FormResult { Succeeded = false, ErrorList = ["An unknown error occurred while deleting the user organization."] };
             }
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error deleting AppUserOrganization");
-            return new FormResult { Succeeded = false, ErrorList = [ ex.Message ] };
+            return new FormResult { Succeeded = false, ErrorList = [ex.Message] };
         }
     }
     #endregion
@@ -541,13 +557,13 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
             {
                 var errorJson = await response.Content.ReadAsStringAsync();
                 var error = JsonSerializer.Deserialize<FormResult>(errorJson, jsonSerializerOptions);
-                return error ?? new FormResult { Succeeded = false, ErrorList = [ "An unknown error occurred while deleting the user department." ] };
+                return error ?? new FormResult { Succeeded = false, ErrorList = ["An unknown error occurred while deleting the user department."] };
             }
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error deleting AppUserDepartment");
-            return new FormResult { Succeeded = false, ErrorList = [ ex.Message ] };
+            return new FormResult { Succeeded = false, ErrorList = [ex.Message] };
         }
     }
     #endregion
@@ -566,7 +582,7 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
         {
             var errorJson = await organizationResponse.Content.ReadAsStringAsync();
             var error = JsonSerializer.Deserialize<FormResult>(errorJson, jsonSerializerOptions);
-            return (null, error ?? new FormResult { Succeeded = false, ErrorList = [ "An unknown error occurred while fetching departments." ] });
+            return (null, error ?? new FormResult { Succeeded = false, ErrorList = ["An unknown error occurred while fetching departments."] });
         }
         var organizationJson = await organizationResponse.Content.ReadAsStringAsync();
         var organization = JsonSerializer.Deserialize<List<TDepartment>>(organizationJson, jsonSerializerOptions);
