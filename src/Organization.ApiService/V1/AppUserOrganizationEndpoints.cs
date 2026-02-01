@@ -35,16 +35,15 @@ public static class AppUserOrganizationEndpoints
         /// <param name="db">The database service for data access.</param>
         /// <param name="ct">Cancellation token.</param>
         /// <returns>The updated TAppUserOrganization with a 200 OK status, or 400 Bad Request if the payload is invalid.</returns>
-        v1.MapPost("/api/AppUserOrganization", async Task<IResult> (ClaimsPrincipal user, TAppUserOrganization payload, IRootDbReadWrite db, CancellationToken ct) =>
+        v1.MapPost("/api/AppUserOrganization", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, TAppUserOrganization payload, IRootDbReadWrite db, CancellationToken ct) =>
         {
             if (payload is null)
                 return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Payload is null"] });
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
-
-                if (!userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
+                var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
+                var (hasAccess, _user) = await UserRolesEndpoints.IsUserInSameOrganizationAndInRoleAsync(user, payload.AppUserId, rolesToCheck, userManager, db, ct);
+                if (!hasAccess)
                 {
                     return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
                 }
@@ -73,14 +72,13 @@ public static class AppUserOrganizationEndpoints
         /// <param name="id">The ID of the TAppUserOrganization to delete.</param>
         /// <param name="ct">Cancellation token.</param>
         /// <returns>A 200 OK status if deletion is successful, or 404 Not Found if the entity does not exist.</returns>
-        v1.MapDelete("/api/AppUserOrganization/{id}", async Task<IResult> (ClaimsPrincipal user, int id, IRootDbReadWrite db, CancellationToken ct) =>
+        v1.MapDelete("/api/AppUserOrganization/{id}", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, string userId, int id, IRootDbReadWrite db, CancellationToken ct) =>
         {
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
-
-                if (!userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
+                var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
+                var (hasAccess, _user) = await UserRolesEndpoints.IsUserInSameOrganizationAndInRoleAsync(user, userId, rolesToCheck, userManager, db, ct);
+                if (!hasAccess)
                 {
                     return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
                 }

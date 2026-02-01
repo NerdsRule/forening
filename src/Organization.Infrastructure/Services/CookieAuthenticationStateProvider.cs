@@ -342,10 +342,11 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
     /// Get user by Id
     /// </summary>
     /// <param name="userId">User Id</param>
+    /// <param name="ct">Cancellation token</param>
     /// <returns>UserModel</returns>
-    public async Task<UserModel?> GetUserByIdAsync(string userId)
+    public async Task<UserModel?> GetUserByIdAsync(string userId, CancellationToken ct)
     {
-        var userResponse = await httpClient.GetAsync($"/v1/api/users/{userId}");
+        var userResponse = await httpClient.GetAsync($"/v1/api/users/{userId}", ct);
         if (!userResponse.IsSuccessStatusCode)
         {
             return null;
@@ -359,10 +360,11 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
     /// Delete user
     /// </summary>
     /// <param name="userId">User Id</param>
+    /// <param name="ct">Cancellation token</param>
     /// <returns>True if successful</returns>
-    public async Task<FormResult> DeleteUserAsync(string userId)
+    public async Task<FormResult> DeleteUserAsync(string userId, CancellationToken ct)
     {
-        var response = await httpClient.DeleteAsync($"/v1/api/users/{userId}");
+        var response = await httpClient.DeleteAsync($"/v1/api/users/{userId}", ct);
         var details = await response.Content.ReadAsStringAsync();
         var formResult = JsonSerializer.Deserialize<FormResult>(details, jsonSerializerOptions);
         return formResult ?? new FormResult { Succeeded = response.IsSuccessStatusCode };
@@ -373,11 +375,11 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
     /// </summary>
     /// <param name="user">User model</param>
     /// <returns>FormResult</returns>
-    public async Task<FormResult> UpdateUserAsync(UserModel user)
+    public async Task<FormResult> UpdateUserAsync(UserModel user, CancellationToken ct)
     {
         try
         {
-            var response = await httpClient.PutAsJsonAsync($"/v1/api/users/", user);
+            var response = await httpClient.PutAsJsonAsync($"/v1/api/users/", user, ct);
             if (response.IsSuccessStatusCode)
             {
                 return new FormResult { Succeeded = true };
@@ -471,10 +473,11 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
     /// Add or update TAppUserOrganization
     /// </summary>
     /// <param name="appUserOrganization">TAppUserOrganization model</param>
+    /// <param name="ct">Cancellation token</param>
     /// <returns>Updated TAppUserOrganization</returns>
-    public async Task<(TAppUserOrganization?, FormResult?)> AddUpdateAppUserOrganizationAsync(TAppUserOrganization appUserOrganization)
+    public async Task<(TAppUserOrganization?, FormResult?)> AddUpdateAppUserOrganizationAsync(TAppUserOrganization appUserOrganization, CancellationToken ct)
     {
-        var response = await httpClient.PostAsJsonAsync($"/v1/api/AppUserOrganization", appUserOrganization);
+        var response = await httpClient.PostAsJsonAsync($"/v1/api/AppUserOrganization", appUserOrganization, ct);
         if (response.IsSuccessStatusCode)
         {
             var updatedJson = await response.Content.ReadAsStringAsync();
@@ -492,12 +495,13 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
     /// Delete TAppUserOrganization
     /// </summary>
     /// <param name="appUserOrganization">TAppUserOrganization model</param>
+    /// <param name="ct">Cancellation token</param>
     /// <returns>FormResult</returns>
-    public async Task<FormResult> DeleteAppUserOrganizationAsync(TAppUserOrganization appUserOrganization)
+    public async Task<FormResult> DeleteAppUserOrganizationAsync(TAppUserOrganization appUserOrganization, CancellationToken ct)
     {
         try
         {
-            var response = await httpClient.DeleteAsync($"/v1/api/AppUserOrganization/{appUserOrganization.Id}");
+            var response = await httpClient.DeleteAsync($"/v1/api/AppUserOrganization/{appUserOrganization.AppUserId}/{appUserOrganization.Id}", ct);
             if (response.IsSuccessStatusCode)
             {
                 return new FormResult { Succeeded = true };
@@ -522,10 +526,11 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
     /// Add or update TAppUserDepartment
     /// </summary>
     /// <param name="appUserDepartment">TAppUserDepartment model</param>
+    /// <param name="ct">Cancellation token</param>
     /// <returns>Updated TAppUserDepartment</returns>
-    public async Task<(TAppUserDepartment?, FormResult?)> AddUpdateAppUserDepartmentAsync(TAppUserDepartment appUserDepartment)
+    public async Task<(TAppUserDepartment?, FormResult?)> AddUpdateAppUserDepartmentAsync(TAppUserDepartment appUserDepartment, CancellationToken ct)
     {
-        var response = await httpClient.PostAsJsonAsync($"/v1/api/AppUserDepartment", appUserDepartment);
+        var response = await httpClient.PostAsJsonAsync($"/v1/api/AppUserDepartment", appUserDepartment, ct);
         if (response.IsSuccessStatusCode)
         {
             var updatedJson = await response.Content.ReadAsStringAsync();
@@ -543,12 +548,13 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
     /// Delete TAppUserDepartment
     /// </summary>
     /// <param name="appUserDepartment">TAppUserDepartment model</param>
+    /// <param name="ct">Cancellation token</param>
     /// <returns>FormResult</returns>
-    public async Task<FormResult> DeleteAppUserDepartmentAsync(TAppUserDepartment appUserDepartment)
+    public async Task<FormResult> DeleteAppUserDepartmentAsync(TAppUserDepartment appUserDepartment, CancellationToken ct)
     {
         try
         {
-            var response = await httpClient.DeleteAsync($"/v1/api/AppUserDepartment/{appUserDepartment.Id}");
+            var response = await httpClient.DeleteAsync($"/v1/api/AppUserDepartment/{appUserDepartment.AppUserId}/{appUserDepartment.Id}", ct);
             if (response.IsSuccessStatusCode)
             {
                 return new FormResult { Succeeded = true };
@@ -575,9 +581,9 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
     /// <param name="organizationId">Organization Id</param>
     /// <param name="ct">Cancellation token</param>
     /// <returns>TOrganization</returns>
-    public async Task<(List<TDepartment>? departments, FormResult? formResult)> GetDepartmentsByOrganizationIdAsync(int organizationId, CancellationToken ct)
+    public async Task<(List<TDepartment>? departments, FormResult? formResult)> GetDepartmentsByOrganizationIdAsync(int organizationId, string userId, CancellationToken ct)
     {
-        var organizationResponse = await httpClient.GetAsync($"/v1/api/department/{organizationId}", ct);
+        var organizationResponse = await httpClient.GetAsync($"/v1/api/department/{userId}/{organizationId}", ct);
         if (!organizationResponse.IsSuccessStatusCode)
         {
             var errorJson = await organizationResponse.Content.ReadAsStringAsync();

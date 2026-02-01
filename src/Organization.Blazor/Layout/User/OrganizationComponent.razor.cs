@@ -12,7 +12,8 @@ partial class OrganizationComponent
         _updateResult = null;
         if (AppUserOrganization != null)
         {
-            var result = await AccountService.AddUpdateAppUserOrganizationAsync(AppUserOrganization);
+            CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
+            var result = await AccountService.AddUpdateAppUserOrganizationAsync(AppUserOrganization, cts.Token);
             if (result.Item1 != null)
             {
                 AppUserOrganization = result.Item1;
@@ -29,7 +30,8 @@ partial class OrganizationComponent
         _updateResult = null;
         if (AppUserOrganization != null)
         {
-            var result = await AccountService.DeleteAppUserOrganizationAsync(AppUserOrganization);
+            CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
+            var result = await AccountService.DeleteAppUserOrganizationAsync(AppUserOrganization, cts.Token);
             if (result.Succeeded)
             {
                 AppUserOrganization = null;
@@ -42,9 +44,11 @@ partial class OrganizationComponent
 
     private async Task HandleAddDepartmentAsync()
     {
-        var result = await AccountService.AddUpdateAppUserDepartmentAsync(_newAppUserDepartment);
+        CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
+        var result = await AccountService.AddUpdateAppUserDepartmentAsync(_newAppUserDepartment, cts.Token);
         if (result.appUserDepartment != null)
         {
+            result.appUserDepartment.Department = _departments.FirstOrDefault(d => d.Id == result.appUserDepartment.DepartmentId);
             AppUserDepartments.Add(result.appUserDepartment);
             _newAppUserDepartment = new TAppUserDepartment { AppUserId = StaticUserInfoBlazor.User!.Id };
         } else
@@ -57,7 +61,7 @@ partial class OrganizationComponent
         if (AppUserOrganization != null)
         {
             var ct = new CancellationTokenSource(TimeSpan.FromSeconds(60)).Token;
-            _departments = (await AccountService.GetDepartmentsByOrganizationIdAsync(AppUserOrganization.OrganizationId, ct)).departments ?? [];
+            _departments = (await AccountService.GetDepartmentsByOrganizationIdAsync(AppUserOrganization.OrganizationId, AppUserOrganization.AppUserId, ct)).departments ?? [];
             _newAppUserDepartment.AppUserId = AppUserOrganization.AppUserId;
         }
         await base.OnInitializedAsync();

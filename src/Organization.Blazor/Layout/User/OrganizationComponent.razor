@@ -50,7 +50,7 @@
         }
     }
     <h5>Departments</h5>
-    @if (_departments != null && _departments.Any())
+    @if (_departments != null)
     {
         <EditForm Model="@_newAppUserDepartment" OnValidSubmit="@HandleAddDepartmentAsync">
             <div class="row rounded rounded-1 my-1 p-2 border border-1 border-light">

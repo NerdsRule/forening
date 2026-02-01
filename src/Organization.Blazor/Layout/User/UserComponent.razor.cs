@@ -17,7 +17,8 @@ partial class UserComponent
         _formResult = null;
         if (User != null)
         {
-            _formResult = await AccountService.UpdateUserAsync(User);
+            CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
+            _formResult = await AccountService.UpdateUserAsync(User, cts.Token);
         }
     }
 
@@ -30,7 +31,8 @@ partial class UserComponent
         _formResult = null;
         if (User != null)
         {
-            _formResult = await AccountService.DeleteUserAsync(User.Id);
+            CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
+            _formResult = await AccountService.DeleteUserAsync(User.Id, cts.Token);
         }
     }
     [Parameter] public UserModel? User { get; set; }

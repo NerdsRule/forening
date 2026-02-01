@@ -16,7 +16,8 @@ partial class UserManager
             return;
         }
         selectedUserId = userId;
-        selectedUser = await  AccountService.GetUserByIdAsync(userId);
+        var ct = new CancellationTokenSource(TimeSpan.FromSeconds(30)).Token;
+        selectedUser = await  AccountService.GetUserByIdAsync(userId, ct);
     }
 
     protected override async Task OnInitializedAsync()

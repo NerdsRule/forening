@@ -74,22 +74,25 @@ public interface IAccountService
     /// Delete user
     /// </summary>
     /// <param name="userId">User Id</param>
+    /// <param name="ct">Cancellation token</param>
     /// <returns>True if successful</returns>
-    public Task<FormResult> DeleteUserAsync(string userId);
+    public Task<FormResult> DeleteUserAsync(string userId, CancellationToken ct);
 
     // <summary>
     /// Get user by Id
     /// </summary>
     /// <param name="userId">User Id</param>
+    /// <param name="ct">Cancellation token</param>
     /// <returns>UserModel</returns>
-    public Task<UserModel?> GetUserByIdAsync(string userId);
+    public Task<UserModel?> GetUserByIdAsync(string userId, CancellationToken ct);
 
     /// <summary>
     /// Update user
     /// </summary>
     /// <param name="user">User model</param>
+    /// <param name="ct">Cancellation token</param>
     /// <returns>FormResult</returns>
-    public Task<FormResult> UpdateUserAsync(UserModel user);
+    public Task<FormResult> UpdateUserAsync(UserModel user, CancellationToken ct);
 
     #region Password Management
     /// <summary>
@@ -112,14 +115,16 @@ public interface IAccountService
     /// Add or update TAppUserOrganization
     /// </summary>
     /// <param name="appUserOrganization">TAppUserOrganization model</param>
+    /// <param name="ct">Cancellation token</param>
     /// <returns>Updated TAppUserOrganization</returns>
-    public Task<(TAppUserOrganization?, FormResult?)> AddUpdateAppUserOrganizationAsync(TAppUserOrganization appUserOrganization);
+    public Task<(TAppUserOrganization?, FormResult?)> AddUpdateAppUserOrganizationAsync(TAppUserOrganization appUserOrganization, CancellationToken ct);
     /// <summary>
     /// Delete TAppUserOrganization
     /// </summary>
     /// <param name="appUserOrganization">TAppUserOrganization model</param>
+    /// <param name="ct">Cancellation token</param>
     /// <returns>FormResult</returns>
-    public Task<FormResult> DeleteAppUserOrganizationAsync(TAppUserOrganization appUserOrganization);
+    public Task<FormResult> DeleteAppUserOrganizationAsync(TAppUserOrganization appUserOrganization, CancellationToken ct);
     #endregion
 
     #region TAppUserDepartment
@@ -127,14 +132,16 @@ public interface IAccountService
     /// Add or update TAppUserDepartment
     /// </summary>
     /// <param name="appUserDepartment">TAppUserDepartment model</param>
+    /// <param name="ct">Cancellation token</param>
     /// <returns>Updated TAppUserDepartment</returns>
-    public Task<(TAppUserDepartment? appUserDepartment, FormResult? formResult)> AddUpdateAppUserDepartmentAsync(TAppUserDepartment appUserDepartment);
+    public Task<(TAppUserDepartment? appUserDepartment, FormResult? formResult)> AddUpdateAppUserDepartmentAsync(TAppUserDepartment appUserDepartment, CancellationToken ct);
     /// <summary>
     /// Delete TAppUserDepartment
     /// </summary>
     /// <param name="appUserDepartment">TAppUserDepartment model</param>
+    /// <param name="ct">Cancellation token</param>
     /// <returns>FormResult</returns>
-    public Task<FormResult> DeleteAppUserDepartmentAsync(TAppUserDepartment appUserDepartment);
+    public Task<FormResult> DeleteAppUserDepartmentAsync(TAppUserDepartment appUserDepartment, CancellationToken ct);
     #endregion
 
     #region TOrganization and TDepartment
@@ -142,8 +149,9 @@ public interface IAccountService
     /// Get departments by organization Id
     /// </summary>
     /// <param name="organizationId">Organization Id</param>
+    /// <param name="userId">User Id</param>
     /// <param name="ct">Cancellation token</param>
     /// <returns>TOrganization</returns>
-    public Task<(List<TDepartment>? departments, FormResult? formResult)> GetDepartmentsByOrganizationIdAsync(int organizationId, CancellationToken ct);
+    public Task<(List<TDepartment>? departments, FormResult? formResult)> GetDepartmentsByOrganizationIdAsync(int organizationId, string userId, CancellationToken ct);
     #endregion
 }

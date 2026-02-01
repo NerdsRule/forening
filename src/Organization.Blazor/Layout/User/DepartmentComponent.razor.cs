@@ -8,7 +8,8 @@ partial class DepartmentComponent
     {
         if (AppUserDepartment != null)
         {
-            var result = await AccountService.AddUpdateAppUserDepartmentAsync(AppUserDepartment);
+            CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
+            var result = await AccountService.AddUpdateAppUserDepartmentAsync(AppUserDepartment, cts.Token);
             if (result.Item1 != null)
             {
                 AppUserDepartment = result.Item1;
@@ -25,7 +26,8 @@ partial class DepartmentComponent
         _updateResult = null;
         if (AppUserDepartment != null)
         {
-            var result = await AccountService.DeleteAppUserDepartmentAsync(AppUserDepartment);
+            CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
+            var result = await AccountService.DeleteAppUserDepartmentAsync(AppUserDepartment, cts.Token);
             if (result.Succeeded)
             {
                 AppUserDepartment = null;

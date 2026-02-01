@@ -31,7 +31,7 @@ public static class UserRolesEndpoints
     /// <param name="db"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    private static async Task<bool> IsUserAuthorizedForOrganizationAsync(ClaimsPrincipal user, int organizationId, int departmentId, List<RolesEnum> roles, IRootDbReadWrite db, CancellationToken cancellationToken)
+    public static async Task<bool> IsUserAuthorizedForOrganizationAsync(ClaimsPrincipal user, int organizationId, int departmentId, List<RolesEnum> roles, IRootDbReadWrite db, CancellationToken cancellationToken)
     {
         if (user.Identity is not null && user.Identity.IsAuthenticated && organizationId > 0)
         {
@@ -47,6 +47,31 @@ public static class UserRolesEndpoints
                    userDepRoles.Any(c => c.DepartmentId == departmentId && roles.Contains(c.Role));
         }                
         return false;
+    }
+
+    /// <summary>
+    /// Checks if the user is in the same organization and has one of the specified roles.
+    /// </summary>
+    /// <param name="user">Instance of ClaimsPrincipal representing the authenticated user.</param>
+    /// <param name="userId">User Id to check against.</param>
+    /// <param name="rolesToCheck">Array of roles to check.</param>
+    /// <param name="userManager">Instance of UserManager for managing user-related operations.</param>
+    /// <param name="db">Instance of IRootDbReadWrite for database operations.</param>
+    /// <param name="cancellationToken">Cancellation token for async operations.</param>
+    /// <returns>Returns true if the user is in the same organization and has one of the specified roles; otherwise, false.</returns>
+    public static async Task<(bool hasAccess, UserModel? user)> IsUserInSameOrganizationAndInRoleAsync(ClaimsPrincipal user, string userId, RolesEnum[] rolesToCheck, UserManager<AppUser> userManager, IRootDbReadWrite db, CancellationToken cancellationToken)
+    {
+        var identity = (ClaimsIdentity)user.Identity!;
+        var _loggedInUserId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        // Build logged in user roles
+        var loggedInUser = await GetUserInfoAsync(_loggedInUserId!, userManager, db, cancellationToken);
+        var _user = await GetUserInfoAsync(userId, userManager, db, cancellationToken);
+        if (loggedInUser is not null && _user is not null)
+        {
+            // Check if logged in user has access to the requested user's organization and is an admin
+            return (loggedInUser.AppUserOrganizations.Any(o => _user.AppUserOrganizations.Any(uo => uo.OrganizationId == o.OrganizationId) && rolesToCheck.Contains(o.Role)), _user);
+        }
+        return (false, null);
     }
 
     /// <summary>
@@ -106,7 +131,7 @@ public static class UserRolesEndpoints
             }
             //return Results.Ok();
             return Results.Unauthorized();
-        }).AllowAnonymous();
+        }).RequireAuthorization();
 
         /// <summary>
         /// Login endpoint
@@ -215,235 +240,6 @@ public static class UserRolesEndpoints
             return Results.Unauthorized();
         }).RequireAuthorization();
 
-        #region Role management endpoints (Should be deleted later)
-        /// <summary>
-        /// Get roles for the authenticated user
-        /// </summary>
-        /// <param name="user">ClaimsPrincipal</param>
-        /// <returns>Array of roles</returns>
-        v1.MapGet("/api/roles", (ClaimsPrincipal user) =>
-        {
-            if (user.Identity is not null && user.Identity.IsAuthenticated)
-            {
-                var identity = (ClaimsIdentity)user.Identity;
-                var roles = identity.FindAll(identity.RoleClaimType)
-                    .Select(c =>
-                        new
-                        {
-                            c.Issuer,
-                            c.OriginalIssuer,
-                            c.Type,
-                            c.Value,
-                            c.ValueType
-                        });
-
-                return TypedResults.Json(roles);
-            }
-
-            return Results.Unauthorized();
-        }).RequireAuthorization();
-
-        /// <summary>
-        /// Remove roles from a user if authenticated user is an administrator
-        /// </summary>
-        /// <param name="user">ClaimsPrincipal</param>
-        /// <param name="userManager">UserManager</param>
-        /// <param name="roleManager">RoleManager</param>
-        /// <param name="userId">User Id</param>
-        /// <param name="roles">Roles to remove</param>
-        /// <returns>Result</returns>
-        v1.MapDelete("/api/users/{userId}/roles", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager, string userId, [FromBody] string[] roles) =>
-        {
-            if (user.Identity is not null && user.Identity.IsAuthenticated)
-            {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
-
-                if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
-                {
-                    // Only administrators can remove the administrator role
-                    if (roles.Contains(RolesEnum.DepartmentAdmin.ToString()) && !userRoles.Any(c => c.Value == RolesEnum.DepartmentAdmin.ToString()))
-                    {
-                        return Results.Forbid();
-                    }
-                    var appUser = await userManager.FindByIdAsync(userId);
-                    if (appUser is not null)
-                    {
-                        await userManager.RemoveFromRolesAsync(appUser, roles);
-
-                        return Results.Ok();
-                    }
-                }
-            }
-            return Results.NotFound();
-        }).RequireAuthorization();
-
-        /// <summary>
-        /// Get all roles
-        /// </summary>
-        /// <param name="user">ClaimsPrincipal</param>
-        /// <param name="roleManager">RoleManager</param>
-        /// <returns>Array of roles</returns>
-        v1.MapGet("/api/roles/all", (ClaimsPrincipal user, RoleManager<IdentityRole> roleManager) =>
-        {
-            if (user.Identity is not null && user.Identity.IsAuthenticated)
-            {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
-
-                if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
-                {
-                    var roles = roleManager.Roles.Select(r => r.Name);
-
-                    return TypedResults.Json(roles);
-                }
-            }
-            return Results.StatusCode(StatusCodes.Status403Forbidden);
-        }).RequireAuthorization();
-
-        /// <summary>
-        /// Add a role if authenticated user is an administrator
-        /// </summary>
-        /// <param name="user">ClaimsPrincipal</param>
-        /// <param name="roleManager">RoleManager</param>
-        /// <param name="role">Role to add</param>
-        /// <returns>Result</returns>
-        v1.MapPost("/api/roles", async Task<IResult> (ClaimsPrincipal user, RoleManager<IdentityRole> roleManager, [FromBody] string[] role) =>
-        {
-            if (user.Identity is not null && user.Identity.IsAuthenticated)
-            {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
-
-                if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
-                {
-                    foreach (var r in role)
-                    {
-                        var result = await roleManager.CreateAsync(new IdentityRole(r));
-                        if (!result.Succeeded)
-                        {
-                            return Results.BadRequest(result.Errors);
-                        }
-                    }
-                    return Results.Ok();
-                }
-            }
-            return Results.StatusCode(StatusCodes.Status403Forbidden);
-        }).RequireAuthorization();
-
-        /// <summary>
-        /// Delete a role if authenticated user is an administrator
-        /// </summary>
-        /// <param name="user">ClaimsPrincipal</param>
-        /// <param name="roleManager">RoleManager</param>
-        /// <param name="role">Role to delete</param>
-        /// <returns>Result</returns>
-        v1.MapDelete("/api/roles/{role}", async Task<IResult> (ClaimsPrincipal user, RoleManager<IdentityRole> roleManager, string role) =>
-        {
-            if (user.Identity is not null && user.Identity.IsAuthenticated)
-            {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
-
-                if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
-                {
-                    var roleToDelete = await roleManager.FindByNameAsync(role);
-                    if (roleToDelete is not null)
-                    {
-                        await roleManager.DeleteAsync(roleToDelete);
-
-                        return Results.Ok(new FormResult { Succeeded = true });
-                    }
-                }
-            }
-            return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [ "Role not found." ] });
-        }).RequireAuthorization();
-
-        /// <summary>
-        /// Get roles for a user if authenticated user is an administrator
-        /// </summary>
-        /// <param name="user">ClaimsPrincipal</param>
-        /// <param name="userManager">UserManager</param>
-        /// <param name="userId">User Id</param>
-        /// <returns>Array of roles</returns>
-        v1.MapGet("/api/users/{userId}/roles", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, string userId) =>
-        {
-            if (user.Identity is not null && user.Identity.IsAuthenticated)
-            {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
-
-                if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
-                {
-                    var appUser = await userManager.FindByIdAsync(userId);
-                    if (appUser is not null)
-                    {
-                        var roles = await userManager.GetRolesAsync(appUser);
-
-                        return TypedResults.Json(roles);
-                    }
-                }
-            }
-            return Results.NotFound();
-        }).RequireAuthorization();
-
-        /// <summary>
-        /// Add roles to a user if authenticated user is an administrator
-        /// </summary>
-        /// <param name="user">ClaimsPrincipal</param>
-        /// <param name="userManager">UserManager</param>
-        /// <param name="roleManager">RoleManager</param>
-        /// <param name="userId">User Id</param>
-        /// <param name="roles">Roles to add</param>
-        /// <returns>Result</returns>
-        v1.MapPost("/api/users/{userId}/roles", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager, string userId, [FromBody] string[] roles) =>
-        {
-            if (user.Identity is not null && user.Identity.IsAuthenticated)
-            {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
-
-                // Add roles to first time setup
-                if (!userRoles.Any())
-                {
-                    // If only one user exists, make the user an EnterpriseAdmin
-                    if (userManager.Users.Count() == 1 && roles.Contains(RolesEnum.EnterpriseAdmin.ToString()))
-                    {
-                        var appUser = await userManager.FindByIdAsync(userId);
-                        if (appUser is not null)
-                        {
-                            await userManager.AddToRolesAsync(appUser, roles);
-                            return Results.Ok();
-                        }
-                    }
-                }
-
-                if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString() || c.Value == RolesEnum.DepartmentAdmin.ToString()))
-                {
-                    // Only administrators can add the administrator role
-                    if (roles.Contains(RolesEnum.DepartmentAdmin.ToString()) && !userRoles.Any(c => c.Value == RolesEnum.DepartmentAdmin.ToString())
-                    && !userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
-                    {
-                        return Results.Forbid();
-                    }
-                    // find user by email and add roles
-                    var appUser = await userManager.FindByIdAsync(userId);
-                    if (appUser is not null)
-                    {
-                        await userManager.AddToRolesAsync(appUser, roles);
-                    }
-                    else
-                    {
-                        return Results.NotFound();
-                    }
-                    return Results.Ok();
-                }
-                return Results.Forbid();
-            }
-            return Results.StatusCode(StatusCodes.Status403Forbidden);
-        }).RequireAuthorization();
-        #endregion
-
         /// <summary>
         /// Get all users if authenticated user is an administrator
         /// </summary>
@@ -479,14 +275,12 @@ public static class UserRolesEndpoints
         /// <param name="userManager">UserManager</param>
         /// <param name="userId">User Id</param>
         /// <returns>Result</returns>
-        v1.MapDelete("/api/users/{userId}", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, string userId) =>
+        v1.MapDelete("/api/users/{userId}", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, IRootDbReadWrite db, string userId, CancellationToken cancellationToken) =>
         {
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
-
-                if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
+                var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
+                var (hasAccess, _user) = await IsUserInSameOrganizationAndInRoleAsync(user, userId, rolesToCheck, userManager, db, cancellationToken);
                 {
                     var appUser = await userManager.FindByIdAsync(userId);
                     if (appUser is not null && appUser.NormalizedUserName != "LASSE.TARP@SPACE4IT.DK")
@@ -511,23 +305,15 @@ public static class UserRolesEndpoints
         /// <param name="db">IRootDbReadWrite</param>
         /// <param name="userId">User Id</param>
         /// <returns>UserModel</returns>
-        v1.MapGet("/api/users/{userId}", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, IRootDbReadWrite db, string userId) =>
+        v1.MapGet("/api/users/{userId}", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, IRootDbReadWrite db, string userId, CancellationToken cancellationToken) =>
         {
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
-                if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
+                var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
+                var (hasAccess, _user) = await IsUserInSameOrganizationAndInRoleAsync(user, userId, rolesToCheck, userManager, db, cancellationToken);
+                if (hasAccess)
                 {
-                    var appUser = await GetUserInfoAsync(userId, userManager, db, CancellationToken.None);
-                    if (appUser is not null)
-                    {
-                        return Results.Ok(appUser);
-                    }
-                    else
-                    {
-                        return Results.NotFound();
-                    }
+                    return Results.Ok(_user);
                 }
             }
             return Results.StatusCode(StatusCodes.Status403Forbidden);
@@ -540,14 +326,12 @@ public static class UserRolesEndpoints
         /// <param name="userManager">UserManager</param>
         /// <param name="model">UserModel</param>
         /// <returns>Result</returns>
-        v1.MapPut("/api/users", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, [FromBody] UserModel model) =>
+        v1.MapPut("/api/users", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, IRootDbReadWrite db, [FromBody] UserModel model, CancellationToken cancellationToken) =>
         {
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
-
-                if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
+                var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
+                var (hasAccess, _user) = await IsUserInSameOrganizationAndInRoleAsync(user, model.Id, rolesToCheck, userManager, db, cancellationToken);
                 {
                     var appUser = await userManager.FindByIdAsync(model.Id);
                     if (appUser is not null)
@@ -620,14 +404,12 @@ public static class UserRolesEndpoints
         /// <param name="userManager">UserManager</param>
         /// <param name="model">ResetPasswordModel</param>
         /// <returns>Result</returns>
-        v1.MapPost("/api/users/password/reset", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, [FromBody] ResetPasswordModel model) =>
+        v1.MapPost("/api/users/password/reset", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, IRootDbReadWrite db, CancellationToken cancellationToken, [FromBody] ResetPasswordModel model) =>
         {
-            if (user.Identity is not null && user.Identity.IsAuthenticated)
+            if (user.Identity is not null && user.Identity.IsAuthenticated && !string.IsNullOrEmpty(model.UserId))
             {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
-
-                if (userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
+                var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
+                var (hasAccess, _user) = await IsUserInSameOrganizationAndInRoleAsync(user, model.UserId, rolesToCheck, userManager, db, cancellationToken);
                 {
                     var appUser = await userManager.FindByIdAsync(model.UserId!);
                     if (appUser is not null)
