@@ -1,5 +1,4 @@
 
-using Blazored.LocalStorage;
 
 namespace Organization.Infrastructure.Services;
 
@@ -40,6 +39,7 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
     /// </summary>
     private readonly ClaimsPrincipal unauthenticated = new(new ClaimsIdentity());
 
+    #region User Management
     /// <summary>
     /// Register a new user.
     /// </summary>
@@ -248,6 +248,10 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
         return new AuthenticationState(user);
     }
 
+    /// <summary>
+    /// User logout.
+    /// </summary>
+    /// <returns>Task</returns>
     public async Task LogoutAsync()
     {
         const string Empty = "{}";
@@ -265,62 +269,6 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
         await GetAuthenticationStateAsync();
         return authenticated;
     }
-
-    #region User Role Management. Should be removed.
-    /// <summary>
-    /// Get the roles for a user.
-    /// </summary>
-    /// <param name="userId"></param>
-    /// <returns>Array of roles</returns>
-    public async Task<string[]> GetUserRolesAsync(string userId)
-    {
-        var rolesResponse = await httpClient.GetAsync($"/v1/api/users/{userId}/roles");
-        rolesResponse.EnsureSuccessStatusCode();
-        var rolesJson = await rolesResponse.Content.ReadAsStringAsync();
-        var roles = JsonSerializer.Deserialize<string[]>(rolesJson, jsonSerializerOptions);
-        return roles ?? [];
-    }
-
-    /// <summary>
-    /// Get all available roles.
-    /// </summary>
-    /// <returns>Array of roles</returns>
-    public async Task<string[]> GetAllRolesAsync()
-    {
-        var rolesResponse = await httpClient.GetAsync("/v1/api/roles/all");
-        rolesResponse.EnsureSuccessStatusCode();
-        var rolesJson = await rolesResponse.Content.ReadAsStringAsync();
-        var roles = JsonSerializer.Deserialize<string[]>(rolesJson, jsonSerializerOptions);
-        return roles ?? [];
-    }
-
-    /// <summary>
-    /// Add roles to a user.
-    /// </summary>
-    /// <param name="userId">User Id</param>
-    /// <param name="roles">Array of roles</param>
-    /// <returns>True if successful</returns>
-    public async Task<bool> AddRolesToUserAsync(string userId, string[] roles)
-    {
-        var response = await httpClient.PostAsJsonAsync($"/v1/api/users/{userId}/roles", roles);
-        return response.IsSuccessStatusCode;
-    }
-
-    /// <summary>
-    /// Remove roles from a user.
-    /// </summary>
-    /// <param name="userId">User Id</param>
-    /// <param name="roles">Array of roles</param>
-    /// <returns>True if successful</returns>
-    public async Task<bool> RemoveRolesFromUserAsync(string userId, string[] roles)
-    {
-        var response = await httpClient.SendAsync(new HttpRequestMessage(HttpMethod.Delete, $"/v1/api/users/{userId}/roles")
-        {
-            Content = JsonContent.Create(roles)
-        });
-        return response.IsSuccessStatusCode;
-    }
-    #endregion
 
     /// <summary>
     /// Get all users
@@ -399,6 +347,7 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
             return new FormResult { Succeeded = false, ErrorList = [ex.Message] };
         }
     }
+    #endregion
 
     #region Password Management
     /// <summary>

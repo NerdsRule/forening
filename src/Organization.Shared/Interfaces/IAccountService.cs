@@ -32,36 +32,7 @@ public interface IAccountService
     /// </summary>
     /// <returns>True if authenticated</returns>
     public Task<bool> CheckAuthenticatedAsync();
-
-    /// <summary>
-    /// Get the roles for a user.
-    /// </summary>
-    /// <param name="userId"></param>
-    /// <returns>Array of roles</returns>
-    public Task<string[]> GetUserRolesAsync(string userId);
-
-    /// <summary>
-    /// Get all available roles.
-    /// </summary>
-    /// <returns>Array of roles</returns>
-    public Task<string[]> GetAllRolesAsync();
-
-    /// <summary>
-    /// Remove roles from a user.
-    /// </summary>
-    /// <param name="userId">User Id</param>
-    /// <param name="roles">Array of roles</param>
-    /// <returns>True if successful</returns>
-    public Task<bool> RemoveRolesFromUserAsync(string userId, string[] roles);
-
-    /// <summary>
-    /// Add roles to a user.
-    /// </summary>
-    /// <param name="userId">User Id</param>
-    /// <param name="roles">Array of roles</param>
-    /// <returns>True if successful</returns>
-    public Task<bool> AddRolesToUserAsync(string userId, string[] roles);
-
+    
     /// <summary>
     /// Get all users
     /// </summary>
