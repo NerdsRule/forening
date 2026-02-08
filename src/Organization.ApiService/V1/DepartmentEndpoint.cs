@@ -27,14 +27,14 @@ public static class DepartmentEndpoint
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
                 if (user.Identity is not null && user.Identity.IsAuthenticated)
-            {
-                var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
-                var (hasAccess, _user) = await UserRolesEndpoints.IsUserInSameOrganizationAndInRoleAsync(user, userId, rolesToCheck, userManager, db, ct);
-                if (!hasAccess)
                 {
-                    return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
+                    var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
+                    var (hasAccess, _user) = await UserRolesEndpoints.IsUserInSameOrganizationAndInRoleAsync(user, userId, rolesToCheck, userManager, db, ct);
+                    if (!hasAccess)
+                    {
+                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
+                    }
                 }
-            }
             var departments = await db.GetDepartmentsAsync(id, userId, ct);
             if (departments is not null)
                 return Results.Ok(departments);

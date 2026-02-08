@@ -28,23 +28,23 @@ public static class TaskEndpoint
                 return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Payload is null"] });
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
-
-                if (!userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString() || c.Value == RolesEnum.DepartmentAdmin.ToString()))
+                try
                 {
-                    return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
+                    var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
+                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, payload.DepartmentId, rolesToCheck, db, ct);
+                    if (!hasAccess)
+                    {
+                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
+                    }
+                    var updated = await db.AddUpdateRowAsync(payload, ct);
+                    return updated is null ? Results.NotFound(new FormResult { Succeeded = false, ErrorList = ["Not found or added"] }) : Results.Ok(updated);
+                }
+                catch (Exception e)
+                {
+                    return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [e.Message] });
                 }
             }
-            try
-            {
-                var updated = await db.AddUpdateRowAsync(payload, ct);
-                return updated is null ? Results.NotFound(new FormResult { Succeeded = false, ErrorList = ["Not found or added"] }) : Results.Ok(updated);
-            }
-            catch (Exception e)
-            {
-                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [e.Message] });
-            }
+            return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["User not authenticated"] });
         })
         .Accepts<TTask>("application/json")
         .Produces<TTask>(StatusCodes.Status200OK)
@@ -61,22 +61,28 @@ public static class TaskEndpoint
         {
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
-                if (!userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString() || c.Value == RolesEnum.DepartmentAdmin.ToString()))
+                try
                 {
-                    return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
+                    var _task = await db.GetRowAsync<TTask>(id, ct);
+                    if (_task == null)
+                    {
+                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Task not found"] });
+                    }
+                    var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
+                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, _task.DepartmentId, rolesToCheck, db, ct);
+                    if (!hasAccess)
+                    {
+                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
+                    }
+                    await db.DeleteRowAsync<TTask>(new TTask { Id = id, CreatorUserId = "", DueDateUtc = DateTime.UtcNow, Name = "" }, ct);
+                    return Results.Ok(new FormResult { Succeeded = true });
+                }
+                catch (Exception e)
+                {
+                    return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [e.Message] });
                 }
             }
-            try
-            {
-                await db.DeleteRowAsync<TTask>(new TTask { Id = id, CreatorUserId = "", DueDateUtc = DateTime.UtcNow, Name = "" }, ct);
-                return Results.Ok(new FormResult { Succeeded = true });
-            }
-            catch (Exception e)
-            {
-                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [e.Message] });
-            }
+            return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["User not authenticated"] });
         })
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
@@ -94,28 +100,15 @@ public static class TaskEndpoint
         {
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
-                if (!userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString() || c.Value == RolesEnum.DepartmentAdmin.ToString()))
-                {
-                    // Check if user has access to the specific department
-                    var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                    if (string.IsNullOrEmpty(userId))
-                    {
-                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["User ID not found"] });
-                    }
-
-                    var userDepartmentAccess = (await db.GetRowsAsync<TAppUserDepartment>( ct)).Where(a => a.AppUserId == userId && a.DepartmentId == departmentId);
-                    
-                    if (!userDepartmentAccess.Any())
-                    {
-                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Access denied to department"] });
-                    }
-                }
-
                 try
                 {
-                    var tasks = (await db.GetRowsAsync<TTask>(ct)).Where(t => t.DepartmentId == departmentId).ToList();
+                    var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
+                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, departmentId, rolesToCheck, db, ct);
+                    if (!hasAccess)
+                    {
+                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
+                    }
+                    var tasks = await db.GetTasksByDepartmentAsync(departmentId, ct);
                     return Results.Ok(tasks);
                 }
                 catch (Exception e)
@@ -144,30 +137,20 @@ public static class TaskEndpoint
         {
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
-                // Check if user has access to the specific department where the task is located
-                var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userId))
-                {
-                    return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["User ID not found"] });
-                }
-
                 try
                 {
-                    var task = (await db.GetRowsAsync<TTask>(ct)).FirstOrDefault(t => t.Id == id);
-                    if (task == null)
+                    var _task = await db.GetRowAsync<TTask>(id, ct);
+                    if (_task == null)
                     {
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Task not found"] });
                     }
-
-                    var userDepartmentAccess = (await db.GetRowsAsync<TAppUserDepartment>(ct)).Where(a => a.AppUserId == userId && a.DepartmentId == task.DepartmentId);
-                    
-                    if (!userDepartmentAccess.Any())
+                    var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
+                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, _task.DepartmentId, rolesToCheck, db, ct);
+                    if (!hasAccess)
                     {
-                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Access denied to department"] });
+                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
                     }
-                    return Results.Ok(task);
+                    return Results.Ok(_task);
                 }
                 catch (Exception e)
                 {
@@ -180,6 +163,79 @@ public static class TaskEndpoint
             }
         })
         .Produces<TTask>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .RequireAuthorization();
+
+        /// <summary>
+        /// Add or update a TTaskDepartment association.
+        /// </summary>
+        /// <param name="departmentTask">The TTaskDepartment association to add or update.</param>
+        /// <param name="user">The claims principal representing the authenticated user.</param>
+        /// <param name="db">The database service for data access.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>The added or updated TTaskDepartment association with a 200 OK status, or 400 Bad Request if unauthorized.</returns>
+        v1.MapPost("/api/TaskDepartment", async Task<IResult> (TTaskDepartment departmentTask, ClaimsPrincipal user, IRootDbReadWrite db, CancellationToken ct) =>
+        {
+            if (user.Identity is not null && user.Identity.IsAuthenticated)
+            {
+                try
+                {
+                    var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
+                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, departmentTask.DepartmentId, rolesToCheck, db, ct);
+                    if (!hasAccess)
+                    {
+                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
+                    }
+                    var updated = await db.AddUpdateRowAsync(departmentTask, ct);
+                    return updated is null ? Results.NotFound(new FormResult { Succeeded = false, ErrorList = ["Not found or added"] }) : Results.Ok(updated);
+                }
+                catch (Exception e)
+                {
+                    return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [e.Message] });
+                }
+            }
+            return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["User not authenticated"] });
+        }).Accepts<TTaskDepartment>("application/json")
+        .Produces<TTaskDepartment>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .RequireAuthorization();
+
+        /// <summary>
+        /// Delete a TTaskDepartment association.
+        /// </summary>
+        /// <param name="id">The ID of the TTaskDepartment association to delete.</param>
+        /// <param name="user">The claims principal representing the authenticated user.</param>
+        /// <param name="db">The database service for data access.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>A 200 OK status if deletion is successful, or 400 Bad Request if unauthorized.</returns>
+        v1.MapDelete("/api/TaskDepartment/{id}", async Task<IResult> (int id, ClaimsPrincipal user, IRootDbReadWrite db, CancellationToken ct) =>
+        {
+            if (user.Identity is not null && user.Identity.IsAuthenticated)
+            {
+                try
+                {
+                    var taskDepartment = await db.GetRowAsync<TTaskDepartment>(id, ct);
+                    if (taskDepartment == null)
+                    {
+                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["TaskDepartment association not found"] });
+                    }
+                    var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
+                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, taskDepartment.DepartmentId, rolesToCheck, db, ct);
+                    if (!hasAccess)
+                    {
+                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
+                    }
+                    await db.DeleteRowAsync<TTaskDepartment>(new TTaskDepartment { Id = id, DepartmentId = taskDepartment.DepartmentId, TaskId = taskDepartment.TaskId }, ct);
+                    return Results.Ok(new FormResult { Succeeded = true });
+                }
+                catch (Exception e)
+                {
+                    return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [e.Message] });
+                }
+            }
+            return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["User not authenticated"] });
+        }).Accepts<TTaskDepartment>("application/json")
+        .Produces<TTaskDepartment>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .RequireAuthorization();
     }

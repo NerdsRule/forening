@@ -28,6 +28,7 @@ public class AppDbContext : IdentityDbContext<AppUser>
         });
         builder.Entity<TAppUserOrganization>().HasIndex(u => new { u.AppUserId, u.OrganizationId }).IsUnique();
         builder.Entity<TAppUserDepartment>().HasIndex(u => new { u.AppUserId, u.DepartmentId }).IsUnique();
+        builder.Entity<TTaskDepartment>().HasIndex(u => new { u.TaskId, u.DepartmentId }).IsUnique();
         // builder.Entity<TProduct>().HasIndex(u => new {u.NormalizedName, u.TProductSizeId, u.TProductTypeId}).IsUnique();
         // builder.Entity<TProductType>().HasIndex(u => u.NormalizedName).IsUnique();
         // builder.Entity<TCustomer>().HasIndex(u => u.NormalizedName).IsUnique();
@@ -50,6 +51,7 @@ public class AppDbContext : IdentityDbContext<AppUser>
     public DbSet<TAppUserOrganization> AppUserOrganizations { get; set; } = null!;
     public DbSet<TAppUserDepartment> AppUserDepartments { get; set; } = null!;
     public DbSet<TTask> Tasks { get; set; } = null!;
+    public DbSet<TTaskDepartment> TaskDepartments { get; set; } = null!;
     public DbSet<TPrize> Prizes { get; set; } = null!;
     #endregion
 }

@@ -38,6 +38,11 @@ public class TTask : TBaseTable
     public int DepartmentId { get; set; }
 
     /// <summary>
+    /// Refers to the department.
+    /// </summary>
+    public virtual TDepartment? Department { get; set; }
+
+    /// <summary>
     /// Gets or sets the user ID that created the task.
     /// </summary>
     [Required(ErrorMessage = "Creator user ID is required."), ForeignKey("AspNetUsers")]

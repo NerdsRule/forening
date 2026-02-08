@@ -47,4 +47,11 @@ builder.Services.AddHttpClient("Auth", client =>
 
 #endregion
 
+builder.Services.AddScoped<IDepartmentTaskService, DepartmentTaskService>()
+.AddHttpClient("DepartmentTaskService", client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7375");
+    client.Timeout = TimeSpan.FromMinutes(1);
+});
+
 await builder.Build().RunAsync();

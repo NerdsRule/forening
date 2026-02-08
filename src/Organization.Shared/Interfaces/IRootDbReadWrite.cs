@@ -64,6 +64,16 @@ public interface IRootDbReadWrite
     public Task<List<TDepartment>?> GetDepartmentsAsync(int organizationId, string userId, CancellationToken ct);
     #endregion
 
+#region TTasks and Departments
+    /// <summary>
+    /// Get tasks by department id
+    /// </summary>
+    /// <param name="departmentId">Department Id</param>
+    /// <returns>List of tasks</returns>
+    public Task<List<TTask>> GetTasksByDepartmentAsync(int departmentId, CancellationToken ct);
+    
+    #endregion
+
     #region Generic CRUD
     /// <summary>
     /// Gets the row asynchronous.

@@ -1,5 +1,4 @@
 
-using Microsoft.AspNetCore.Authentication.Cookies;
 
 /// <summary>
 /// Provides extension methods to register HTTP endpoints for user role management in API v1.
@@ -21,6 +20,26 @@ namespace Organization.ApiService.V1;
 
 public static class UserRolesEndpoints
 {
+    /// <summary>
+    /// Check if user is authorized and is RolesEnum.EnterpriseAdmin in any organization
+    /// </summary> <param name="user">ClaimsPrincipal</param>
+    /// <param name="db">IRootDbReadWrite</param>
+    /// <param name="cancellationToken">CancellationToken</param>
+    /// <returns>True if user is an EnterpriseAdmin in any organization, otherwise false</returns>
+    public static async Task<bool> IsUserEnterpriseAdminAsync(ClaimsPrincipal user, IRootDbReadWrite db, CancellationToken cancellationToken)
+    {
+        if (user.Identity is not null && user.Identity.IsAuthenticated)
+        {
+            var identity = (ClaimsIdentity)user.Identity;
+            var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId is null) return false;
+
+            var userOrgRoles = await db.GetUserOrganizationsAsync(userId, cancellationToken);
+            return userOrgRoles.Any(c => c.Role == RolesEnum.EnterpriseAdmin);
+        }
+        return false;
+    }
+
     /// <summary>
     /// Checks if the user is authorized for the specified organization and role.
     /// </summary>
@@ -45,6 +64,31 @@ public static class UserRolesEndpoints
             var userDepRoles = await db.GetUserDepartmentsAsync(userId, cancellationToken);
             return userOrgRoles.Any(c => c.OrganizationId == organizationId && roles.Contains(c.Role)) ||
                    userDepRoles.Any(c => c.DepartmentId == departmentId && roles.Contains(c.Role));
+        }                
+        return false;
+    }
+
+    /// <summary>
+    /// Checks if the user is authorized for the specified department and role.
+    /// </summary>
+    /// <param name="user"></param>
+    /// <param name="departmentId"></param>
+    /// <param name="roles"></param>
+    /// <param name="db"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public static async Task<bool> IsUserAuthorizedForDepartmentAsync(ClaimsPrincipal user, int departmentId, RolesEnum[] roles, IRootDbReadWrite db, CancellationToken cancellationToken)
+    {
+        if (user.Identity is not null && user.Identity.IsAuthenticated && departmentId > 0)
+        {
+            var identity = (ClaimsIdentity)user.Identity;
+            var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
+            if (userId is null) return false;
+            
+            // get user roles from TAppUserOrganization
+            var userDepRoles = await db.GetUserDepartmentsAsync(userId, cancellationToken);
+            return userDepRoles.Any(c => c.DepartmentId == departmentId && roles.Contains(c.Role));
         }                
         return false;
     }

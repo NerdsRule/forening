@@ -59,18 +59,16 @@ public static class OrganizationEndpoints
         {
              if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
-
-                if (!userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
+                var hasAccess = await UserRolesEndpoints.IsUserEnterpriseAdminAsync(user, db, ct);
+                if (!hasAccess)
                 {
-                    return Results.Forbid();
+                    return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
                 }
             }
             var organizations = await db.GetRowsAsync<TOrganization>(ct);
             if (organizations is not null) 
                 return Results.Ok(organizations);
-            return Results.NotFound();
+            return Results.NotFound(new FormResult { Succeeded = false, ErrorList = ["No organizations found"] });
         }).Produces<List<TOrganization>>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound)
         .RequireAuthorization();
@@ -83,7 +81,7 @@ public static class OrganizationEndpoints
         v1.MapGet("/api/organization/{id:int}", async Task<IResult> (ClaimsPrincipal user, int id, IRootDbReadWrite db, CancellationToken ct) =>
         {
             var organization = await db.GetRowAsync<TOrganization>(id, ct);
-            return organization is null ? Results.NotFound() : Results.Ok(organization);
+            return organization is null ? Results.NotFound(new FormResult { Succeeded = false, ErrorList = ["Organization not found"] }) : Results.Ok(organization);
         })
         .Produces<List<TDepartment>>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status404NotFound)
@@ -100,25 +98,23 @@ public static class OrganizationEndpoints
         v1.MapPut("/api/organization", async Task<IResult> (ClaimsPrincipal user, TOrganization payload, IRootDbReadWrite db, CancellationToken ct) =>
         {
             if (payload is null)
-                return Results.BadRequest();
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Invalid organization data"] });
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
-
-                if (!userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
+                var hasAccess = await UserRolesEndpoints.IsUserEnterpriseAdminAsync(user, db, ct);
+                if (!hasAccess)
                 {
-                    return Results.Forbid();
+                    return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
                 }
             }
             try
             {
                 var updated = await db.AddUpdateRowAsync(payload, ct);
-                return updated is null ? Results.NotFound() : Results.Ok(updated);
+                return updated is null ? Results.NotFound(new FormResult { Succeeded = false, ErrorList = ["Organization not found"] }) : Results.Ok(updated);
             }
             catch (Exception e)
             {
-                return Results.Problem(detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [e.Message] });
             }
         })
         .Accepts<TOrganization>("application/json")
@@ -140,26 +136,24 @@ public static class OrganizationEndpoints
         {
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
-
-                if (!userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString()))
+                var hasAccess = await UserRolesEndpoints.IsUserEnterpriseAdminAsync(user, db, ct);
+                if (!hasAccess)
                 {
-                    return Results.BadRequest(new FormResult{Succeeded = false, ErrorList = ["User does not have permission to delete organization"]});
+                    return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
                 }
             }
             try
             {
                 var organization = await db.GetRowAsync<TOrganization>(id, ct);
                 if (organization is null)
-                    return Results.NotFound();
+                    return Results.NotFound(new FormResult { Succeeded = false, ErrorList = ["Organization not found"] });
 
                 await db.DeleteRowAsync(organization, ct);
                 return Results.Ok();
             }
             catch (Exception e)
             {
-                return Results.Problem(detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [e.Message] });
             }
         })
         .Produces(StatusCodes.Status200OK)

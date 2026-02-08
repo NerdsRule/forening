@@ -65,6 +65,26 @@ public class RootDbReadWrite : IRootDbReadWrite
     }
     #endregion
 
+    #region TTasks and Departments
+    /// <summary>
+    /// Get tasks by department id
+    /// </summary>
+    /// <param name="departmentId">Department Id</param>
+    /// <returns>List of tasks</returns>
+    public async Task<List<TTask>> GetTasksByDepartmentAsync(int departmentId, CancellationToken ct)
+    {
+        // Check if user is part of department
+        var res = new List<TTask>();
+        var ownedTasks = Db.Tasks.Where(task => task.DepartmentId == departmentId).Include(d => d.Department).AsNoTracking();
+        var relatedTaskDepartments = Db.TaskDepartments.Where(td => td.DepartmentId == departmentId).AsNoTracking().Select(td => td.Task).Where(t => t != null).Cast<TTask>().Include(d => d.Department).AsNoTracking();
+        if (ownedTasks is not null && ownedTasks.Any())
+            res.AddRange(await ownedTasks.ToListAsync(ct));
+        if (relatedTaskDepartments is not null && relatedTaskDepartments.Any())
+            res.AddRange(await relatedTaskDepartments.ToListAsync(ct));
+        return res;
+    }
+    #endregion
+
     #region Generic CRUD
     /// <summary>
     /// Gets the row asynchronous.

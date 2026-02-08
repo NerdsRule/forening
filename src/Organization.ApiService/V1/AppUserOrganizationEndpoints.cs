@@ -41,22 +41,24 @@ public static class AppUserOrganizationEndpoints
                 return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Payload is null"] });
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
+                try
+                {
                 var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
                 var (hasAccess, _user) = await UserRolesEndpoints.IsUserInSameOrganizationAndInRoleAsync(user, payload.AppUserId, rolesToCheck, userManager, db, ct);
                 if (!hasAccess)
                 {
                     return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
                 }
-            }
-            try
-            {
+        
                 var updated = await db.AddUpdateRowAsync(payload, ct);
                 return updated is null ? Results.NotFound(new FormResult { Succeeded = false, ErrorList = ["Not found"] }) : Results.Ok(updated);
+                }
+                catch (Exception e)
+                {
+                    return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [e.Message] });
+                }
             }
-            catch (Exception e)
-            {
-                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [e.Message] });
-            }
+            return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Unauthorized"] });
         })
         .Accepts<TAppUserOrganization>("application/json")
         .Produces<TAppUserOrganization>(StatusCodes.Status200OK)
@@ -76,22 +78,23 @@ public static class AppUserOrganizationEndpoints
         {
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
+                try
+                {
                 var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
                 var (hasAccess, _user) = await UserRolesEndpoints.IsUserInSameOrganizationAndInRoleAsync(user, userId, rolesToCheck, userManager, db, ct);
                 if (!hasAccess)
                 {
                     return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
                 }
-            }
-            try
-            {
                 await db.DeleteRowAsync(new TAppUserOrganization { Id = id }, ct);
                 return Results.Ok();
+                }
+                catch (Exception e)
+                {
+                    return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [e.Message] });
+                }
             }
-            catch (Exception e)
-            {
-                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [e.Message] });
-            }
+            return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Unauthorized"] });
         })
         .RequireAuthorization();
     }

@@ -3,7 +3,7 @@ namespace Organization.ApiService.V1;
 
 public static class PrizeEndpoint
 {
-/// <summary>
+    /// <summary>
     /// Maps task-related HTTP endpoints to the provided <see cref="WebApplication"/> instance.
     /// </summary>
     /// <param name="app">The <see cref="WebApplication"/> instance to which the endpoints will be mapped.</param>
@@ -25,23 +25,24 @@ public static class PrizeEndpoint
                 return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Payload is null"] });
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
-
-                if (!userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString() || c.Value == RolesEnum.DepartmentAdmin.ToString()))
+                try
+                {
+                var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
+                var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, payload.DepartmentId, rolesToCheck, db, ct);
+                if (!hasAccess)
                 {
                     return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
                 }
-            }
-            try
-            {
+            
                 var updated = await db.AddUpdateRowAsync(payload, ct);
                 return updated is null ? Results.NotFound(new FormResult { Succeeded = false, ErrorList = ["Not found or added"] }) : Results.Ok(updated);
+                }
+                catch (Exception e)
+                {
+                    return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [e.Message] });
+                }
             }
-            catch (Exception e)
-            {
-                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [e.Message] });
-            }
+            return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Unauthorized"] });
         })
         .Accepts<TPrize>("application/json")
         .Produces<TPrize>(StatusCodes.Status200OK)
@@ -58,22 +59,28 @@ public static class PrizeEndpoint
         {
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
-                if (!userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString() || c.Value == RolesEnum.DepartmentAdmin.ToString()))
+                try
                 {
-                    return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
+                    var _price = await db.GetRowAsync<TPrize>(id, ct);
+                    if (_price is null)
+                    {
+                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Price not found"] });
+                    }
+                    var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
+                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, _price.DepartmentId, rolesToCheck, db, ct);
+                    if (!hasAccess)
+                    {
+                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
+                    }
+                    await db.DeleteRowAsync<TPrize>(new TPrize { Id = id, CreatorUserId = "", Name = "" }, ct);
+                    return Results.Ok(new FormResult { Succeeded = true });
+                }
+                catch (Exception e)
+                {
+                    return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [e.Message] });
                 }
             }
-            try
-            {
-                await db.DeleteRowAsync<TPrize>(new TPrize { Id = id, CreatorUserId = "", Name = "" }, ct);
-                return Results.Ok(new FormResult { Succeeded = true });
-            }
-            catch (Exception e)
-            {
-                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [e.Message] });
-            }
+            return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Unauthorized"] });
         })
         .Produces(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
@@ -91,27 +98,14 @@ public static class PrizeEndpoint
         {
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
-                if (!userRoles.Any(c => c.Value == RolesEnum.EnterpriseAdmin.ToString() || c.Value == RolesEnum.DepartmentAdmin.ToString()))
-                {
-                    // Check if user has access to the specific department
-                    var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                    if (string.IsNullOrEmpty(userId))
-                    {
-                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["User ID not found"] });
-                    }
-
-                    var userDepartmentAccess = (await db.GetRowsAsync<TAppUserDepartment>( ct)).Where(a => a.AppUserId == userId && a.DepartmentId == departmentId);
-                    
-                    if (!userDepartmentAccess.Any())
-                    {
-                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Access denied to department"] });
-                    }
-                }
-
                 try
                 {
+                    var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
+                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, departmentId, rolesToCheck, db, ct);
+                    if (!hasAccess)
+                    {
+                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
+                    }
                     var prizes = (await db.GetRowsAsync<TPrize>(ct)).Where(t => t.DepartmentId == departmentId).ToList();
                     return Results.Ok(prizes);
                 }
@@ -141,40 +135,27 @@ public static class PrizeEndpoint
         {
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userRoles = identity.FindAll(identity.RoleClaimType);
-                // Check if user has access to the specific department where the task is located
-                var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userId))
-                {
-                    return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["User ID not found"] });
-                }
-
                 try
                 {
-                    var prize = (await db.GetRowsAsync<TPrize>(ct)).FirstOrDefault(t => t.Id == id);
-                    if (prize == null)
+                    var _prize = await db.GetRowAsync<TPrize>(id, ct);
+                    if (_prize is null)
                     {
-                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Prize not found"] });
+                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Price not found"] });
                     }
-
-                    var userDepartmentAccess = (await db.GetRowsAsync<TAppUserDepartment>(ct)).Where(a => a.AppUserId == userId && a.DepartmentId == prize.DepartmentId);
-                    
-                    if (!userDepartmentAccess.Any())
+                    var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
+                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, _prize.DepartmentId, rolesToCheck, db, ct);
+                    if (!hasAccess)
                     {
-                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Access denied to department"] });
+                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
                     }
-                    return Results.Ok(prize);
+                    return Results.Ok(_prize);
                 }
                 catch (Exception e)
                 {
                     return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [e.Message] });
                 }
             }
-            else
-            {
-                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["User not authenticated"] });
-            }
+            return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["User not authenticated"] });
         })
         .Produces<TPrize>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
