@@ -28,25 +28,5 @@
             </div>
         </div>
     </EditForm>
-    @if (_updateResult != null)
-    {
-        @if (_updateResult.Succeeded)
-        {
-            <div class="alert alert-success" role="alert">
-                @foreach (var msg in _updateResult.ErrorList)
-                {
-                    <div>@msg</div>
-                }
-            </div>
-        }
-        else
-        {
-            <div class="alert alert-danger" role="alert">
-                @foreach (var error in _updateResult.ErrorList)
-                {
-                    <div>@error</div>
-                }
-            </div>
-        }
-    }
+    <FormResultComponent FormResult="_updateResult" />
 }

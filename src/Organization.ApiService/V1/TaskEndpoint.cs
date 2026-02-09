@@ -96,7 +96,7 @@ public static class TaskEndpoint
         /// <param name="db">The database service for data access.</param>
         /// <param name="ct">Cancellation token.</param>
         /// <returns>A list of tasks for the specified department with a 200 OK status, or 400 Bad Request if unauthorized.</returns>
-        v1.MapGet("/api/Task/ByDepartment/{departmentId}", async Task<IResult> (int departmentId, ClaimsPrincipal user, IRootDbReadWrite db, CancellationToken ct) =>
+        v1.MapGet("/api/Task/ByDepartment/{departmentId}", async Task<IResult> (ClaimsPrincipal user, int departmentId, IRootDbReadWrite db, CancellationToken ct) =>
         {
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
@@ -109,6 +109,8 @@ public static class TaskEndpoint
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
                     }
                     var tasks = await db.GetTasksByDepartmentAsync(departmentId, ct);
+                    if (tasks.Count == 0)
+                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["No tasks found for this department"] });
                     return Results.Ok(tasks);
                 }
                 catch (Exception e)

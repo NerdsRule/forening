@@ -1,0 +1,21 @@
+@if (Result != null)
+    {
+        @if (Result.Succeeded)
+        {
+            <div class="alert alert-success" role="alert">
+                @foreach (var msg in Result.ErrorList)
+                {
+                    <div>@msg</div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-danger" role="alert">
+                @foreach (var error in Result.ErrorList)
+                {
+                    <div>@error</div>
+                }
+            </div>
+        }
+    }

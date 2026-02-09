@@ -19,7 +19,7 @@ public class DepartmentTaskService(IHttpClientFactory httpClientFactory, ILogger
     /// <summary>
     /// Special auth client.
     /// </summary>
-    private readonly HttpClient httpClient = httpClientFactory.CreateClient("DepartmentTaskService");
+    private readonly HttpClient httpClient = httpClientFactory.CreateClient("Auth");
 
     #region Task Management
     /// <summary>
@@ -42,7 +42,8 @@ public class DepartmentTaskService(IHttpClientFactory httpClientFactory, ILogger
             }
             
             logger.LogWarning("Failed to retrieve tasks for department {DepartmentId}. Status: {StatusCode}", departmentId, response.StatusCode);
-            return (null, new FormResult { Succeeded = false, ErrorList = ["Failed to retrieve tasks"] });
+            var formResult = await response.Content.ReadFromJsonAsync<FormResult>(jsonSerializerOptions, cancellationToken);
+            return (null, formResult ?? new FormResult { Succeeded = false, ErrorList = ["Failed to retrieve tasks"] });
         }
         catch (Exception ex)
         {
