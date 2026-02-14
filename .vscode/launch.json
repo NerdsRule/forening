@@ -1,0 +1,55 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch Full Stack (AppHost)",
+      "type": "dotnet", 
+      "request": "launch",
+      "projectPath": "${workspaceFolder}/src/Organization.AppHost/Organization.AppHost.csproj",
+      "launchBrowser": {
+        "enabled": true,
+        "args": "https://localhost:7145",
+        "windows": {
+          "command": "cmd.exe", 
+          "args": "/C start https://localhost:7145"
+        },
+        "osx": {
+          "command": "open",
+          "args": "https://localhost:7145"
+        },
+        "linux": {
+          "command": "xdg-open",
+          "args": "https://localhost:7145"
+        },
+      },
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    },
+    {
+      "name": "Launch Blazor Only (Port 7145)",
+      "type": "dotnet",
+      "request": "launch",
+      "projectPath": "${workspaceFolder}/src/Organization.Blazor/Organization.Blazor.csproj",
+      "launchBrowser": {
+        "enabled": true,
+        "args": "https://localhost:7145",
+        "windows": {
+          "command": "cmd.exe",
+          "args": "/C start https://localhost:7145"
+        },
+        "osx": {
+          "command": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+          "args": "https://localhost:7145"
+        },
+        "linux": {
+          "command": "xdg-open",
+          "args": "https://localhost:7145"
+        }
+      },
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  ]
+}

@@ -231,4 +231,66 @@ public class DepartmentTaskService(IHttpClientFactory httpClientFactory, ILogger
     }
 
     #endregion
+
+    #region Users with access to a department and Organization
+    /// <summary>
+    /// Get users with access to a specific department
+    /// </summary>
+    /// <param name="departmentId">The ID of the department</param>
+    /// <param name="cancellationToken">Cancellation token for the operation</param>
+    /// <returns>A list of users who have access to the department</returns>
+    public async Task<(List<UserModel>? data, FormResult? formResult)> GetUsersWithAccessToDepartmentAsync(int departmentId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            logger.LogInformation("Retrieving users with access to department {DepartmentId}", departmentId);
+            var response = await httpClient.GetAsync($"/v1/api/users/departments/{departmentId}", cancellationToken);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var users = await response.Content.ReadFromJsonAsync<List<UserModel>>(jsonSerializerOptions, cancellationToken);
+                return (users, null);
+            }
+            
+            logger.LogWarning("Failed to retrieve users for department {DepartmentId}. Status: {StatusCode}", departmentId, response.StatusCode);
+            var formResult = await response.Content.ReadFromJsonAsync<FormResult>(jsonSerializerOptions, cancellationToken);
+            return (null, formResult ?? new FormResult { Succeeded = false, ErrorList = ["Failed to retrieve users"] });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving users for department {DepartmentId}", departmentId);
+            return (null, new FormResult { Succeeded = false, ErrorList = ["Error retrieving users"] });
+        }
+    }
+
+    /// <summary>
+    /// Get users with access to a specific organization
+    /// </summary>
+    /// <param name="organizationId">The ID of the organization</param>
+    /// <param name="cancellationToken">Cancellation token for the operation</param>
+    /// <returns>A list of users who have access to the organization</returns>
+    public async Task<(List<UserModel>? data, FormResult? formResult)> GetUsersWithAccessToOrganizationAsync(int organizationId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            logger.LogInformation("Retrieving users with access to organization {OrganizationId}", organizationId);
+            var response = await httpClient.GetAsync($"/v1/api/users/organizations/{organizationId}", cancellationToken);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var users = await response.Content.ReadFromJsonAsync<List<UserModel>>(jsonSerializerOptions, cancellationToken);
+                return (users, null);
+            }
+            
+            logger.LogWarning("Failed to retrieve users for organization {OrganizationId}. Status: {StatusCode}", organizationId, response.StatusCode);
+            var formResult = await response.Content.ReadFromJsonAsync<FormResult>(jsonSerializerOptions, cancellationToken);
+            return (null, formResult ?? new FormResult { Succeeded = false, ErrorList = ["Failed to retrieve users"] });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving users for organization {OrganizationId}", organizationId);
+            return (null, new FormResult { Succeeded = false, ErrorList = ["Error retrieving users"] });
+        }
+    }
+    #endregion
 }

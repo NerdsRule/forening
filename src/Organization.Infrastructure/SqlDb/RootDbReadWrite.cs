@@ -45,6 +45,34 @@ public class RootDbReadWrite : IRootDbReadWrite
             return [];
         return await res.ToListAsync<TAppUserDepartment>(ct);
     }
+
+    /// <summary>
+    /// Get users in organization
+    /// </summary>
+    /// <param name="organizationId">Organization Id</param>
+    /// <returns>List of users in organization</returns>
+    public async Task<List<AppUser>> GetUsersInOrganizationAsync(int organizationId, CancellationToken ct)
+    {
+        var res = Db.AppUserOrganizations.Where(c => c.OrganizationId == organizationId)
+            !.Include(c => c.AppUser).AsNoTracking();
+        if (res is null || !res.Any() || res.Select(c => c.AppUser).All(u => u == null))
+            return [];
+        return await res.Select(c => c.AppUser!).ToListAsync(ct) ?? [];
+    }
+
+    /// <summary>
+    /// Get users in department
+    /// </summary>
+    /// <param name="departmentId">Department Id</param>
+    /// <returns>List of users in department</returns>
+    public async Task<List<AppUser>> GetUsersInDepartmentAsync(int departmentId, CancellationToken ct)
+    {
+        var res = Db.AppUserDepartments.Where(c => c.DepartmentId == departmentId)
+            !.Include(c => c.AppUser).AsNoTracking();
+        if (res is null || !res.Any() || res.Select(c => c.AppUser).All(u => u == null))
+            return [];
+        return await res.Select(c => c.AppUser!).ToListAsync(ct) ?? [];
+    }
     #endregion
     
     #region Organizations and Departments
@@ -75,13 +103,21 @@ public class RootDbReadWrite : IRootDbReadWrite
     {
         // Check if user is part of department
         var res = new List<TTask>();
-        var ownedTasks = Db.Tasks.Where(task => task.DepartmentId == departmentId).Include(d => d.Department).AsNoTracking();
+        var ownedTasks = Db.Tasks.Where(task => task.DepartmentId == departmentId).Include(d => d.Department).Include(u => u.AssignedUser).AsNoTracking();
         //var relatedTaskDepartments = Db.TaskDepartments.Where(td => td.DepartmentId == departmentId).Select(td => td.Task).Where(t => t != null).Cast<TTask>().Include(d => d.Department).AsNoTracking();
         var relatedTaskDepartments = Db.TaskDepartments.Where(td => td.DepartmentId == departmentId).Select(td => td.Task).Where(t => t != null).Cast<TTask>().AsNoTracking();
         if (ownedTasks is not null && ownedTasks.Any())
             res.AddRange(await ownedTasks.ToListAsync(ct));
         if (relatedTaskDepartments is not null && relatedTaskDepartments.Any())
-            res.AddRange(await relatedTaskDepartments.ToListAsync(ct));
+        {
+            // Can not include department and assigned user in relatedTaskDepartments query because of EF Core tracking issues, so we need to load them separately for each task
+            var userInDepartment = await Db.AppUserDepartments.Where(u => u.DepartmentId == departmentId).Select(u => u).AsNoTracking().ToListAsync(ct);
+            foreach (var task in relatedTaskDepartments)
+            {
+                task.CreatorUser = userInDepartment.Where(u => u.AppUserId == task.CreatorUserId).Select(u => u.AppUser).FirstOrDefault();
+            }
+            res.AddRange(relatedTaskDepartments);
+        }
         return res;
     }
     #endregion

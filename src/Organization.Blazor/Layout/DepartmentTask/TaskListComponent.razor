@@ -1,5 +1,4 @@
-
-@if(StaticUserInfoBlazor.SelectedDepartment != null)
+@if (StaticUserInfoBlazor.SelectedDepartment != null)
 {
     <h4>Tasks for department: @StaticUserInfoBlazor.SelectedDepartment.Department?.Name</h4>
 }
@@ -7,10 +6,8 @@
 
 @if (_tasks.Any())
 {
-    <ul>
-        @foreach (var task in _tasks)
-        {
-            
-        }
-    </ul>
+    @foreach (var task in _tasks)
+    {
+        <DepartmentTaskComponent @ref="_taskComponents[task.Id]" ChildContent="task" InitDisplayDetails="false" OnTaskDeletedEvent="RemoveTaskFromList" UsersWithAccess="UsersWithAccess" />
+    }
 }

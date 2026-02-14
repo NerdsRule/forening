@@ -1,4 +1,6 @@
 
+using System.Diagnostics;
+
 namespace Organization.Shared.Identity;
 
 /// <summary>
@@ -9,7 +11,16 @@ public static class StaticUserInfoBlazor
     /// <summary>
     /// User info
     /// </summary>
-    public static UserModel? User {get; set;}
+    private static UserModel? _user;
+    public static UserModel? User
+    {
+        get => _user;
+        set
+        {
+            _user = value;
+            Console.WriteLine($"User changed: {value?.Id ?? "null"}");
+        }
+    }
 
     /// <summary>
     /// Selected TAppUserOrganization

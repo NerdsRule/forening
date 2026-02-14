@@ -52,6 +52,20 @@ public interface IRootDbReadWrite
     /// <param name="userId">User Id</param>
     /// <returns>List of TAppUserDepartment</returns>
     public Task<List<TAppUserDepartment>> GetUserDepartmentsAsync(string userId, CancellationToken ct);
+
+    /// <summary>
+    /// Get users in organization
+    /// </summary>
+    /// <param name="organizationId">Organization Id</param>
+    /// <returns>List of users in organization</returns>
+    public Task<List<AppUser>> GetUsersInOrganizationAsync(int organizationId, CancellationToken ct);
+
+    /// <summary>
+    /// Get users in department
+    /// </summary>
+    /// <param name="departmentId">Department Id</param>
+    /// <returns>List of users in department</returns>
+    public Task<List<AppUser>> GetUsersInDepartmentAsync(int departmentId, CancellationToken ct);
     #endregion
 
     #region Organizations and Departments

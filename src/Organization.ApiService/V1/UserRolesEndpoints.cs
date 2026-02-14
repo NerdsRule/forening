@@ -20,6 +20,7 @@ namespace Organization.ApiService.V1;
 
 public static class UserRolesEndpoints
 {
+    #region Helper methods for user role checks and information retrieval
     /// <summary>
     /// Check if user is authorized and is RolesEnum.EnterpriseAdmin in any organization
     /// </summary> <param name="user">ClaimsPrincipal</param>
@@ -50,21 +51,21 @@ public static class UserRolesEndpoints
     /// <param name="db"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public static async Task<bool> IsUserAuthorizedForOrganizationAsync(ClaimsPrincipal user, int organizationId, int departmentId, List<RolesEnum> roles, IRootDbReadWrite db, CancellationToken cancellationToken)
+    public static async Task<bool> IsUserAuthorizedForOrganizationAsync(ClaimsPrincipal user, int organizationId, int departmentId, RolesEnum[] roles, IRootDbReadWrite db, CancellationToken cancellationToken)
     {
         if (user.Identity is not null && user.Identity.IsAuthenticated && organizationId > 0)
         {
             var identity = (ClaimsIdentity)user.Identity;
             var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            
+
             if (userId is null) return false;
-            
+
             // get user roles from TAppUserOrganization
             var userOrgRoles = await db.GetUserOrganizationsAsync(userId, cancellationToken);
             var userDepRoles = await db.GetUserDepartmentsAsync(userId, cancellationToken);
             return userOrgRoles.Any(c => c.OrganizationId == organizationId && roles.Contains(c.Role)) ||
                    userDepRoles.Any(c => c.DepartmentId == departmentId && roles.Contains(c.Role));
-        }                
+        }
         return false;
     }
 
@@ -83,13 +84,13 @@ public static class UserRolesEndpoints
         {
             var identity = (ClaimsIdentity)user.Identity;
             var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            
+
             if (userId is null) return false;
-            
+
             // get user roles from TAppUserOrganization
             var userDepRoles = await db.GetUserDepartmentsAsync(userId, cancellationToken);
             return userDepRoles.Any(c => c.DepartmentId == departmentId && roles.Contains(c.Role));
-        }                
+        }
         return false;
     }
 
@@ -126,30 +127,31 @@ public static class UserRolesEndpoints
     /// <param name="db">Instance of IRootDbReadWrite for database operations.</param>
     /// <param name="cancellationToken">Cancellation token for async operations.</param>
     /// <returns>Returns a UserModel containing user information if authenticated; otherwise, returns an Unauthorized result.</returns>
-    public static async Task<UserModel?> GetUserInfoAsync(string userId, UserManager<AppUser> userManager, IRootDbReadWrite db,  CancellationToken cancellationToken)
+    public static async Task<UserModel?> GetUserInfoAsync(string userId, UserManager<AppUser> userManager, IRootDbReadWrite db, CancellationToken cancellationToken)
     {
-            var appUser = await userManager.FindByIdAsync(userId);
-            if (appUser is null) return null;
+        var appUser = await userManager.FindByIdAsync(userId);
+        if (appUser is null) return null;
 
-            var userAppUserOrgs = await db.GetUserOrganizationsAsync(userId, cancellationToken);
-            var userAppUserDeps = await db.GetUserDepartmentsAsync(userId, cancellationToken);
+        var userAppUserOrgs = await db.GetUserOrganizationsAsync(userId, cancellationToken);
+        var userAppUserDeps = await db.GetUserDepartmentsAsync(userId, cancellationToken);
 
-            return new()
-            {
-                Id = appUser.Id,
-                UserName = appUser.UserName ?? string.Empty,
-                Email = appUser.Email ?? string.Empty,
-                Points = appUser.Points,
-                UsedPoints = appUser.UsedPoints,
-                MemberNumber = appUser.MemberNumber,
-                AppUserOrganizations = userAppUserOrgs,
-                AppUserDepartments = userAppUserDeps
-            };
+        return new()
+        {
+            Id = appUser.Id,
+            UserName = appUser.UserName ?? string.Empty,
+            Email = appUser.Email ?? string.Empty,
+            Points = appUser.Points,
+            UsedPoints = appUser.UsedPoints,
+            MemberNumber = appUser.MemberNumber,
+            AppUserOrganizations = userAppUserOrgs,
+            AppUserDepartments = userAppUserDeps
+        };
     }
+    #endregion
 
     public static void MapUserRolesEndpoints(this WebApplication app)
     {
-        
+
         var v1 = app.MapGroup("/v1");
 
         #region Endpoints for user management
@@ -168,7 +170,7 @@ public static class UserRolesEndpoints
                 var identity = (ClaimsIdentity)user.Identity;
                 var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 if (userId is null) return Results.Unauthorized();
-                
+
                 var userInfo = await GetUserInfoAsync(userId, userManager, db, cancellationToken);
                 if (userInfo is null) return Results.Unauthorized();
                 return Results.Ok(userInfo);
@@ -225,7 +227,7 @@ public static class UserRolesEndpoints
             // TODO: Check if the authenticated user has permission to add users to the organization
             if (!await IsUserAuthorizedForOrganizationAsync(user, model.OrganizationId, 0, [RolesEnum.DepartmentAdmin, RolesEnum.EnterpriseAdmin], db, cancellationToken))
             {
-                return Results.BadRequest(new FormResult{ Succeeded = false, ErrorList = [ "You are not authorized to add users to this organization." ] });
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["You are not authorized to add users to this organization."] });
             }
             // Validate input
             if (model is null)
@@ -235,13 +237,13 @@ public static class UserRolesEndpoints
 
             if (string.IsNullOrWhiteSpace(model.Email) || string.IsNullOrWhiteSpace(model.Password))
             {
-                return Results.BadRequest(new FormResult{ Succeeded = false, ErrorList = [ "Email and password are required." ] });
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Email and password are required."] });
             }
 
             var existing = await userManager.FindByEmailAsync(model.Email);
             if (existing is not null)
             {
-                return Results.Conflict(new FormResult{ Succeeded = false, ErrorList = [ "Email already in use." ] });
+                return Results.Conflict(new FormResult { Succeeded = false, ErrorList = ["Email already in use."] });
             }
 
             var newUser = new AppUser
@@ -253,7 +255,7 @@ public static class UserRolesEndpoints
             var createResult = await userManager.CreateAsync(newUser, model.Password);
             if (!createResult.Succeeded)
             {
-                return Results.BadRequest(new FormResult{ Succeeded = false, ErrorList = createResult.Errors.Select(e => e.Description).ToArray() });
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = createResult.Errors.Select(e => e.Description).ToArray() });
             }
             // Assign default role
             var org = await db.AddRowAsync<TAppUserOrganization>(new TAppUserOrganization
@@ -308,7 +310,7 @@ public static class UserRolesEndpoints
                     MemberNumber = u.MemberNumber
                 }).ToList();
                 return TypedResults.Json(users);
-                } 
+            }
             return Results.StatusCode(StatusCodes.Status403Forbidden);
         }).RequireAuthorization();
 
@@ -334,11 +336,11 @@ public static class UserRolesEndpoints
                     }
                     else
                     {
-                        return Results.NotFound(new FormResult { Succeeded = false, ErrorList = [ "User not found." ] });
+                        return Results.NotFound(new FormResult { Succeeded = false, ErrorList = ["User not found."] });
                     }
                 }
             }
-            return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [ "You are not authorized to delete this user." ] });
+            return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["You are not authorized to delete this user."] });
         }).RequireAuthorization();
 
         /// <summary>
@@ -406,6 +408,76 @@ public static class UserRolesEndpoints
         }).RequireAuthorization();
         #endregion
 
+        #region Endpoints for getting users in organizations and departments
+        /// <summary>
+        /// Get users in an organization if authenticated user is an administrator
+        /// </summary>
+        /// <param name="user">ClaimsPrincipal</param>
+        /// <param name="db">IRootDbReadWrite</param>
+        /// <param name="organizationId">Organization Id</param>
+        /// <returns>List of users in the organization</returns>
+        v1.MapGet("/api/users/organizations/{organizationId}", async (ClaimsPrincipal user, IRootDbReadWrite db, int organizationId, CancellationToken cancellationToken) =>
+        {
+            if (user.Identity is not null && user.Identity.IsAuthenticated)
+            {
+                var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin };
+                if (await IsUserAuthorizedForOrganizationAsync(user, organizationId, 0, rolesToCheck, db, cancellationToken))
+                {
+                    var users = await db.GetUsersInOrganizationAsync(organizationId, cancellationToken);
+                    if (users is null || !users.Any())                    {
+                        return Results.NotFound(new FormResult { Succeeded = false, ErrorList = ["No users found in this organization."] });
+                    }
+                    // Map users to UserModel
+                    var userModels = users.Select(u => new UserModel
+                    {
+                        Id = u.Id,
+                        UserName = u.UserName ?? string.Empty,
+                        Email = u.Email ?? string.Empty,
+                        Points = u.Points,
+                        UsedPoints = u.UsedPoints,
+                        MemberNumber = u.MemberNumber
+                    }).ToList();
+                    return Results.Ok(userModels);
+                }
+            }
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }).RequireAuthorization();
+
+        /// <summary>
+        /// Get users in a department if authenticated user is an administrator
+        /// </summary>
+        /// <param name="user">ClaimsPrincipal</param>
+        /// <param name="db">IRootDbReadWrite</param>
+        /// <param name="departmentId">Department Id</param>
+        /// <returns>List of users in the department</returns>
+        v1.MapGet("/api/users/departments/{departmentId}", async (ClaimsPrincipal user, IRootDbReadWrite db, int departmentId, CancellationToken cancellationToken) =>
+        {
+            if (user.Identity is not null && user.Identity.IsAuthenticated)
+            {
+                var rolesToCheck = new[] { RolesEnum.DepartmentAdmin, RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin };
+                if (await IsUserAuthorizedForDepartmentAsync(user, departmentId, rolesToCheck, db, cancellationToken))
+                {
+                    var users = await db.GetUsersInDepartmentAsync(departmentId, cancellationToken);
+                    if (users is null || !users.Any())                    {
+                        return Results.NotFound(new FormResult { Succeeded = false, ErrorList = ["No users found in this department."] });
+                    }
+                    // Map users to UserModel
+                    var userModels = users.Select(u => new UserModel
+                    {
+                        Id = u.Id,
+                        UserName = u.UserName ?? string.Empty,
+                        Email = u.Email ?? string.Empty,
+                        Points = u.Points,
+                        UsedPoints = u.UsedPoints,
+                        MemberNumber = u.MemberNumber
+                    }).ToList();
+                    return Results.Ok(userModels);
+                }
+            }
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }).RequireAuthorization();
+        #endregion
+        
         #region Password management
         /// <summary>
         /// Change password for a user
@@ -462,7 +534,7 @@ public static class UserRolesEndpoints
                         IdentityResult result = await userManager.ResetPasswordAsync(appUser, resetToken, model.Password!);
                         if (result.Succeeded)
                         {
-                            return Results.Ok(new FormResult { Succeeded = true, ErrorList = [ "Password has been reset successfully." ] });
+                            return Results.Ok(new FormResult { Succeeded = true, ErrorList = ["Password has been reset successfully."] });
                         }
                         else
                         {
@@ -524,7 +596,7 @@ public static class UserRolesEndpoints
                 Role = RolesEnum.EnterpriseAdmin
             }, cancellationToken);
 
-            return Results.Ok( new UserModel { Id = testUser.Id, UserName = testUser.UserName, Email = testUser.Email } );
+            return Results.Ok(new UserModel { Id = testUser.Id, UserName = testUser.UserName, Email = testUser.Email });
         }).AllowAnonymous();
         #endregion
     }

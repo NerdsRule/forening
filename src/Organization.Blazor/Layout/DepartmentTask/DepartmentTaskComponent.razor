@@ -1,0 +1,93 @@
+<div class="row border border-secondary rounded rounded-1 my-2 p-2">
+    <div class="col-12 col-md-3 ">
+        <strong>Department:</strong> @ChildContent.Department?.Name
+    </div>
+    <div class="col-12 col-md-4">
+        <strong>Name:</strong> @ChildContent.Name
+    </div>
+    <div class="col-12 col-md-3">
+        <strong>Assigned:</strong> @ChildContent.AssignedUser?.UserName
+    </div>
+    <div class="col-12 col-md-1">
+        <button class="btn btn-secondary" @onclick="() => DisplayDetails = !DisplayDetails">@(DisplayDetails ? "Hide" :
+                     "Show") Details</button>
+        </div>
+    </div>
+
+    @if (DisplayDetails)
+    {
+        <div class="row border border-primary rounded rounded-1 my-2 p-2">
+            <EditForm Model="ChildContent" OnValidSubmit="() => OnTaskAddedOrUpdated(ChildContent)">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                @if (ChildContent.CreatorUser != null)
+                {
+                    <div class="mb-3">
+                        <label for="creatorUser" class="form-label">Creator</label>
+                        <InputText id="creatorUser" class="form-control" @bind-Value="ChildContent.CreatorUser.UserName" disabled />
+                    </div>
+                }
+                @if (ChildContent.Department != null)
+                {
+                    <div class="mb-3">
+                        <label for="department" class="form-label">Department</label>
+                        <InputText id="department" class="form-control" @bind-Value="ChildContent.Department.Name" disabled />
+                    </div>
+                }
+                <div class="mb-3">
+                    <label for="taskName" class="form-label">Task Name</label>
+                    <InputText id="taskName" class="form-control" @bind-Value="ChildContent.Name" />
+                    <ValidationMessage For="() => ChildContent.Name" />
+                </div>
+    
+                <div class="mb-3">
+                    <label for="taskDescription" class="form-label">Description</label>
+                    <InputTextArea id="taskDescription" class="form-control" @bind-Value="ChildContent.Description" />
+                    <ValidationMessage For="() => ChildContent.Description" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="estimatedTimeMinutes" class="form-label">Estimated Time (Minutes)</label>
+                    <InputNumber id="estimatedTimeMinutes" class="form-control"
+                                 @bind-Value="ChildContent.EstimatedTimeMinutes" />
+                    <ValidationMessage For="() => ChildContent.EstimatedTimeMinutes" />
+                </div>
+    
+                <div class="mb-3">
+                    <label for="taskDueDate" class="form-label">Due Date</label>
+                    <InputDate id="taskDueDate" class="form-control" @bind-Value="ChildContent.DueDateUtc" />
+                    <ValidationMessage For="() => ChildContent.DueDateUtc" />
+                </div>
+
+                @if (UsersWithAccess != null && UsersWithAccess.Any())
+                {
+                    <div class="mb-3">
+                        <label for="assignedUser" class="form-label">Assigned User</label>
+                        <InputSelect id="assignedUser" class="form-select" ValueChanged="((string value) => SetAssignedUser(value))" ValueExpression="() => ChildContent.AssignedUserId">
+                            <option value="">-- Select user --</option>
+                            @foreach (var user in UsersWithAccess)
+                            {
+                                <option value="@user.Id">@user.UserName</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="() => ChildContent.AssignedUserId" />
+                    </div>
+                } else
+                {
+                    <div class="mb-3">
+                        <InputHidden id="assignedUser" @bind-Value="ChildContent.AssignedUserId" />
+                        <ValidationMessage For="() => ChildContent.AssignedUserId" />
+                        <div class="form-check form-switch">
+                            <InputCheckbox class="form-check-input" id="assignedToMe" @bind-Value="IsAssignedToMe" />
+                            <label class="form-check-label" for="assignedToMe">Assign to me</label>
+                        </div>
+                    </div>
+                }
+
+                <button type="submit" class="btn btn-primary" disabled="@DisableSubmit">@AddUpdateText</button>
+                <button type="button" class="btn btn-danger ms-5" @onclick="DeleteTaskAsync" disabled="@DisableDelete">Delete</button>
+                <SpinnerComponent ShowSpinner="@ShowSpinner" />
+            </EditForm>
+        </div>
+    }
+    <FormResultComponent Result="@FormResult" />

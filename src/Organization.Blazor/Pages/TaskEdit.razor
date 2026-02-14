@@ -3,6 +3,10 @@
 <PageTitle>Edit task</PageTitle>
 
 <div class="container-fluid mt-4">
+    <FormResultComponent Result="@FormResult" />
+    <SpinnerComponent ShowSpinner="@ShowSpinner" />
+<h3>Add new task</h3>
+<DepartmentTaskComponent ChildContent="_newTask" OnTaskAddedOrUpdatedEvent="OnTaskAddedOrUpdated" InitDisplayDetails="false" UsersWithAccess="UsersWithAccess"/>
 <h3>Edit task</h3>
-<TaskListComponent />
+<TaskListComponent @ref="_taskListComponent" UsersWithAccess="UsersWithAccess"/>
 </div>

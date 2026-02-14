@@ -56,4 +56,22 @@ public interface IDepartmentTaskService
     /// <returns>A result indicating whether the deletion was successful or if there was an error</returns>
     Task<FormResult> DeleteDepartmentTaskAsync(int departmentTaskId, CancellationToken cancellationToken);
     #endregion
+
+    #region Users with access to a department and Organization
+    /// <summary>
+    /// Get users with access to a specific department
+    /// </summary>
+    /// <param name="departmentId">The ID of the department</param>
+    /// <param name="cancellationToken">Cancellation token for the operation</param>
+    /// <returns>A list of users who have access to the department</returns>
+    Task<(List<UserModel>? data, FormResult? formResult)> GetUsersWithAccessToDepartmentAsync(int departmentId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Get users with access to a specific organization
+    /// </summary>
+    /// <param name="organizationId">The ID of the organization</param>
+    /// <param name="cancellationToken">Cancellation token for the operation</param>
+    /// <returns>A list of users who have access to the organization</returns>
+    Task<(List<UserModel>? data, FormResult? formResult)> GetUsersWithAccessToOrganizationAsync(int organizationId, CancellationToken cancellationToken);
+    #endregion
 }
