@@ -30,7 +30,37 @@ public static class TaskEndpoint
             {
                 try
                 {
-                    var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
+                    // Department member can only add/update tasks for their own department, while Department and only change AssingedUserId to themselves
+                    var originalTask = payload.Id != 0 ? await db.GetRowAsync<TTask>(payload.Id, ct) : null;
+                    var rolesToCheck = new[] { RolesEnum.DepartmentMember };
+                    var isDepartmentMember = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, payload.DepartmentId, rolesToCheck, db, ct);
+                    if (isDepartmentMember)
+                    {
+                        if (originalTask != null)
+                        {
+                            var userId = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+                            if (payload.AssignedUserId != null && payload.AssignedUserId != userId)
+                            {
+                                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Department members can only assign tasks to themselves"] });
+                            } else if (payload.AssignedUserId == null && originalTask.AssignedUserId != userId)
+                            {
+                                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Department members can only unassign tasks that are assigned to themselves"] });
+                            } else if (payload.AssignedUserId != null && payload.AssignedUserId == userId && originalTask.AssignedUserId != userId && originalTask.AssignedUserId != null)
+                            {
+                                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Department members can only assign tasks to themselves"] });
+                            }
+                            originalTask.AssignedUserId = payload.AssignedUserId;
+                            originalTask.Status = payload.Status;
+                            var updatedUserId = await db.AddUpdateRowAsync(originalTask, ct);
+                            return updatedUserId is null ? Results.NotFound(new FormResult { Succeeded = false, ErrorList = ["Not found or added"] }) : Results.Ok(updatedUserId);
+                        }
+                        else
+                        {
+                            return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Department members can only assign tasks to themselves"] });
+                        }
+                    }
+                    // Admin, Enterprise Admin, and Department Admin can add/update tasks for any department, while Department Members can only add/update tasks for their own department.
+                    rolesToCheck = [RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin];
                     var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, payload.DepartmentId, rolesToCheck, db, ct);
                     if (!hasAccess)
                     {
@@ -102,7 +132,7 @@ public static class TaskEndpoint
             {
                 try
                 {
-                    var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
+                    var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin, RolesEnum.DepartmentMember };
                     var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, departmentId, rolesToCheck, db, ct);
                     if (!hasAccess)
                     {

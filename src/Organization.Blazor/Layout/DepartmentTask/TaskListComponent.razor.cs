@@ -12,6 +12,21 @@ partial class TaskListComponent
     [Inject] private IDepartmentTaskService DepartmentTaskService { get; set; } = default!;
 
     /// <summary>
+    /// Refresh the list of tasks by reloading them from the API. This method can be called after a task is added, updated, or deleted to ensure that the list of tasks displayed in the component is up to date with the latest data from the server.
+    /// </summary> <returns>A task that represents the asynchronous operation.</returns>
+    private async Task RefreshTasks()
+    {        var ct = new CancellationTokenSource(TimeSpan.FromSeconds(60)).Token;
+        var taskResponse = await DepartmentTaskService.GetOwnedTasksByDepartmentIdAsync(StaticUserInfoBlazor.SelectedDepartment!.DepartmentId, ct);
+        if (taskResponse.data != null)        {
+            _tasks = taskResponse.data;
+        }
+        else        {
+            _taskResult = taskResponse.formResult;
+        }
+        StateHasChanged();
+    }
+
+    /// <summary>
     /// Add or update a task in the list of tasks. This method will be called when a task is added or updated in the DepartmentTaskComponent, and it will update the list of tasks accordingly. If the task already exists in the list, it will be updated with the new information. If the task does not exist in the list, it will be added to the list.
     /// </summary>
     /// <param name="task">The task to add or update.</param>
@@ -49,8 +64,6 @@ partial class TaskListComponent
     {
         //_ = await AccountService.CheckAuthenticatedAsync();
         var ct = new CancellationTokenSource(TimeSpan.FromSeconds(60)).Token;
-        var selectedDepartment = StaticUserInfoBlazor.SelectedDepartment?.Department;
-        var selectedUser = StaticUserInfoBlazor.User;
         var response = await AccountService.GetDepartmentsByOrganizationIdAsync(StaticUserInfoBlazor.SelectedOrganization!.Id, StaticUserInfoBlazor.User!.Id, ct);
         if (response.departments != null)
         {
@@ -60,7 +73,7 @@ partial class TaskListComponent
         {
             _taskResult = response.formResult;
         }
-        var taskResponse = await DepartmentTaskService.GetOwnedTasksByDepartmentIdAsync(StaticUserInfoBlazor.SelectedDepartment!.Id, ct);
+        var taskResponse = await DepartmentTaskService.GetOwnedTasksByDepartmentIdAsync(StaticUserInfoBlazor.SelectedDepartment!.DepartmentId, ct);
         if (taskResponse.data != null)
         {
             _tasks = taskResponse.data;

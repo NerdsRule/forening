@@ -29,11 +29,13 @@ public class AppDbContext : IdentityDbContext<AppUser>
         builder.Entity<TTaskDepartment>().HasIndex(u => new { u.TaskId, u.DepartmentId }).IsUnique();
         builder.Entity<TTask>(entity =>
         {
-            entity.Property(e => e.PointsAwarded).IsRequired().HasDefaultValue(0);  
+            entity.Property(e => e.PointsAwarded).IsRequired().HasDefaultValue(0);
+            entity.Property(e => e.Status).IsRequired().HasDefaultValue(TaskStatusEnum.NotStarted);
         });
          builder.Entity<TPrize>(entity =>
         {
             entity.Property(e => e.PointsCost).IsRequired().HasDefaultValue(0);  
+            entity.Property(e => e.Status).IsRequired().HasDefaultValue(PrizeStatusEnum.Available);
         });
         // builder.Entity<TProduct>().HasIndex(u => new {u.NormalizedName, u.TProductSizeId, u.TProductTypeId}).IsUnique();
         // builder.Entity<TProductType>().HasIndex(u => u.NormalizedName).IsUnique();

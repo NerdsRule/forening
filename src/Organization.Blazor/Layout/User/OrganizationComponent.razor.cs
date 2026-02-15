@@ -3,10 +3,14 @@ namespace Organization.Blazor.Layout.User;
 
 partial class OrganizationComponent
 {
-    private FormResult? _updateResult;
+    private FormResult? _updateResult { get; set; } = null;
     private Dictionary<int, DepartmentComponent> _userDepartmentsDict = new();
     private List<TDepartment> _departments = new();
     private TAppUserDepartment _newAppUserDepartment = new();
+    [Parameter] public TAppUserOrganization? AppUserOrganization { get; set; }
+    [Parameter] public List<TAppUserDepartment> AppUserDepartments { get; set; } = new();
+    [Inject] private IAccountService AccountService { get; set; } = default!;
+
     private async Task HandleUpdateRoleAsync()
     {
         _updateResult = null;
@@ -44,6 +48,7 @@ partial class OrganizationComponent
 
     private async Task HandleAddDepartmentAsync()
     {
+        _updateResult = null;
         CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
         var result = await AccountService.AddUpdateAppUserDepartmentAsync(_newAppUserDepartment, cts.Token);
         if (result.appUserDepartment != null)
@@ -61,12 +66,18 @@ partial class OrganizationComponent
         if (AppUserOrganization != null)
         {
             var ct = new CancellationTokenSource(TimeSpan.FromSeconds(60)).Token;
-            _departments = (await AccountService.GetDepartmentsByOrganizationIdAsync(AppUserOrganization.OrganizationId, AppUserOrganization.AppUserId, ct)).departments ?? [];
+            var departments = await AccountService.GetDepartmentsByOrganizationIdAsync(AppUserOrganization.OrganizationId, AppUserOrganization.AppUserId, ct);
+            if (departments.departments != null)            
+            {
+                _departments = departments.departments;
+            }
+            if (departments.formResult != null)
+            {
+                _updateResult = departments.formResult;
+            }
             _newAppUserDepartment.AppUserId = AppUserOrganization.AppUserId;
         }
         await base.OnInitializedAsync();
     }
-    [Parameter] public TAppUserOrganization? AppUserOrganization { get; set; }
-    [Parameter] public List<TAppUserDepartment> AppUserDepartments { get; set; } = new();
-    [Inject] private IAccountService AccountService { get; set; } = default!;
 }
+    

@@ -3,9 +3,12 @@ namespace Organization.Blazor.Layout.User;
 
 partial class DepartmentComponent
 {
-    private FormResult? _updateResult;
+    private FormResult? _updateResult {get; set; } = null;
+    [Parameter] public TAppUserDepartment? AppUserDepartment { get; set; }
+    [Inject] private IAccountService AccountService { get; set; } = default!;
     private async Task HandleUpdateRoleAsync()
     {
+        _updateResult = null;
         if (AppUserDepartment != null)
         {
             CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
@@ -37,6 +40,4 @@ partial class DepartmentComponent
             }
         }
     }
-    [Parameter] public TAppUserDepartment? AppUserDepartment { get; set; }
-    [Inject] private IAccountService AccountService { get; set; } = default!;
 }

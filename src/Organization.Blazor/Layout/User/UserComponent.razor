@@ -31,41 +31,7 @@
                     <ValidationMessage For="@(() => User.MemberNumber)" />
                 </div>
             </div>
-            <div class="row rounded rounded-1 my-1 p-2 border border-1 border-secondary">
-                <div class="col-12 col-md-3">
-                    <strong>Points:</strong>
-                </div>
-                <div class="col-12 col-md-9">
-                    <InputNumber @bind-Value="User.Points" class="form-control" step="1" />
-                    <ValidationMessage For="@(() => User.Points)" />
-                </div>
-            </div>
-            <div class="row rounded rounded-1 p-2 border border-1 border-secondary">
-                <div class="col-12 col-md-3">
-                    <strong>Used points:</strong>
-                </div>
-                <div class="col-12 col-md-9">
-                    <InputNumber @bind-Value="User.UsedPoints" class="form-control" step="1" />
-                    <ValidationMessage For="@(() => User.UsedPoints)" />
-                </div>
-            </div>
-            @if (_formResult != null){
-                <div class="row rounded rounded-1 my-1 p-2 border border-1 @(_formResult.Succeeded ? "border-success" : "border-danger")">
-                    <div class="col-12">
-                        @if (_formResult.Succeeded)
-                        {
-                            <div class="alert alert-success">Operation completed successfully!</div>
-                        }
-                        else
-                        {
-                            @foreach (var error in _formResult.ErrorList)
-                            {
-                                <div class="alert alert-danger">@error</div>
-                            }
-                        }
-                    </div>
-                </div>
-            }
+            <FormResultComponent Result="_formResult" />
             <div class="row rounded rounded-1 my-1 p-2">
                 <div class="col-12 col-md-2 offset-md-8">
                     <button type="submit" class="btn btn-primary">Update</button>

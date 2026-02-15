@@ -1,16 +1,19 @@
-<div class="row border border-secondary @(IsThisTaskAssignedToMe ? "bg-success text-white" : "") rounded rounded-1 my-2 p-2">
+
+<div class="row border border-secondary @(IsThisTaskAssignedToMe ? "alert alert-success" : "") rounded rounded-1 my-2 p-2">
     <div class="col-12 col-md-3 ">
-        <strong>Department:</strong> @ChildContent.Department?.Name
+        <strong class="d-md-none">Department:</strong> @ChildContent.Department?.Name
     </div>
     <div class="col-12 col-md-4">
-        <strong>Name:</strong> @ChildContent.Name
-    </div>
-    <div class="col-12 col-md-3">
-        <strong>Assigned:</strong> @ChildContent.AssignedUser?.UserName
+        <strong class="d-md-none">Name:</strong> @ChildContent.Name
     </div>
     <div class="col-12 col-md-1">
-        <button class="btn btn-secondary" @onclick="() => DisplayDetails = !DisplayDetails">@(DisplayDetails ? "Hide" :
-                     "Show") Details</button>
+        <strong class="d-md-none">Points:</strong> @ChildContent.PointsAwarded
+    </div>
+    <div class="col-12 col-md-3">
+        <strong class="d-md-none">Assigned:</strong> @ChildContent.AssignedUser?.UserName
+    </div>
+    <div class="col-12 col-md-1">
+        <button class="btn btn-secondary" @onclick="() => DisplayDetails = !DisplayDetails">@(DisplayDetails ? "Hide" : "Show") Details</button>
         </div>
     </div>
 
@@ -36,27 +39,32 @@
                 }
                 <div class="mb-3">
                     <label for="taskName" class="form-label">Task Name</label>
-                    <InputText id="taskName" class="form-control" @bind-Value="ChildContent.Name" />
+                    <InputText id="taskName" class="form-control" @bind-Value="ChildContent.Name" disabled="@DisableName" />
                     <ValidationMessage For="() => ChildContent.Name" />
                 </div>
     
                 <div class="mb-3">
                     <label for="taskDescription" class="form-label">Description</label>
-                    <InputTextArea id="taskDescription" class="form-control" @bind-Value="ChildContent.Description" />
+                    <InputTextArea id="taskDescription" class="form-control" @bind-Value="ChildContent.Description" disabled="@DisableDescription" />
                     <ValidationMessage For="() => ChildContent.Description" />
                 </div>
 
                 <div class="mb-3">
                     <label for="estimatedTimeMinutes" class="form-label">Estimated Time (Minutes)</label>
-                    <InputNumber id="estimatedTimeMinutes" class="form-control"
-                                 @bind-Value="ChildContent.EstimatedTimeMinutes" />
+                    <InputNumber id="estimatedTimeMinutes" class="form-control" @bind-Value="ChildContent.EstimatedTimeMinutes" disabled="@DisableEstimatedTimeMinutes" />
                     <ValidationMessage For="() => ChildContent.EstimatedTimeMinutes" />
                 </div>
     
                 <div class="mb-3">
                     <label for="taskDueDate" class="form-label">Due Date</label>
-                    <InputDate id="taskDueDate" class="form-control" @bind-Value="ChildContent.DueDateUtc" />
+                    <InputDate id="taskDueDate" class="form-control" @bind-Value="ChildContent.DueDateUtc" disabled="@DisableDueDateUtc" />
                     <ValidationMessage For="() => ChildContent.DueDateUtc" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="points" class="form-label">Points you earn solving this task</label>
+                    <InputNumber id="points" class="form-control" @bind-Value="ChildContent.PointsAwarded" disabled="@DisablePointsAwarded" />
+                    <ValidationMessage For="() => ChildContent.PointsAwarded" />
                 </div>
 
                 @if (UsersWithAccess != null && UsersWithAccess.Any())
@@ -78,11 +86,22 @@
                         <InputHidden id="assignedUser" @bind-Value="ChildContent.AssignedUserId" />
                         <ValidationMessage For="() => ChildContent.AssignedUserId" />
                         <div class="form-check form-switch">
-                            <InputCheckbox class="form-check-input" id="assignedToMe" @bind-Value="IsAssignedToMe" />
+                            <InputCheckbox class="form-check-input" id="assignedToMe" @bind-Value="IsAssignedToMe" disabled="@DisableIsAssignedToMe" />
                             <label class="form-check-label" for="assignedToMe">Assign to me</label>
                         </div>
                     </div>
                 }
+
+                 <div class="mb-3">
+                    <label for="taskStatus" class="form-label">Status</label>
+                    <InputSelect id="taskStatus" class="form-select" @bind-Value="ChildContent.Status">
+                        @foreach (var status in TaskWorkflows.GetAvailableTaskStatus(ChildContent.Status, new[] { StaticUserInfoBlazor.DepartmentRole, StaticUserInfoBlazor.OrganizationRole }, IsThisTaskAssignedToMe))
+                        {
+                            <option value="@status.enumValue">@status.text</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="() => ChildContent.Status" />
+                </div>                
 
                 <button type="submit" class="btn btn-primary" disabled="@DisableSubmit">@AddUpdateText</button>
                 <button type="button" class="btn btn-danger ms-5" @onclick="DeleteTaskAsync" disabled="@DisableDelete">Delete</button>

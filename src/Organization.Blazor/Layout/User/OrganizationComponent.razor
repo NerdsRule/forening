@@ -1,6 +1,5 @@
 ﻿@if (AppUserOrganization != null)
 {
-
     <EditForm Model="@AppUserOrganization" OnValidSubmit="@HandleUpdateRoleAsync">
         <div class="row rounded rounded-1 my-1 p-2 border border-1 border-secondary">
             <div class="col-12 col-md-2">
@@ -28,27 +27,9 @@
             </div>
         </div>
     </EditForm>
-    @if (_updateResult != null)
-    {
-        @if (_updateResult.Succeeded)
-        {
-            <div class="alert alert-success" role="alert">
-                @foreach (var msg in _updateResult.ErrorList)
-                {
-                    <div>@msg</div>
-                }
-            </div>
-        }
-        else
-        {
-            <div class="alert alert-danger" role="alert">
-                @foreach (var error in _updateResult.ErrorList)
-                {
-                    <div>@error</div>
-                }
-            </div>
-        }
-    }
+    
+    <FormResultComponent Result="_updateResult" />
+    
     <h5>Departments</h5>
     @if (_departments != null)
     {

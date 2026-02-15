@@ -28,7 +28,7 @@ public static class DepartmentEndpoint
             {
                 if (user.Identity is not null && user.Identity.IsAuthenticated)
                 {
-                    var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
+                    var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin, RolesEnum.OrganizationMember };
                     var (hasAccess, _user) = await UserRolesEndpoints.IsUserInSameOrganizationAndInRoleAsync(user, userId, rolesToCheck, userManager, db, ct);
                     if (!hasAccess)
                     {
@@ -41,7 +41,7 @@ public static class DepartmentEndpoint
             }
             return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Could not retrieve departments"] });
         }).Produces<List<TDepartment>>(StatusCodes.Status200OK)
-        .Produces(StatusCodes.Status404NotFound)
+        .Produces<FormResult>(StatusCodes.Status404NotFound)
         .RequireAuthorization();
     }
 }

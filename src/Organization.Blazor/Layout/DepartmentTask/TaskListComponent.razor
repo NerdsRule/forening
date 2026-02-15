@@ -6,6 +6,26 @@
 
 @if (_tasks.Any())
 {
+<div class="d-none d-sm-block">
+    <div class="row">
+        <div class="col-12 col-md-3">
+            <strong>Department</strong>
+        </div>
+        <div class="col-12 col-md-4">
+            <strong>Name</strong>
+        </div>
+        <div class="col-12 col-md-1">
+            <strong>Points</strong>
+        </div>
+        <div class="col-12 col-md-3">
+            <strong>Assigned</strong>
+        </div>
+        <div class="col-12 col-md-1">
+            <strong>Details</strong>
+            <button class="btn btn-primary oi oi-reload" @onclick="RefreshTasks" title="Refresh the list"></button>
+        </div>
+    </div>
+</div>
     @foreach (var task in _tasks)
     {
         <DepartmentTaskComponent @ref="_taskComponents[task.Id]" ChildContent="task" InitDisplayDetails="false" OnTaskDeletedEvent="RemoveTaskFromList" UsersWithAccess="UsersWithAccess" />

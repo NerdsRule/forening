@@ -2,14 +2,23 @@
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="container-fluid">
+<h3>Optjen point, når du bidrager i din forening – og brug dem på belønninger, der skaber værdi for både dig og fællesskabet.</h3>
+
 <AuthorizeView>
     <Authorized>
-        <p>
-            Welcome back, @context.User.Identity?.Name, you are logged in!
-        </p>
+        <div class="alert alert-success">
+            Velkommen tilbage, @context.User.Identity?.Name, du er logget ind!
+        </div>
+        <LandingPageTaskComponent />
     </Authorized>
     <NotAuthorized>
+        <p>
+        Foreningens digitale platform er designet til at styrke fællesskabet og engagere medlemmerne ved at gøre det nemt og sjovt at bidrage til foreningens aktiviteter. 
+        <br />Med vores platform kan du optjene point ved at deltage i forskellige opgaver og aktiviteter, der er vigtige for foreningens succes. Disse point kan du senere bruge på belønninger, der ikke kun gavner dig, men også hele fællesskabet.
+        <br />Uanset om du er en aktiv deltager i foreningens arrangementer, hjælper med at organisere begivenheder eller bidrager på andre måder, vil du kunne se dine point vokse og bruge dem på belønninger, der styrker både dig og foreningen. Det er vores måde at sige tak for din indsats og opfordre til  et stærkere fællesskab.
+        </p>
         <AuthenticationComponent/>
     </NotAuthorized>
 </AuthorizeView>
+</div>

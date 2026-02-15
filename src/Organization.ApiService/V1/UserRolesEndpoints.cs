@@ -89,7 +89,10 @@ public static class UserRolesEndpoints
 
             // get user roles from TAppUserOrganization
             var userDepRoles = await db.GetUserDepartmentsAsync(userId, cancellationToken);
-            return userDepRoles.Any(c => c.DepartmentId == departmentId && roles.Contains(c.Role));
+            var r1 = userDepRoles.Any(c => c.DepartmentId == departmentId);
+            var r2 = userDepRoles.Any(c => roles.Contains(c.Role));
+            bool res = userDepRoles.Any(c => c.DepartmentId == departmentId && roles.Contains(c.Role));       
+            return res;
         }
         return false;
     }

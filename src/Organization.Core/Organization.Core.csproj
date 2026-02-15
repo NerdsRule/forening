@@ -10,4 +10,8 @@
     <ProjectReference Include="../Organization.Shared/Organization.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="TaskPrizeCore/" />
+  </ItemGroup>
+
 </Project>

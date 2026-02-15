@@ -7,12 +7,51 @@ partial class DepartmentTaskComponent
     private bool DisplayDetails { get; set; } = false;
     private bool DisableSubmit { get; set; } = false;
     private bool DisableDelete { get; set; } = true;
+    private bool DisableName { get; set; } = false;
+    private bool DisableDescription { get; set; } = false;
+    private bool DisableEstimatedTimeMinutes { get; set; } = false;
+    private bool DisableDueDateUtc { get; set; } = false;
+    private bool DisablePointsAwarded { get; set; } = false;
+    private bool DisableIsAssignedToMe { get; set; } = false;
     private bool ShowSpinner { get; set; } = false;
+    private bool IsDepartmentAdmin { get; set; } = StaticUserInfoBlazor.DepartmentRole == Shared.RolesEnum.DepartmentAdmin;
+    private bool IsOrganizationAdmin { get; set; } = StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.OrganizationAdmin;
+    private bool IsEnterpriseAdmin { get; set; } = StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.EnterpriseAdmin;
+    private bool IsDepartmentMember { get; set; } = StaticUserInfoBlazor.DepartmentRole == Shared.RolesEnum.DepartmentMember;
     private FormResult? FormResult { get; set; } = null;
     private string AddUpdateText => ChildContent.Id == 0 ? "Add Task" : "Update Task";
     private bool IsThisTaskAssignedToMe => ChildContent.AssignedUserId == StaticUserInfoBlazor.User?.Id;
     
-    // Computed property for checkbox binding
+    [Parameter] public bool InitDisplayDetails { get; set; } = false;
+    [Parameter] public TTask ChildContent { get; set; } = null!;
+    [Parameter] public EventCallback<TTask> OnTaskAddedOrUpdatedEvent { get; set; }
+    [Parameter] public EventCallback<int> OnTaskDeletedEvent { get; set; }
+    [Parameter] public List<UserModel> UsersWithAccess { get; set; } = [];
+    [Inject] private IAccountService AccountService { get; set; } = default!;
+    [Inject] private IDepartmentTaskService DepartmentTaskService { get; set; } = null!;
+
+    /// <summary>
+    /// Set Disable properties based on user permissions and whether the task is new or existing. This method will be called from the parent component to set the appropriate disable states for the form fields and buttons based on the current user's permissions and whether they are creating a new task or editing an existing one.
+    /// </summary>
+    private void SetDisableProperties()
+    {
+        bool isNewTask = ChildContent.Id == 0;
+        bool isAssignedToMe = IsThisTaskAssignedToMe;
+        
+        DisableName = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
+        DisableDescription = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
+        DisableEstimatedTimeMinutes = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
+        DisableDueDateUtc = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
+        DisablePointsAwarded = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
+        DisableIsAssignedToMe = isNewTask ? false : (!isAssignedToMe && !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin && !IsDepartmentMember);
+        DisableSubmit = isNewTask ? !(isAssignedToMe || IsDepartmentAdmin || IsOrganizationAdmin || IsEnterpriseAdmin) : (!isAssignedToMe && !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin && !IsDepartmentMember);
+        DisableDelete = isNewTask || (!isAssignedToMe && !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin);
+    }
+
+    /// <summary>
+    /// Get or set whether the task is assigned to the current user. 
+    /// This property will be used to bind the value of the "Assign to me" checkbox in the form, and it will update the AssignedUserId and AssignedUser properties of the task accordingly when the checkbox is toggled.
+    /// </summary>
     private bool IsAssignedToMe 
     {
         get => ChildContent?.AssignedUserId == StaticUserInfoBlazor.User?.Id;
@@ -31,13 +70,6 @@ partial class DepartmentTaskComponent
             StateHasChanged(); // Trigger re-render
         }
     }
-    [Parameter] public bool InitDisplayDetails { get; set; } = false;
-    [Parameter] public TTask ChildContent { get; set; } = null!;
-    [Parameter] public EventCallback<TTask> OnTaskAddedOrUpdatedEvent { get; set; }
-    [Parameter] public EventCallback<int> OnTaskDeletedEvent { get; set; }
-    [Parameter] public List<UserModel> UsersWithAccess { get; set; } = [];
-    [Inject] private IAccountService AccountService { get; set; } = default!;
-    [Inject] private IDepartmentTaskService DepartmentTaskService { get; set; } = null!;
 
     /// <summary>
     /// Handle the event when a task is added or updated in the DepartmentTaskComponent. This method will be called with the task that was added or updated, and it can be used to perform any necessary actions, such as displaying a success message or refreshing a list of tasks.
@@ -121,7 +153,7 @@ partial class DepartmentTaskComponent
     protected override async Task OnInitializedAsync()
     {
         DisplayDetails = InitDisplayDetails;
-        DisableDelete = !(StaticUserInfoBlazor.DepartmentRole == Shared.RolesEnum.DepartmentAdmin || StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.OrganizationAdmin);
+        SetDisableProperties();
         await base.OnInitializedAsync();
     }
 }

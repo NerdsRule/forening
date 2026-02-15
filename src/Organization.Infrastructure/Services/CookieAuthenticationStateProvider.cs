@@ -532,16 +532,24 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
     /// <returns>TOrganization</returns>
     public async Task<(List<TDepartment>? departments, FormResult? formResult)> GetDepartmentsByOrganizationIdAsync(int organizationId, string userId, CancellationToken ct)
     {
-        var organizationResponse = await httpClient.GetAsync($"/v1/api/department/{userId}/{organizationId}", ct);
-        if (!organizationResponse.IsSuccessStatusCode)
+        try
         {
-            var errorJson = await organizationResponse.Content.ReadAsStringAsync();
-            var error = JsonSerializer.Deserialize<FormResult>(errorJson, jsonSerializerOptions);
-            return (null, error ?? new FormResult { Succeeded = false, ErrorList = ["An unknown error occurred while fetching departments."] });
+            var organizationResponse = await httpClient.GetAsync($"/v1/api/department/{userId}/{organizationId}", ct);
+            if (!organizationResponse.IsSuccessStatusCode)
+            {
+                var errorJson = await organizationResponse.Content.ReadAsStringAsync();
+                var error = JsonSerializer.Deserialize<FormResult>(errorJson, jsonSerializerOptions);
+                return (null, error ?? new FormResult { Succeeded = false, ErrorList = ["An unknown error occurred while fetching departments."] });
+            }
+            var organizationJson = await organizationResponse.Content.ReadAsStringAsync();
+            var organization = JsonSerializer.Deserialize<List<TDepartment>>(organizationJson, jsonSerializerOptions);
+            return (organization, null);
         }
-        var organizationJson = await organizationResponse.Content.ReadAsStringAsync();
-        var organization = JsonSerializer.Deserialize<List<TDepartment>>(organizationJson, jsonSerializerOptions);
-        return (organization, null);
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error fetching departments by organization Id");
+            return (null, new FormResult { Succeeded = false, ErrorList = [ex.Message] });
+        }
     }
     #endregion
 }

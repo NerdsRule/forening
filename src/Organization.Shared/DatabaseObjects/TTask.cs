@@ -69,4 +69,10 @@ public class TTask : TBaseTable
     /// </summary>
     [Required(ErrorMessage = "Points awarded is required.")]
     public int PointsAwarded { get; set; }
+
+    /// <summary>
+    /// Status of the task.
+    /// </summary> <summary>
+    [Required(ErrorMessage = "Task status is required.")]
+    public Shared.TaskStatusEnum Status { get; set; } = Shared.TaskStatusEnum.NotStarted;
 }

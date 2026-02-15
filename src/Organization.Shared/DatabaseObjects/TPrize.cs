@@ -52,4 +52,10 @@ public class TPrize : TBaseTable
     /// Refers to the assigned user.
     /// </summary>
     public virtual AppUser? AssignedUser { get; set; }
+
+    /// <summary>
+    /// Status of the prize entry.
+    /// </summary>
+    [Required(ErrorMessage = "Status is required.")]
+    public PrizeStatusEnum Status { get; set; } = PrizeStatusEnum.Available;
 }
