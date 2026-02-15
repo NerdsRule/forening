@@ -22,13 +22,19 @@ public class AppDbContext : IdentityDbContext<AppUser>
     {
         builder.Entity<AppUser>(entity =>
         {
-            entity.Property(e => e.Points).HasDefaultValue(0);
-            entity.Property(e => e.UsedPoints).HasDefaultValue(0);
             entity.Property(e => e.MemberNumber).HasMaxLength(50);
         });
         builder.Entity<TAppUserOrganization>().HasIndex(u => new { u.AppUserId, u.OrganizationId }).IsUnique();
         builder.Entity<TAppUserDepartment>().HasIndex(u => new { u.AppUserId, u.DepartmentId }).IsUnique();
         builder.Entity<TTaskDepartment>().HasIndex(u => new { u.TaskId, u.DepartmentId }).IsUnique();
+        builder.Entity<TTask>(entity =>
+        {
+            entity.Property(e => e.PointsAwarded).IsRequired().HasDefaultValue(0);  
+        });
+         builder.Entity<TPrize>(entity =>
+        {
+            entity.Property(e => e.PointsCost).IsRequired().HasDefaultValue(0);  
+        });
         // builder.Entity<TProduct>().HasIndex(u => new {u.NormalizedName, u.TProductSizeId, u.TProductTypeId}).IsUnique();
         // builder.Entity<TProductType>().HasIndex(u => u.NormalizedName).IsUnique();
         // builder.Entity<TCustomer>().HasIndex(u => u.NormalizedName).IsUnique();

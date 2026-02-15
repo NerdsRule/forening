@@ -11,16 +11,6 @@ namespace Organization.Shared.Identity;
 public class AppUser : IdentityUser
 {
     /// <summary>
-    /// Points accumulated by the user.
-    /// </summary>
-    public int Points { get; set; }
-
-    /// <summary>
-    /// Used points by the user.
-    /// </summary>
-    public int UsedPoints { get; set; }
-
-    /// <summary>
     /// Member number associated with the user.
     /// </summary>
     public string? MemberNumber { get; set; }

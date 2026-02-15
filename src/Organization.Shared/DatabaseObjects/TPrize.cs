@@ -20,10 +20,10 @@ public class TPrize : TBaseTable
     public string? Description { get; set; }
 
     /// <summary>
-    /// Gets or sets the amount for the price entry.
+    /// Points this prize entry costs.
     /// </summary>
-    [Required(ErrorMessage = "Amount is required.")]
-    public double Amount { get; set; }
+    [Required(ErrorMessage = "Points cost is required.")]
+    public int PointsCost { get; set; }
 
     /// <summary>
     /// Gets or sets the department ID associated with the task.

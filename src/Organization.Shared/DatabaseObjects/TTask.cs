@@ -63,4 +63,10 @@ public class TTask : TBaseTable
     /// Refers to the assigned user.
     /// </summary>
     public virtual AppUser? AssignedUser { get; set; }
+
+    /// <summary>
+    /// Points awarded for completing the task.
+    /// </summary>
+    [Required(ErrorMessage = "Points awarded is required.")]
+    public int PointsAwarded { get; set; }
 }

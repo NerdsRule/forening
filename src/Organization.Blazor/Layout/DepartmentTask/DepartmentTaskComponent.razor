@@ -1,4 +1,4 @@
-<div class="row border border-secondary rounded rounded-1 my-2 p-2">
+<div class="row border border-secondary @(IsThisTaskAssignedToMe ? "bg-success text-white" : "") rounded rounded-1 my-2 p-2">
     <div class="col-12 col-md-3 ">
         <strong>Department:</strong> @ChildContent.Department?.Name
     </div>
@@ -63,7 +63,7 @@
                 {
                     <div class="mb-3">
                         <label for="assignedUser" class="form-label">Assigned User</label>
-                        <InputSelect id="assignedUser" class="form-select" ValueChanged="((string value) => SetAssignedUser(value))" ValueExpression="() => ChildContent.AssignedUserId">
+                        <InputSelect id="assignedUser" class="form-select" Value="ChildContent.AssignedUserId" ValueChanged="((string value) => SetAssignedUser(value))" ValueExpression="() => ChildContent.AssignedUserId">
                             <option value="">-- Select user --</option>
                             @foreach (var user in UsersWithAccess)
                             {

@@ -10,6 +10,7 @@ partial class DepartmentTaskComponent
     private bool ShowSpinner { get; set; } = false;
     private FormResult? FormResult { get; set; } = null;
     private string AddUpdateText => ChildContent.Id == 0 ? "Add Task" : "Update Task";
+    private bool IsThisTaskAssignedToMe => ChildContent.AssignedUserId == StaticUserInfoBlazor.User?.Id;
     
     // Computed property for checkbox binding
     private bool IsAssignedToMe 

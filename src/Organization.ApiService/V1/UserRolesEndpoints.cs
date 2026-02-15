@@ -140,8 +140,6 @@ public static class UserRolesEndpoints
             Id = appUser.Id,
             UserName = appUser.UserName ?? string.Empty,
             Email = appUser.Email ?? string.Empty,
-            Points = appUser.Points,
-            UsedPoints = appUser.UsedPoints,
             MemberNumber = appUser.MemberNumber,
             AppUserOrganizations = userAppUserOrgs,
             AppUserDepartments = userAppUserDeps
@@ -305,8 +303,6 @@ public static class UserRolesEndpoints
                     Id = u.Id,
                     UserName = u.UserName ?? string.Empty,
                     Email = u.Email ?? string.Empty,
-                    Points = u.Points,
-                    UsedPoints = u.UsedPoints,
                     MemberNumber = u.MemberNumber
                 }).ToList();
                 return TypedResults.Json(users);
@@ -384,8 +380,6 @@ public static class UserRolesEndpoints
                     {
                         appUser.UserName = model.UserName;
                         appUser.Email = model.Email;
-                        appUser.Points = model.Points;
-                        appUser.UsedPoints = model.UsedPoints;
                         appUser.MemberNumber = model.MemberNumber;
                         var result = await userManager.UpdateAsync(appUser);
                         if (result.Succeeded)
@@ -433,8 +427,6 @@ public static class UserRolesEndpoints
                         Id = u.Id,
                         UserName = u.UserName ?? string.Empty,
                         Email = u.Email ?? string.Empty,
-                        Points = u.Points,
-                        UsedPoints = u.UsedPoints,
                         MemberNumber = u.MemberNumber
                     }).ToList();
                     return Results.Ok(userModels);
@@ -467,8 +459,6 @@ public static class UserRolesEndpoints
                         Id = u.Id,
                         UserName = u.UserName ?? string.Empty,
                         Email = u.Email ?? string.Empty,
-                        Points = u.Points,
-                        UsedPoints = u.UsedPoints,
                         MemberNumber = u.MemberNumber
                     }).ToList();
                     return Results.Ok(userModels);
