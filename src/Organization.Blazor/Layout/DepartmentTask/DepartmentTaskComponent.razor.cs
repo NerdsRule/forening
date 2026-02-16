@@ -1,4 +1,6 @@
 
+using System.Diagnostics;
+
 namespace Organization.Blazor.Layout.DepartmentTask;
 
 partial class DepartmentTaskComponent
@@ -36,16 +38,16 @@ partial class DepartmentTaskComponent
     private void SetDisableProperties()
     {
         bool isNewTask = ChildContent.Id == 0;
-        bool isAssignedToMe = IsThisTaskAssignedToMe;
         
         DisableName = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
         DisableDescription = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
         DisableEstimatedTimeMinutes = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
         DisableDueDateUtc = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
         DisablePointsAwarded = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
-        DisableIsAssignedToMe = isNewTask ? false : (!isAssignedToMe && !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin && !IsDepartmentMember);
-        DisableSubmit = isNewTask ? !(isAssignedToMe || IsDepartmentAdmin || IsOrganizationAdmin || IsEnterpriseAdmin) : (!isAssignedToMe && !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin && !IsDepartmentMember);
-        DisableDelete = isNewTask || (!isAssignedToMe && !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin);
+        DisableIsAssignedToMe = isNewTask || !IsThisTaskAssignedToMe ? true : (!IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin && !IsDepartmentMember);
+        Console.WriteLine($"SetDisableProperties: isNewTask={isNewTask}, IsThisTaskAssignedToMe={IsThisTaskAssignedToMe}, DisableIsAssignedToMe={DisableIsAssignedToMe}"); 
+        DisableSubmit = isNewTask ? !(IsThisTaskAssignedToMe || IsDepartmentAdmin || IsOrganizationAdmin || IsEnterpriseAdmin) : (!IsThisTaskAssignedToMe && !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin && !IsDepartmentMember);
+        DisableDelete = isNewTask || (!IsThisTaskAssignedToMe && !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin);
     }
 
     /// <summary>
