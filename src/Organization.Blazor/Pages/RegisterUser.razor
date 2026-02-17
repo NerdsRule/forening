@@ -31,26 +31,6 @@
     </div>
     <button type="submit" class="btn btn-primary">Register</button>
 </EditForm>
-@if (_formResult != null)
-    {
-        @if (_formResult.Succeeded)
-        {
-            <div class="alert alert-success" role="alert">
-                @foreach (var msg in _formResult.ErrorList)
-                {
-                    <div>@msg</div>
-                }
-            </div>
-        }
-        else
-        {
-            <div class="alert alert-danger" role="alert">
-                @foreach (var error in _formResult.ErrorList)
-                {
-                    <div>@error</div>
-                }
-            </div>
-        }
-    }
+<FormResultComponent @ref="FormResult" />
 </div>
 

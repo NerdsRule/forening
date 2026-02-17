@@ -5,7 +5,7 @@ partial class ResetPassword
 {
     private List<UserModel> _users = new();
     private ResetPasswordModel _resetPasswordModel { get; set; } = new();
-    private FormResult? _formResult { get; set;}
+    private FormResultComponent FormResult { get; set;} = null!;
     private UserModel? _selectedUser {get; set;}
     private string? _selectedUserId { get; set; }
 
@@ -25,8 +25,9 @@ partial class ResetPassword
 
     private async Task HandleValidSubmit()
     {
-        _formResult = null;
-        _formResult = await AccountService.ResetPasswordAsync(_resetPasswordModel);
+        FormResult.ClearFormResult();
+        var res = await AccountService.ResetPasswordAsync(_resetPasswordModel);
+        FormResult.SetFormResult(res);
     }
 
     protected override async Task OnInitializedAsync()

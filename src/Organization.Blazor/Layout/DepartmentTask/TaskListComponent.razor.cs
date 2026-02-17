@@ -6,7 +6,7 @@ partial class TaskListComponent
     private Dictionary<int, DepartmentTaskComponent> _taskComponents = [];
     private List<TTask> _tasks { get; set; } = [];
     private List<TDepartment> _departments { get; set; } = [];
-    private FormResult? _taskResult;
+    private FormResultComponent _taskResult {get;set;} = null!;
     [Parameter] public List<UserModel> UsersWithAccess { get; set; } = [];
      [Inject] private IAccountService AccountService { get; set; } = default!;
     [Inject] private IDepartmentTaskService DepartmentTaskService { get; set; } = default!;
@@ -20,8 +20,9 @@ partial class TaskListComponent
         if (taskResponse.data != null)        {
             _tasks = taskResponse.data;
         }
-        else        {
-            _taskResult = taskResponse.formResult;
+        else if (taskResponse.formResult != null)
+        {
+            _taskResult.SetFormResult(taskResponse.formResult,2);
         }
         StateHasChanged();
     }
@@ -69,18 +70,18 @@ partial class TaskListComponent
         {
             _departments = response.departments;
         }
-        else
+        else if (response.formResult != null)
         {
-            _taskResult = response.formResult;
+            _taskResult.SetFormResult(response.formResult,2);
         }
         var taskResponse = await DepartmentTaskService.GetOwnedTasksByDepartmentIdAsync(StaticUserInfoBlazor.SelectedDepartment!.DepartmentId, ct);
         if (taskResponse.data != null)
         {
             _tasks = taskResponse.data;
         }
-        else
+        else if (taskResponse.formResult != null)
         {
-            _taskResult = taskResponse.formResult;
+            _taskResult.SetFormResult(taskResponse.formResult,2);
         }
         await base.OnInitializedAsync();
     }

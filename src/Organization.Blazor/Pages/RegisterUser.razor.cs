@@ -4,12 +4,14 @@ namespace Organization.Blazor.Pages;
 partial class RegisterUser
 {
     private RegisterModel _registerModel = new();
-    private FormResult? _formResult;
+    private FormResultComponent FormResult { get; set; } = null!;
 
     private async Task HandleValidSubmit()
     {
+        FormResult.ClearFormResult();
         // Handle the valid form submission, e.g., send data to the server
-        _formResult = await AccountService.RegisterAsync(_registerModel);
+        var result = await AccountService.RegisterAsync(_registerModel);
+        FormResult.SetFormResult(result);
     }
 
     protected override void OnInitialized()

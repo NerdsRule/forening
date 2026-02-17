@@ -7,7 +7,7 @@ namespace Organization.Blazor.Layout.DepartmentTask;
 partial class LandingPageTaskComponent
 {
     private TaskListComponent _taskListComponent = null!;
-    private FormResult? FormResult { get; set; } = null;
+    private FormResultComponent FormResult { get; set; } = null!;
     private bool ShowSpinner { get; set; } = false;
     private List<UserModel> UsersWithAccess => [];
     [Inject] IDepartmentTaskService DepartmentTaskService { get; set; } = null!;

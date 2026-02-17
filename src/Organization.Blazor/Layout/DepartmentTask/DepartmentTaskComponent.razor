@@ -3,11 +3,14 @@
     <div class="col-12 col-md-3 ">
         <strong class="d-md-none">Department:</strong> @ChildContent.Department?.Name
     </div>
-    <div class="col-12 col-md-4">
+    <div class="col-12 col-md-3">
         <strong class="d-md-none">Name:</strong> @ChildContent.Name
     </div>
     <div class="col-12 col-md-1">
         <strong class="d-md-none">Points:</strong> @ChildContent.PointsAwarded
+    </div>
+    <div class="col-12 col-md-1">
+        <strong class="d-md-none">Status:</strong> @ChildContent.Status
     </div>
     <div class="col-12 col-md-3">
         <strong class="d-md-none">Assigned:</strong> @ChildContent.AssignedUser?.UserName
@@ -94,8 +97,8 @@
 
                  <div class="mb-3">
                     <label for="taskStatus" class="form-label">Status</label>
-                    <InputSelect id="taskStatus" class="form-select" @bind-Value="ChildContent.Status">
-                        @foreach (var status in TaskWorkflows.GetAvailableTaskStatus(ChildContent.Status, new[] { StaticUserInfoBlazor.DepartmentRole, StaticUserInfoBlazor.OrganizationRole }, IsThisTaskAssignedToMe))
+                    <InputSelect id="taskStatus" class="form-select" @bind-Value="ChildContent.Status" Disabled="@DisableStatus">
+                        @foreach (var status in StatusOptions)
                         {
                             <option value="@status.enumValue">@status.text</option>
                         }
@@ -109,4 +112,4 @@
             </EditForm>
         </div>
     }
-    <FormResultComponent Result="@FormResult" />
+    <FormResultComponent @ref="FormResultComponent" />

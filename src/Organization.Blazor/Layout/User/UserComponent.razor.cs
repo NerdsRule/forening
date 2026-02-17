@@ -4,7 +4,7 @@ namespace Organization.Blazor.Layout.User;
 
 partial class UserComponent
 {
-    private FormResult? _formResult;
+    private FormResultComponent _formResult { get; set; } = null!;
     private Dictionary<int, OrganizationComponent> _userOrganizationsDict = new();
     
 
@@ -14,11 +14,15 @@ partial class UserComponent
     /// <returns></returns>
     private async Task HandleSubmitUser()
     {
-        _formResult = null;
+        _formResult.ClearFormResult();
         if (User != null)
         {
             CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
-            _formResult = await AccountService.UpdateUserAsync(User, cts.Token);
+            var result = await AccountService.UpdateUserAsync(User, cts.Token);
+            if (result != null)
+            {
+                _formResult.SetFormResult(result, 2);
+            }
         }
     }
 
@@ -28,11 +32,15 @@ partial class UserComponent
     /// <returns></returns>
     private async Task HandleDeleteUserAsync()
     {
-        _formResult = null;
+        _formResult.ClearFormResult();
         if (User != null)
         {
             CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
-            _formResult = await AccountService.DeleteUserAsync(User.Id, cts.Token);
+            var result = await AccountService.DeleteUserAsync(User.Id, cts.Token);
+            if (result != null)
+            {
+                _formResult.SetFormResult(result, 2);
+            }
         }
     }
     [Parameter] public UserModel? User { get; set; }

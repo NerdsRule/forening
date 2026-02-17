@@ -3,12 +3,12 @@ namespace Organization.Blazor.Layout.User;
 
 partial class DepartmentComponent
 {
-    private FormResult? _updateResult {get; set; } = null;
+    private FormResultComponent _updateResult {get; set; } = null!;
     [Parameter] public TAppUserDepartment? AppUserDepartment { get; set; }
     [Inject] private IAccountService AccountService { get; set; } = default!;
     private async Task HandleUpdateRoleAsync()
     {
-        _updateResult = null;
+        _updateResult.ClearFormResult();
         if (AppUserDepartment != null)
         {
             CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
@@ -16,17 +16,17 @@ partial class DepartmentComponent
             if (result.Item1 != null)
             {
                 AppUserDepartment = result.Item1;
-                _updateResult = new FormResult { Succeeded = true, ErrorList = ["Data updated successfully"] };
-            } else
+                _updateResult.SetFormResult(new FormResult { Succeeded = true, ErrorList = ["Data updated successfully"] }, 2);
+            } else if (result.Item2 != null)
             {
-                _updateResult = result.Item2;
+                _updateResult.SetFormResult(result.Item2, 2);
             }
         }
     }
 
     private async Task HandleDeleteAsync()
     {
-        _updateResult = null;
+        _updateResult.ClearFormResult();
         if (AppUserDepartment != null)
         {
             CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
@@ -34,9 +34,9 @@ partial class DepartmentComponent
             if (result.Succeeded)
             {
                 AppUserDepartment = null;
-            } else
+            } else if (result != null)
             {
-                _updateResult = result;
+                _updateResult.SetFormResult(result, 2);
             }
         }
     }

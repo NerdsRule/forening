@@ -6,7 +6,7 @@ namespace Organization.Blazor.Pages;
 public partial class TaskEdit
 {
     private TaskListComponent _taskListComponent = null!;
-    private FormResult? FormResult { get; set; } = null;
+    private FormResultComponent FormResult { get; set; } = null!;
     private TTask _newTask { get; set; } = new TTask();
     private bool ShowSpinner { get; set; } = true;
     private List<UserModel> UsersWithAccessToOrganization { get; set; } = [];
@@ -39,7 +39,11 @@ public partial class TaskEdit
     protected override async Task OnInitializedAsync()
     {
         // Load user info
-        FormResult = new FormResult { Succeeded = true, ErrorList = ["Loading user info..."] };
+        if (FormResult is not null)
+        {
+            FormResult.SetFormResult(new FormResult { Succeeded = true, ErrorList = ["Loading user info..."] });
+        }
+
         ShowSpinner = true;
         //_ = await AccountService.CheckAuthenticatedAsync();
         if (StaticUserInfoBlazor.User is null)
@@ -52,20 +56,23 @@ public partial class TaskEdit
         if (StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.OrganizationAdmin || StaticUserInfoBlazor.DepartmentRole == Shared.RolesEnum.EnterpriseAdmin)
         {
             var (usersWithAccessToOrganization, formResultUsersWithAccessToOrganization) = await DepartmentTaskService.GetUsersWithAccessToOrganizationAsync(StaticUserInfoBlazor.SelectedOrganization!.Id, CancellationToken.None);
-            if (formResultUsersWithAccessToOrganization is not null)
-                FormResult = formResultUsersWithAccessToOrganization;
+            if (formResultUsersWithAccessToOrganization is not null && FormResult is not null)
+                FormResult.SetFormResult(formResultUsersWithAccessToOrganization);
             else if (usersWithAccessToOrganization is not null)
                 UsersWithAccessToOrganization = usersWithAccessToOrganization;
         }
 
         var (usersWithAccessToDepartment, formResultUsersWithAccessToDepartment) = await DepartmentTaskService.GetUsersWithAccessToDepartmentAsync(StaticUserInfoBlazor.SelectedDepartment!.Id, CancellationToken.None);
-        if (formResultUsersWithAccessToDepartment is not null)
-            FormResult = formResultUsersWithAccessToDepartment;
+        if (formResultUsersWithAccessToDepartment is not null && FormResult is not null)
+            FormResult.SetFormResult(formResultUsersWithAccessToDepartment);
         else if (usersWithAccessToDepartment is not null)
             UsersWithAccessToDepartment = usersWithAccessToDepartment;
 
         ShowSpinner = false;
-        FormResult = null;
+        if (FormResult is not null)
+        {
+            FormResult.ClearFormResult();
+        }
         await base.OnInitializedAsync();
     }
 

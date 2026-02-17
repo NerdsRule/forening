@@ -5,6 +5,7 @@ namespace Organization.Blazor.Layout.DepartmentTask;
 
 partial class DepartmentTaskComponent
 {
+    private FormResultComponent FormResultComponent { get; set; } = null!;
     private UserModel Me { get; set; } = StaticUserInfoBlazor.User!;
     private bool DisplayDetails { get; set; } = false;
     private bool DisableSubmit { get; set; } = false;
@@ -15,14 +16,15 @@ partial class DepartmentTaskComponent
     private bool DisableDueDateUtc { get; set; } = false;
     private bool DisablePointsAwarded { get; set; } = false;
     private bool DisableIsAssignedToMe { get; set; } = false;
+    private bool DisableStatus { get; set; } = false;
     private bool ShowSpinner { get; set; } = false;
     private bool IsDepartmentAdmin { get; set; } = StaticUserInfoBlazor.DepartmentRole == Shared.RolesEnum.DepartmentAdmin;
     private bool IsOrganizationAdmin { get; set; } = StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.OrganizationAdmin;
     private bool IsEnterpriseAdmin { get; set; } = StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.EnterpriseAdmin;
     private bool IsDepartmentMember { get; set; } = StaticUserInfoBlazor.DepartmentRole == Shared.RolesEnum.DepartmentMember;
-    private FormResult? FormResult { get; set; } = null;
     private string AddUpdateText => ChildContent.Id == 0 ? "Add Task" : "Update Task";
     private bool IsThisTaskAssignedToMe => ChildContent.AssignedUserId == StaticUserInfoBlazor.User?.Id;
+    private (string text, Shared.TaskStatusEnum enumValue)[] StatusOptions => TaskWorkflows.GetAvailableTaskStatus(ChildContent.Status, [StaticUserInfoBlazor.DepartmentRole, StaticUserInfoBlazor.OrganizationRole], IsThisTaskAssignedToMe);
     
     [Parameter] public bool InitDisplayDetails { get; set; } = false;
     [Parameter] public TTask ChildContent { get; set; } = null!;
@@ -37,6 +39,19 @@ partial class DepartmentTaskComponent
     /// </summary>
     private void SetDisableProperties()
     {
+        if (ChildContent.Status == Shared.TaskStatusEnum.VerifiedCompleted && !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin)
+        {
+            DisableName = true;
+            DisableDescription = true;
+            DisableEstimatedTimeMinutes = true;
+            DisableDueDateUtc = true;
+            DisablePointsAwarded = true;
+            DisableIsAssignedToMe = true;
+            DisableSubmit = true;
+            DisableDelete = true;
+            DisableStatus = true;
+            return;
+        }
         bool isNewTask = ChildContent.Id == 0;
         
         DisableName = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
@@ -45,9 +60,14 @@ partial class DepartmentTaskComponent
         DisableDueDateUtc = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
         DisablePointsAwarded = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
         DisableIsAssignedToMe = isNewTask || !IsThisTaskAssignedToMe ? true : (!IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin && !IsDepartmentMember);
-        Console.WriteLine($"SetDisableProperties: isNewTask={isNewTask}, IsThisTaskAssignedToMe={IsThisTaskAssignedToMe}, DisableIsAssignedToMe={DisableIsAssignedToMe}"); 
-        DisableSubmit = isNewTask ? !(IsThisTaskAssignedToMe || IsDepartmentAdmin || IsOrganizationAdmin || IsEnterpriseAdmin) : (!IsThisTaskAssignedToMe && !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin && !IsDepartmentMember);
-        DisableDelete = isNewTask || (!IsThisTaskAssignedToMe && !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin);
+        DisableDelete = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
+        DisableStatus = (ChildContent.Status == Shared.TaskStatusEnum.VerifiedCompleted && IsThisTaskAssignedToMe) || (!IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin && !IsAssignedToMe);
+        if (isNewTask)
+            DisableSubmit = false;
+        else if (DisableName && DisableDescription && DisableEstimatedTimeMinutes && DisableDueDateUtc && DisablePointsAwarded && DisableStatus)
+            DisableSubmit = true;
+        else
+            DisableSubmit = false;
     }
 
     /// <summary>
@@ -82,20 +102,20 @@ partial class DepartmentTaskComponent
     {
         DisableSubmit = true;
         ShowSpinner = true;
-        FormResult = null;
+        FormResultComponent.ClearFormResult();
         CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
         var _updateResult = await DepartmentTaskService.AddUpdateTaskAsync(task, cts.Token);
         ShowSpinner = false;
         DisableSubmit = false;
         if (_updateResult.formResult != null && !_updateResult.formResult.Succeeded)
         {
-            FormResult = _updateResult.formResult;
+            FormResultComponent.SetFormResult(_updateResult.formResult);
             return;
         }
         else if (_updateResult.data != null)
         {
             task = _updateResult.data;
-            FormResult = new FormResult { Succeeded = true, ErrorList = ["Task added/updated successfully!"] };
+            FormResultComponent.SetFormResult(new FormResult { Succeeded = true, ErrorList = ["Task added/updated successfully!"] }, 2);
         }
         await OnTaskAddedOrUpdatedEvent.InvokeAsync(task);
     }
@@ -106,7 +126,8 @@ partial class DepartmentTaskComponent
     /// <param name="userId">The ID of the user that was selected from the dropdown. This can be an integer representing the user's ID, or it can be an empty string if the user selects the option to unassign the task.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     private void SetAssignedUser(string userId)
-    {        
+    {
+        FormResultComponent.ClearFormResult();
         if (string.IsNullOrEmpty(userId))
         {
             ChildContent.AssignedUserId = null;
@@ -132,11 +153,11 @@ partial class DepartmentTaskComponent
     {
         if (ChildContent.Id == 0)
         {
-            FormResult = new FormResult { Succeeded = false, ErrorList = ["Cannot delete a task that has not been saved yet."] };
+            FormResultComponent.SetFormResult(new FormResult { Succeeded = false, ErrorList = ["Cannot delete a task that has not been saved yet."] });
             return;
         }
         ShowSpinner = true;
-        FormResult = null;
+        FormResultComponent.ClearFormResult();
         CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
         var _deleteResult = await DepartmentTaskService.DeleteTaskAsync(ChildContent.Id, cts.Token);
         ShowSpinner = false;
@@ -146,7 +167,7 @@ partial class DepartmentTaskComponent
         }
         else
         {
-            FormResult = _deleteResult ?? new FormResult { Succeeded = false, ErrorList = ["An error occurred while trying to delete the task."] };
+            FormResultComponent.SetFormResult(_deleteResult ?? new FormResult { Succeeded = false, ErrorList = ["An error occurred while trying to delete the task."] });
         }
     }
 

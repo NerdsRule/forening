@@ -6,7 +6,14 @@ namespace Organization.Core.TaskPrizeCore;
 /// </summary>
 public static class TaskWorkflows
 {
-    
+    static Dictionary<Shared.TaskStatusEnum, string> StatusTextMapping = new()
+    {
+        { Shared.TaskStatusEnum.NotStarted, "Not Started" },
+        { Shared.TaskStatusEnum.InProgress, "In Progress" },
+        { Shared.TaskStatusEnum.Completed, "Completed" },
+        { Shared.TaskStatusEnum.VerifiedCompleted, "Verified Completed" }
+    };
+
         /// <summary>
         /// Get the next task status based on the current status and the user's role. This method can be used to determine what the next logical status of a task should be when a user takes an action on it, such as marking it as in progress or completed. The available transitions can vary based on the user's role, ensuring that only users with the appropriate permissions can move tasks to certain statuses.
         /// </summary>
@@ -16,36 +23,34 @@ public static class TaskWorkflows
         /// <returns>A tuple containing the text representation of the next status and its corresponding enum value.</returns>
     public static (string text, Shared.TaskStatusEnum enumValue)[] GetAvailableTaskStatus(Shared.TaskStatusEnum currentStatus, Shared.RolesEnum[] userRole, bool isAssignedToMe)
     {
+        var availableStatuses = new List<(string text, Shared.TaskStatusEnum enumValue)>();
         if (userRole.Contains(Shared.RolesEnum.DepartmentAdmin) || userRole.Contains(Shared.RolesEnum.OrganizationAdmin) || userRole.Contains(Shared.RolesEnum.EnterpriseAdmin))
         {
-            return
+            availableStatuses.AddRange(
             [
-                ("Not Started", Shared.TaskStatusEnum.NotStarted),
-                ("In Progress", Shared.TaskStatusEnum.InProgress),
-                ("Completed", Shared.TaskStatusEnum.Completed),
-                ("Verified Completed", Shared.TaskStatusEnum.VerifiedCompleted)
-            ];
+                (StatusTextMapping[Shared.TaskStatusEnum.NotStarted], Shared.TaskStatusEnum.NotStarted),
+                (StatusTextMapping[Shared.TaskStatusEnum.InProgress], Shared.TaskStatusEnum.InProgress),
+                (StatusTextMapping[Shared.TaskStatusEnum.Completed], Shared.TaskStatusEnum.Completed),
+                (StatusTextMapping[Shared.TaskStatusEnum.VerifiedCompleted], Shared.TaskStatusEnum.VerifiedCompleted)
+            ]);
         }
         else if (userRole.Contains(Shared.RolesEnum.DepartmentMember) && isAssignedToMe)
         {
-            return
+            availableStatuses.AddRange(
             [
-                ("Not Started", Shared.TaskStatusEnum.NotStarted),
-                ("In Progress", Shared.TaskStatusEnum.InProgress),
-                ("Completed", Shared.TaskStatusEnum.Completed)
-            ];
+                (StatusTextMapping[Shared.TaskStatusEnum.NotStarted], Shared.TaskStatusEnum.NotStarted),
+                (StatusTextMapping[Shared.TaskStatusEnum.InProgress], Shared.TaskStatusEnum.InProgress),
+                (StatusTextMapping[Shared.TaskStatusEnum.Completed], Shared.TaskStatusEnum.Completed)
+            ]);
         }
         else
         {
-            return currentStatus switch
-            {
-                Shared.TaskStatusEnum.NotStarted => [("Not Started", Shared.TaskStatusEnum.NotStarted)],
-                Shared.TaskStatusEnum.InProgress => [("In Progress", Shared.TaskStatusEnum.InProgress)],
-                Shared.TaskStatusEnum.Completed => [("Completed", Shared.TaskStatusEnum.Completed)],
-                Shared.TaskStatusEnum.VerifiedCompleted => [("Verified Completed", Shared.TaskStatusEnum.VerifiedCompleted)],
-                _ => [(currentStatus.ToString(), currentStatus)]
-            };
-            
+            availableStatuses.Add((StatusTextMapping[currentStatus], currentStatus));
         }
+        if (!availableStatuses.Any(s => s.enumValue == currentStatus))
+        {            
+            availableStatuses.Add((StatusTextMapping[currentStatus], currentStatus));
+        }
+        return [.. availableStatuses];
     }
 }

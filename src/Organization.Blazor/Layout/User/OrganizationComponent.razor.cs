@@ -3,7 +3,7 @@ namespace Organization.Blazor.Layout.User;
 
 partial class OrganizationComponent
 {
-    private FormResult? _updateResult { get; set; } = null;
+    private FormResultComponent _updateResult { get; set; } = null!;
     private Dictionary<int, DepartmentComponent> _userDepartmentsDict = new();
     private List<TDepartment> _departments = new();
     private TAppUserDepartment _newAppUserDepartment = new();
@@ -13,7 +13,7 @@ partial class OrganizationComponent
 
     private async Task HandleUpdateRoleAsync()
     {
-        _updateResult = null;
+        _updateResult.ClearFormResult();
         if (AppUserOrganization != null)
         {
             CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
@@ -21,17 +21,17 @@ partial class OrganizationComponent
             if (result.Item1 != null)
             {
                 AppUserOrganization = result.Item1;
-                _updateResult = new FormResult { Succeeded = true, ErrorList = ["Data updated successfully"] };
-            } else
+                _updateResult.SetFormResult(new FormResult { Succeeded = true, ErrorList = ["Data updated successfully"] }, 2);
+            } else if (result.Item2 != null)
             {
-                _updateResult = result.Item2;
+                _updateResult.SetFormResult(result.Item2, 2);
             }
         }
     }
 
     private async Task HandleDeleteAsync()
     {
-        _updateResult = null;
+        _updateResult.ClearFormResult();
         if (AppUserOrganization != null)
         {
             CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
@@ -39,16 +39,16 @@ partial class OrganizationComponent
             if (result.Succeeded)
             {
                 AppUserOrganization = null;
-            } else
+            } else if (result != null)
             {
-                _updateResult = result;
+                _updateResult.SetFormResult(result, 2);
             }
         }
     }
 
     private async Task HandleAddDepartmentAsync()
     {
-        _updateResult = null;
+        _updateResult.ClearFormResult();
         CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
         var result = await AccountService.AddUpdateAppUserDepartmentAsync(_newAppUserDepartment, cts.Token);
         if (result.appUserDepartment != null)
@@ -56,9 +56,9 @@ partial class OrganizationComponent
             result.appUserDepartment.Department = _departments.FirstOrDefault(d => d.Id == result.appUserDepartment.DepartmentId);
             AppUserDepartments.Add(result.appUserDepartment);
             _newAppUserDepartment = new TAppUserDepartment { AppUserId = StaticUserInfoBlazor.User!.Id };
-        } else
+        } else if (result.formResult != null)
         {
-            _updateResult = result.formResult;
+            _updateResult.SetFormResult(result.formResult, 2);
         }
     }
     protected override async Task OnInitializedAsync()
@@ -73,7 +73,7 @@ partial class OrganizationComponent
             }
             if (departments.formResult != null)
             {
-                _updateResult = departments.formResult;
+                _updateResult.SetFormResult(departments.formResult, 2);
             }
             _newAppUserDepartment.AppUserId = AppUserOrganization.AppUserId;
         }

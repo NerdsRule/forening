@@ -31,7 +31,7 @@
                     <ValidationMessage For="@(() => User.MemberNumber)" />
                 </div>
             </div>
-            <FormResultComponent Result="_formResult" />
+            <FormResultComponent @ref="_formResult" />
             <div class="row rounded rounded-1 my-1 p-2">
                 <div class="col-12 col-md-2 offset-md-8">
                     <button type="submit" class="btn btn-primary">Update</button>
