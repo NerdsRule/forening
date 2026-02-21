@@ -16,6 +16,11 @@ public class VTaskPointsAwarded
     public string UserName { get; set; } = string.Empty;
 
     /// <summary>
+    /// Gets or sets the user display name, which can be used in the UI instead of the username or email.
+    /// </summary>
+    public string? UserDisplayName { get; set; }
+
+    /// <summary>
     /// Gets or sets the user email.
     /// </summary>
     public string UserEmail { get; set; } = string.Empty;

@@ -139,6 +139,7 @@ public class RootDbReadWrite : IRootDbReadWrite
                         UserId = u.Id,
                         UserName = u.UserName ?? string.Empty,
                         UserEmail = u.Email ?? string.Empty,
+                        UserDisplayName = u.DisplayName,
                         TaskId = t.Id,
                         TaskName = t.Name,
                         TaskDescription = t.Description,
@@ -149,6 +150,33 @@ public class RootDbReadWrite : IRootDbReadWrite
                     };
 
         return await query.AsNoTracking().ToListAsync(ct);
+    }
+
+    /// <summary>
+    /// Get VTaskPointsAwarded by user id.
+    /// </summary>
+    /// <param name="userId">User Id</param>
+    /// <returns>List of VTaskPointsAwarded</returns>
+    public async Task<List<VTaskPointsAwarded>> GetTasksWithPointsAwardedByUserAsync(string userId, CancellationToken ct)
+    {        var query = from t in Db.Tasks
+                    join u in Db.Users on t.AssignedUserId equals u.Id
+                    join d in Db.Departments on t.DepartmentId equals d.Id
+                    where t.AssignedUserId == userId && t.Status == Shared.TaskStatusEnum.VerifiedCompleted
+                    select new VTaskPointsAwarded
+                    {
+                        UserId = u.Id,
+                        UserName = u.UserName ?? string.Empty,
+                        UserEmail = u.Email ?? string.Empty,
+                        UserDisplayName = u.DisplayName,
+                        TaskId = t.Id,
+                        TaskName = t.Name,
+                        TaskDescription = t.Description,
+                        TaskStatus = t.Status,
+                        TaskPointsAwarded = t.PointsAwarded,
+                        DepartmentId = d.Id,
+                        DepartmentName = d.Name
+                    };
+                    return await query.AsNoTracking().ToListAsync(ct);
     }
     #endregion
 

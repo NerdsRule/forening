@@ -95,6 +95,13 @@ public interface IRootDbReadWrite
     /// <param name="departmentId">Department Id</param>
     /// <returns>List of tasks with points awarded</returns>
     public Task<List<VTaskPointsAwarded>> GetTasksWithPointsAwardedByDepartmentAsync(int departmentId, CancellationToken ct);
+
+    /// <summary>
+    /// Get VTaskPointsAwarded by user id.
+    /// </summary>
+    /// <param name="userId">User Id</param>
+    /// <returns>List of VTaskPointsAwarded</returns>
+    public Task<List<VTaskPointsAwarded>> GetTasksWithPointsAwardedByUserAsync(string userId, CancellationToken ct);
     #endregion
 
     #region Generic CRUD

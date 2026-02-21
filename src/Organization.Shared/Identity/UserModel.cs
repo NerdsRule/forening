@@ -43,4 +43,9 @@ public class UserModel
     /// TAppUserDepartments the user is associated with.
     /// </summary>
     public List<TAppUserDepartment> AppUserDepartments { get; set; } = [];
+
+    /// <summary>
+    /// User points awarded across all tasks.
+    /// </summary>
+    public int TotalPointsAwarded { get; set; }
 }
