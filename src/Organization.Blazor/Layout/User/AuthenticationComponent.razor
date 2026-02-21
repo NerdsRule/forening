@@ -24,20 +24,10 @@
                             <InputText type="password" class="form-control" @bind-Value="loginModel.Password" />
                             <ValidationMessage For="@(() => loginModel.Password)" />
                         </div>
-                        
-                        @if (!string.IsNullOrEmpty(errorMessage))
-                        {
-                            <div class="alert alert-danger">@errorMessage</div>
-                        }
-                        
-                        <button type="submit" class="btn btn-primary" disabled="@isLoading">
-                            @if (isLoading)
-                            {
-                                <span class="spinner-border spinner-border-sm me-2"></span>
-                            }
-                            Login
-                        </button>
+                        <button type="submit" class="btn btn-primary" disabled="@isLoading">Login</button>
+                        <SpinnerComponent ShowSpinner="isLoading" />
                     </EditForm>
+                    <FormResultComponent @ref="FormResult" />
                 </div>
             </div>
         </div>

@@ -18,7 +18,7 @@ partial class FormResultComponent
     {
         Result = result;
         StateHasChanged();
-     FadeCssClass = "fade-in show";
+        FadeCssClass = "fade-in show";
         StateHasChanged();
         if (timeoutSeconds > 0)
         {
@@ -33,7 +33,6 @@ partial class FormResultComponent
                 });
             });
         }
-        Result = null;
         StateHasChanged();
     }
     

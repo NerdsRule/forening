@@ -78,7 +78,7 @@ public interface IRootDbReadWrite
     public Task<List<TDepartment>?> GetDepartmentsAsync(int organizationId, string userId, CancellationToken ct);
     #endregion
 
-#region TTasks and Departments
+    #region TTasks and Departments
     /// <summary>
     /// Get tasks by department id
     /// </summary>
@@ -86,6 +86,15 @@ public interface IRootDbReadWrite
     /// <returns>List of tasks</returns>
     public Task<List<TTask>> GetTasksByDepartmentAsync(int departmentId, CancellationToken ct);
     
+    #endregion
+
+   #region View for tasks with points awarded
+    /// <summary>
+    /// Get tasks with points awarded by department id
+    /// </summary>
+    /// <param name="departmentId">Department Id</param>
+    /// <returns>List of tasks with points awarded</returns>
+    public Task<List<VTaskPointsAwarded>> GetTasksWithPointsAwardedByDepartmentAsync(int departmentId, CancellationToken ct);
     #endregion
 
     #region Generic CRUD

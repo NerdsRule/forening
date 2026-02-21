@@ -24,6 +24,15 @@
             </div>
             <div class="row rounded rounded-1 my-1 p-2 border border-1 border-secondary">
                 <div class="col-12 col-md-3">
+                    <strong>Display Name:</strong>
+                </div>
+                <div class="col-12 col-md-9">
+                    <InputText @bind-Value="User.DisplayName" class="form-control" />
+                    <ValidationMessage For="@(() => User.DisplayName)" />
+                </div>
+            </div>
+            <div class="row rounded rounded-1 my-1 p-2 border border-1 border-secondary">
+                <div class="col-12 col-md-3">
                     <strong>Member number:</strong>
                 </div>
                 <div class="col-12 col-md-9">

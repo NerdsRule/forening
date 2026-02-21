@@ -7,9 +7,6 @@
 
 <AuthorizeView>
     <Authorized>
-        <div class="alert alert-success">
-            Velkommen tilbage, @context.User.Identity?.Name, du er logget ind!
-        </div>
         <LandingPageTaskComponent />
     </Authorized>
     <NotAuthorized>
@@ -18,7 +15,8 @@
         <br />Med vores platform kan du optjene point ved at deltage i forskellige opgaver og aktiviteter, der er vigtige for foreningens succes. Disse point kan du senere bruge på belønninger, der ikke kun gavner dig, men også hele fællesskabet.
         <br />Uanset om du er en aktiv deltager i foreningens arrangementer, hjælper med at organisere begivenheder eller bidrager på andre måder, vil du kunne se dine point vokse og bruge dem på belønninger, der styrker både dig og foreningen. Det er vores måde at sige tak for din indsats og opfordre til  et stærkere fællesskab.
         </p>
-        <AuthenticationComponent/>
+        <AuthenticationComponent />
     </NotAuthorized>
 </AuthorizeView>
+<FormResultComponent />
 </div>

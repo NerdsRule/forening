@@ -270,5 +270,42 @@ public static class TaskEndpoint
         .Produces<TTaskDepartment>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .RequireAuthorization();
+
+        /// <summary>
+        /// Retrieves all VTaskPointsAwarded records for a specific department.
+        /// </summary>
+        /// <param name="departmentId">The ID of the department whose task points awarded records are to be retrieved.</param>
+        /// <param name="user">The claims principal representing the authenticated user.</param>
+        /// <param name="db">The database service for data access.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>A list of VTaskPointsAwarded records for the specified department with a 200 OK status, or 400 Bad Request if unauthorized.</returns>
+        v1.MapGet("/api/TaskPointsAwarded/ByDepartment/{departmentId}", async Task<IResult> (ClaimsPrincipal user, int departmentId, IRootDbReadWrite db, CancellationToken ct) =>
+        {
+            if (user.Identity is not null && user.Identity.IsAuthenticated)
+            {
+                try
+                {
+                    var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin, RolesEnum.DepartmentMember };
+                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, departmentId, rolesToCheck, db, ct);
+                    if (!hasAccess)
+                    {
+                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
+                    }
+                    var taskPointsAwarded = await db.GetTasksWithPointsAwardedByDepartmentAsync(departmentId, ct);
+                    return Results.Ok(taskPointsAwarded);
+                }
+                catch (Exception e)
+                {
+                    return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [e.Message] });
+                }
+            }
+            else
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["User not authenticated"] });
+            }
+        })
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .RequireAuthorization();
     }
 }

@@ -43,6 +43,11 @@ public static class StaticUserInfoBlazor
     public static RolesEnum DepartmentRole => SelectedDepartment != null ? SelectedDepartment.Role : RolesEnum.None;
 
     /// <summary>
+    /// List of VTaskPointsAwarded for the department selected
+    /// </summary>
+    public static List<VTaskPointsAwarded>? VTaskPointsAwards { get; set; }
+
+    /// <summary>
     /// Key used for local storage and user settings
     /// </summary>
     public const string UserLocalStorageKey = "UserInfo";

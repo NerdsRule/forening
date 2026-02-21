@@ -10,13 +10,13 @@
         <strong class="d-md-none">Points:</strong> @ChildContent.PointsAwarded
     </div>
     <div class="col-12 col-md-1">
-        <strong class="d-md-none">Status:</strong> @ChildContent.Status
+        <strong class="d-md-none">Status:</strong> @(TaskWorkflows.StatusTextMapping[ChildContent.Status])
     </div>
     <div class="col-12 col-md-3">
-        <strong class="d-md-none">Assigned:</strong> @ChildContent.AssignedUser?.UserName
+        <strong class="d-md-none">Assigned:</strong> @(ChildContent.AssignedUser?.DisplayName ?? ChildContent.AssignedUser?.UserName)
     </div>
     <div class="col-12 col-md-1">
-        <button class="btn btn-secondary" @onclick="() => DisplayDetails = !DisplayDetails">@(DisplayDetails ? "Hide" : "Show") Details</button>
+        <button class="btn btn-secondary" @onclick="() => DisplayDetails = !DisplayDetails">@(DisplayDetails ? "Hide" : "Details")</button>
         </div>
     </div>
 
@@ -30,7 +30,7 @@
                 {
                     <div class="mb-3">
                         <label for="creatorUser" class="form-label">Creator</label>
-                        <InputText id="creatorUser" class="form-control" @bind-Value="ChildContent.CreatorUser.UserName" disabled />
+                        <InputText id="creatorUser" class="form-control" @bind-Value="ChildContent.CreatorUser.DisplayName" disabled />
                     </div>
                 }
                 @if (ChildContent.Department != null)

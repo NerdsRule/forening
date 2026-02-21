@@ -6,7 +6,7 @@
             <h3>My Profile - @StaticUserInfoBlazor.User?.UserName</h3>
             @if (StaticUserInfoBlazor.User != null)
             {
-                <p><strong>User Name:</strong> @StaticUserInfoBlazor.User.UserName</p>
+                <p><strong>User Name:</strong> @StaticUserInfoBlazor.User.DisplayName</p>
                 <p><strong>Email:</strong> @StaticUserInfoBlazor.User.Email</p>
                 <p><strong>Member number:</strong> @StaticUserInfoBlazor.User.MemberNumber</p>
             }

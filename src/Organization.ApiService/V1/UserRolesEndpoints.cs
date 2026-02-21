@@ -145,7 +145,8 @@ public static class UserRolesEndpoints
             Email = appUser.Email ?? string.Empty,
             MemberNumber = appUser.MemberNumber,
             AppUserOrganizations = userAppUserOrgs,
-            AppUserDepartments = userAppUserDeps
+            AppUserDepartments = userAppUserDeps,
+            DisplayName = appUser.DisplayName ?? appUser.UserName ?? appUser.Email
         };
     }
     #endregion
@@ -384,6 +385,7 @@ public static class UserRolesEndpoints
                         appUser.UserName = model.UserName;
                         appUser.Email = model.Email;
                         appUser.MemberNumber = model.MemberNumber;
+                        appUser.DisplayName = model.DisplayName;
                         var result = await userManager.UpdateAsync(appUser);
                         if (result.Succeeded)
                         {

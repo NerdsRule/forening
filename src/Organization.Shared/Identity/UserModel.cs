@@ -19,6 +19,12 @@ public class UserModel
     public string UserName { get; set; } = null!;
 
     /// <summary>
+    /// Display name of the user, which can be used in the UI instead of the username or email.
+    /// </summary>
+    [MaxLength(200, ErrorMessage = "Display name cannot exceed 200 characters.")]
+    public string? DisplayName { get; set; }
+
+    /// <summary>
     /// Email of the user
     /// </summary>
     public string Email { get; set; } = null!;

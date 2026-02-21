@@ -74,4 +74,14 @@ public interface IDepartmentTaskService
     /// <returns>A list of users who have access to the organization</returns>
     Task<(List<UserModel>? data, FormResult? formResult)> GetUsersWithAccessToOrganizationAsync(int organizationId, CancellationToken cancellationToken);
     #endregion
+
+    #region Task Points Awarded
+    /// <summary>
+    /// Get a list of tasks that have points awarded for a specific department
+    /// </summary>
+    /// <param name="departmentId">The ID of the department</param>
+    /// <param name="cancellationToken">Cancellation token for the operation</param>
+    /// <returns>A list of tasks with points awarded for the department</returns>
+    Task<(List<VTaskPointsAwarded>? data, FormResult? formResult)> GetTasksWithPointsAwardedByDepartmentIdAsync(int departmentId, CancellationToken cancellationToken);
+    #endregion
 }

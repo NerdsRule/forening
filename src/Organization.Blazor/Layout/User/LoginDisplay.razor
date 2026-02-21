@@ -1,9 +1,7 @@
-﻿@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
-@inject NavigationManager Navigation
-
+﻿
 <AuthorizeView>
     <Authorized>
-        <span style="color: white;">@context.User.Identity?.Name</span>
+        <span style="color: white;">@StaticUserInfoBlazor.User?.DisplayName</span>
         <button class="nav-link btn btn-link" @onclick="BeginLogOut">Log out</button>
         <button class="ms-2 btn btn-sm btn-success oi oi-person" @onclick="MyProfileClick"></button>
     </Authorized>
@@ -11,15 +9,3 @@
         
     </NotAuthorized>
 </AuthorizeView>
-
-@code{
-    public void BeginLogOut()
-    {
-        Console.WriteLine("LoginDisplay: Logging out...");
-        Navigation.NavigateToLogout("authentication/logout");
-    }
-    public void MyProfileClick()
-    {
-        Navigation.NavigateTo("/myprofile");
-    }
-}

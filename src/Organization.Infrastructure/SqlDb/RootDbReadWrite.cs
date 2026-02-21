@@ -122,6 +122,36 @@ public class RootDbReadWrite : IRootDbReadWrite
     }
     #endregion
 
+    #region View for tasks with points awarded
+    /// <summary>
+    /// Get tasks with points awarded by department id
+    /// </summary>
+    /// <param name="departmentId">Department Id</param>
+    /// <returns>List of tasks with points awarded</returns>
+    public async Task<List<VTaskPointsAwarded>> GetTasksWithPointsAwardedByDepartmentAsync(int departmentId, CancellationToken ct)
+    {
+        var query = from t in Db.Tasks
+                    join u in Db.Users on t.AssignedUserId equals u.Id
+                    join d in Db.Departments on t.DepartmentId equals d.Id
+                    where t.DepartmentId == departmentId && t.Status == Shared.TaskStatusEnum.VerifiedCompleted
+                    select new VTaskPointsAwarded
+                    {
+                        UserId = u.Id,
+                        UserName = u.UserName ?? string.Empty,
+                        UserEmail = u.Email ?? string.Empty,
+                        TaskId = t.Id,
+                        TaskName = t.Name,
+                        TaskDescription = t.Description,
+                        TaskStatus = t.Status,
+                        TaskPointsAwarded = t.PointsAwarded,
+                        DepartmentId = d.Id,
+                        DepartmentName = d.Name
+                    };
+
+        return await query.AsNoTracking().ToListAsync(ct);
+    }
+    #endregion
+
     #region Generic CRUD
     /// <summary>
     /// Gets the row asynchronous.

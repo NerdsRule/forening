@@ -6,12 +6,12 @@ namespace Organization.Core.TaskPrizeCore;
 /// </summary>
 public static class TaskWorkflows
 {
-    static Dictionary<Shared.TaskStatusEnum, string> StatusTextMapping = new()
+    public static Dictionary<Shared.TaskStatusEnum, string> StatusTextMapping = new()
     {
         { Shared.TaskStatusEnum.NotStarted, "Not Started" },
         { Shared.TaskStatusEnum.InProgress, "In Progress" },
         { Shared.TaskStatusEnum.Completed, "Completed" },
-        { Shared.TaskStatusEnum.VerifiedCompleted, "Verified Completed" }
+        { Shared.TaskStatusEnum.VerifiedCompleted, "Verified" }
     };
 
         /// <summary>
