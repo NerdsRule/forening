@@ -91,5 +91,14 @@ public interface IDepartmentTaskService
     /// <param name="cancellationToken">Cancellation token for the operation</param>
     /// <returns>A list of tasks with points awarded for the user</returns>
     public Task<(List<VTaskPointsAwarded>? data, FormResult? formResult)> GetTasksWithPointsAwardedByUserIdAsync(string userId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Get top users with points awarded for a specific department, including the specified user if they are not in the top users.
+    /// </summary> <param name="userId">The ID of the user to include if not in top users</param>
+    /// <param name="departmentId">The ID of the department</param>
+    /// <param name="topCount">The number of top users to retrieve</param>
+    /// <param name="cancellationToken">Cancellation token for the operation</param>
+    /// <returns>A list of top users with points awarded for the department, including the specified user if they are not in the top users</returns>
+    public Task<(List<VTaskPointsAwarded>? data, FormResult? formResult)> GetTopUsersWithPointsAwardedByDepartmentAsync(string userId, int departmentId, int topCount, CancellationToken cancellationToken);
     #endregion
 }

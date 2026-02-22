@@ -354,5 +354,36 @@ public class DepartmentTaskService(IHttpClientFactory httpClientFactory, ILogger
             return (null, new FormResult { Succeeded = false, ErrorList = ["Error retrieving tasks with points awarded"] });
         }
     }
-    #endregion
+
+    /// <summary>
+    /// Get top users with points awarded for a specific department, including the specified user if they are not in the top users.
+    /// </summary> <param name="userId">The ID of the user to include if not in top users</param>
+    /// <param name="departmentId">The ID of the department</param>
+    /// <param name="topCount">The number of top users to retrieve</param>
+    /// <param name="cancellationToken">Cancellation token for the operation</param>
+    /// <returns>A list of top users with points awarded for the department, including the specified user if they are not in the top users</returns>
+    public async Task<(List<VTaskPointsAwarded>? data, FormResult? formResult)> GetTopUsersWithPointsAwardedByDepartmentAsync(string userId, int departmentId, int topCount, CancellationToken cancellationToken)
+    {
+        try
+        {            logger.LogInformation("Retrieving top users with points awarded for department {DepartmentId}, including user {UserId} if not in top users", departmentId, userId);
+            var response = await httpClient.GetAsync($"/v1/api/TaskPointsAwarded/TopUsersByDepartment/{userId}/{departmentId}/{topCount}", cancellationToken);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var topUsersWithPoints = await response.Content.ReadFromJsonAsync<List<VTaskPointsAwarded>>(jsonSerializerOptions, cancellationToken);
+                return (topUsersWithPoints, null);
+            }
+            
+            logger.LogWarning("Failed to retrieve top users with points awarded for department {DepartmentId}. Status: {StatusCode}", departmentId, response.StatusCode);
+            var formResult = await response.Content.ReadFromJsonAsync<FormResult>(jsonSerializerOptions, cancellationToken);
+            return (null, formResult ?? new FormResult { Succeeded = false, ErrorList = ["Failed to retrieve top users with points awarded"] });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving top users with points awarded for department {DepartmentId}", departmentId);
+            return (null, new FormResult { Succeeded = false, ErrorList = ["Error retrieving top users with points awarded"] });
+        }
+    }
+
+#endregion
 }

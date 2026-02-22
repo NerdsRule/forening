@@ -59,4 +59,11 @@ public class VTaskPointsAwarded
     /// Gets or sets the department name.
     /// </summary>
     public string DepartmentName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// User position in the department, used for sorting users within a department.
+    /// </summary> <remarks>
+    /// This is not a database field, but is calculated in the application based on the user's position within the department.
+    /// </remarks>
+    public int UserRanking { get; set; }
 }

@@ -1,6 +1,10 @@
 @if (StaticUserInfoBlazor.SelectedDepartment != null)
 {
-    <h4>Tasks for department: @StaticUserInfoBlazor.SelectedDepartment.Department?.Name</h4>
+    <div class="row alert alert-info rounded rounded-1 my-2 p-2 text-center">
+        <div class="col-12">
+        <h4>Tasks for department: @StaticUserInfoBlazor.SelectedDepartment.Department?.Name</h4>
+        </div>
+    </div>
 }
 <FormResultComponent @ref="_taskResult" />
 

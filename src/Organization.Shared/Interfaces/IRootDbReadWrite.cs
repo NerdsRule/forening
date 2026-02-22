@@ -102,6 +102,17 @@ public interface IRootDbReadWrite
     /// <param name="userId">User Id</param>
     /// <returns>List of VTaskPointsAwarded</returns>
     public Task<List<VTaskPointsAwarded>> GetTasksWithPointsAwardedByUserAsync(string userId, CancellationToken ct);
+
+    /// <summary>
+    /// Get top 5 users with most points awarded in department and return as list of VTaskPointsAwarded.
+    /// If user is not within top 5, add user after the top users with their points awarded and ranking.
+    /// </summary> 
+    /// <param name="userId">User Id</param>
+    /// <param name="departmentId">Department Id</param>
+    /// <param name="topCount">Number of top users to retrieve</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>List of VTaskPointsAwarded</returns>
+    public Task<List<VTaskPointsAwarded>> GetTopUsersWithPointsAwardedByDepartmentAsync(string userId, int departmentId, int topCount, CancellationToken ct);
     #endregion
 
     #region Generic CRUD

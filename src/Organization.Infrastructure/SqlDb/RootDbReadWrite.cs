@@ -11,7 +11,7 @@ public class RootDbReadWrite : IRootDbReadWrite
     public RootDbReadWrite(IServiceCollection injectedService)
     {
         var ServiceProvider = injectedService.BuildServiceProvider();
-        Db = ServiceProvider.GetRequiredService<AppDbContext>();   
+        Db = ServiceProvider.GetRequiredService<AppDbContext>();
     }
 
     private AppDbContext Db { get; init; }
@@ -31,7 +31,7 @@ public class RootDbReadWrite : IRootDbReadWrite
             return [];
         return await res.ToListAsync<TAppUserOrganization>(ct);
     }
-    
+
     /// <summary>
     /// Get TAppUserDepartment by user id
     /// </summary>
@@ -74,7 +74,7 @@ public class RootDbReadWrite : IRootDbReadWrite
         return await res.Select(c => c.AppUser!).ToListAsync(ct) ?? [];
     }
     #endregion
-    
+
     #region Organizations and Departments
     /// <summary>
     /// Get departments by organization id
@@ -158,7 +158,8 @@ public class RootDbReadWrite : IRootDbReadWrite
     /// <param name="userId">User Id</param>
     /// <returns>List of VTaskPointsAwarded</returns>
     public async Task<List<VTaskPointsAwarded>> GetTasksWithPointsAwardedByUserAsync(string userId, CancellationToken ct)
-    {        var query = from t in Db.Tasks
+    {
+        var query = from t in Db.Tasks
                     join u in Db.Users on t.AssignedUserId equals u.Id
                     join d in Db.Departments on t.DepartmentId equals d.Id
                     where t.AssignedUserId == userId && t.Status == Shared.TaskStatusEnum.VerifiedCompleted
@@ -176,8 +177,52 @@ public class RootDbReadWrite : IRootDbReadWrite
                         DepartmentId = d.Id,
                         DepartmentName = d.Name
                     };
-                    return await query.AsNoTracking().ToListAsync(ct);
+        return await query.AsNoTracking().ToListAsync(ct);
     }
+
+    /// <summary>
+    /// Get top 5 users with most points awarded in department and return as list of VTaskPointsAwarded.
+    /// If user is not within top 5, add user after the top users with their points awarded and ranking.
+    /// </summary> 
+    /// <param name="userId">User Id</param>
+    /// <param name="departmentId">Department Id</param>
+    /// <param name="topCount">Number of top users to retrieve</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>List of VTaskPointsAwarded</returns>
+    public async Task<List<VTaskPointsAwarded>> GetTopUsersWithPointsAwardedByDepartmentAsync(string userId, int departmentId, int topCount, CancellationToken ct)
+    {
+        var query = from t in Db.Tasks
+                    join u in Db.Users on t.AssignedUserId equals u.Id
+                    join d in Db.Departments on t.DepartmentId equals d.Id
+                    where t.DepartmentId == departmentId && t.Status == Shared.TaskStatusEnum.VerifiedCompleted
+                    group t by new { u.Id, u.UserName, u.Email, u.DisplayName, DepartmentId = d.Id, DepartmentName = d.Name } into g
+                    orderby g.Sum(t => t.PointsAwarded) descending
+                    select new VTaskPointsAwarded
+                    {
+                        UserId = g.Key.Id,
+                        UserName = g.Key.UserName ?? string.Empty,
+                        UserEmail = g.Key.Email ?? string.Empty,
+                        UserDisplayName = g.Key.DisplayName,
+                        DepartmentId = g.Key.DepartmentId,
+                        DepartmentName = g.Key.DepartmentName,
+                        TaskPointsAwarded = g.Sum(t => t.PointsAwarded)
+                    };
+        var res = await query.AsNoTracking().OrderByDescending(v => v.TaskPointsAwarded).ToListAsync(ct);
+        // Update user ranking based on position in list
+        for (int i = 0; i < res.Count; i++)
+        {
+            res[i].UserRanking = i + 1; // Ranking starts at 1
+        }
+        // If user is not within topCount, add user after the top users with their points awarded and ranking
+        if (res.Any(v => v.UserId == userId) && res.First(u => u.UserId == userId).UserRanking > topCount)
+        {
+            var userInList = res.First(u => u.UserId == userId);
+            res = res.Take(topCount).ToList();
+            res.Add(userInList);
+        }
+        return res;
+    }
+
     #endregion
 
     #region Generic CRUD

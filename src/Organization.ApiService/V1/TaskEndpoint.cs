@@ -42,10 +42,12 @@ public static class TaskEndpoint
                             if (payload.AssignedUserId != null && payload.AssignedUserId != userId)
                             {
                                 return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Department members can only assign tasks to themselves"] });
-                            } else if (payload.AssignedUserId == null && originalTask.AssignedUserId != userId)
+                            }
+                            else if (payload.AssignedUserId == null && originalTask.AssignedUserId != userId)
                             {
                                 return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Department members can only unassign tasks that are assigned to themselves"] });
-                            } else if (payload.AssignedUserId != null && payload.AssignedUserId == userId && originalTask.AssignedUserId != userId && originalTask.AssignedUserId != null)
+                            }
+                            else if (payload.AssignedUserId != null && payload.AssignedUserId == userId && originalTask.AssignedUserId != userId && originalTask.AssignedUserId != null)
                             {
                                 return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Department members can only assign tasks to themselves"] });
                             }
@@ -329,6 +331,45 @@ public static class TaskEndpoint
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
                     }
                     var taskPointsAwarded = await db.GetTasksWithPointsAwardedByUserAsync(userId, ct);
+                    return Results.Ok(taskPointsAwarded);
+                }
+                catch (Exception e)
+                {
+                    return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [e.Message] });
+                }
+            }
+            else
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["User not authenticated"] });
+            }
+        })
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .RequireAuthorization();
+
+        /// <summary>
+        /// Get VTaskPointsAwarded limited by top count for a specific department and add the user with their points awarded and ranking if they are not within the top users.
+        /// </summary>
+        /// <param name="userId">User Id</param>
+        /// <param name="departmentId">Department Id</param>
+        /// <param name="topCount">Number of top users to retrieve</param>
+        /// <param name="user">The claims principal representing the authenticated user.</param>
+        /// <param name="db">The database service for data access.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>A list of VTaskPointsAwarded records for the specified department with a 200 OK status, or 400 Bad Request if unauthorized.</returns>
+        v1.MapGet("/api/TaskPointsAwarded/TopUsersByDepartment/{userId}/{departmentId}/{topCount}", async Task<IResult> (ClaimsPrincipal user, string userId, int departmentId, int topCount, IRootDbReadWrite db, CancellationToken ct) =>
+        {
+            if (user.Identity is not null && user.Identity.IsAuthenticated)
+            {
+                try
+                {
+                    var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin, RolesEnum.DepartmentMember };
+                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, departmentId, rolesToCheck, db, ct);
+                    if (!hasAccess)
+                    {
+                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
+                    }
+                    var taskPointsAwarded = await db.GetTopUsersWithPointsAwardedByDepartmentAsync(userId, departmentId, topCount, ct);
                     return Results.Ok(taskPointsAwarded);
                 }
                 catch (Exception e)
