@@ -24,6 +24,7 @@ partial class DepartmentTaskComponent
     private bool IsDepartmentMember { get; set; } = StaticUserInfoBlazor.DepartmentRole == Shared.RolesEnum.DepartmentMember;
     private string AddUpdateText => ChildContent.Id == 0 ? "Add Task" : "Update Task";
     private bool IsThisTaskAssignedToMe => ChildContent.AssignedUserId == StaticUserInfoBlazor.User?.Id;
+    private bool IsNotAssigned => ChildContent.AssignedUserId == null;
     private (string text, Shared.TaskStatusEnum enumValue)[] StatusOptions => TaskWorkflows.GetAvailableTaskStatus(ChildContent.Status, [StaticUserInfoBlazor.DepartmentRole, StaticUserInfoBlazor.OrganizationRole], IsThisTaskAssignedToMe);
     
     [Parameter] public bool InitDisplayDetails { get; set; } = false;
@@ -33,6 +34,7 @@ partial class DepartmentTaskComponent
     [Parameter] public List<UserModel> UsersWithAccess { get; set; } = [];
     [Inject] private IAccountService AccountService { get; set; } = default!;
     [Inject] private IDepartmentTaskService DepartmentTaskService { get; set; } = null!;
+    [Inject] private IUiStateService UiStateService { get; set; } = null!;
 
     /// <summary>
     /// Set Disable properties based on user permissions and whether the task is new or existing. This method will be called from the parent component to set the appropriate disable states for the form fields and buttons based on the current user's permissions and whether they are creating a new task or editing an existing one.
@@ -59,12 +61,23 @@ partial class DepartmentTaskComponent
         DisableEstimatedTimeMinutes = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
         DisableDueDateUtc = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
         DisablePointsAwarded = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
-        DisableIsAssignedToMe = isNewTask || !IsThisTaskAssignedToMe ? true : (!IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin && !IsDepartmentMember);
+        if (isNewTask || ChildContent.Status == Shared.TaskStatusEnum.VerifiedCompleted)
+        {
+            DisableIsAssignedToMe = true;
+        }
+        else if (IsThisTaskAssignedToMe || IsDepartmentAdmin || IsOrganizationAdmin || IsEnterpriseAdmin || IsNotAssigned)
+        {
+            DisableIsAssignedToMe = false;
+        }
+        else
+        {
+            DisableIsAssignedToMe = true;
+        }
         DisableDelete = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
         DisableStatus = (ChildContent.Status == Shared.TaskStatusEnum.VerifiedCompleted && IsThisTaskAssignedToMe) || (!IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin && !IsAssignedToMe);
         if (isNewTask)
             DisableSubmit = false;
-        else if (DisableName && DisableDescription && DisableEstimatedTimeMinutes && DisableDueDateUtc && DisablePointsAwarded && DisableStatus)
+        else if (DisableName && DisableDescription && DisableEstimatedTimeMinutes && DisableDueDateUtc && DisablePointsAwarded && DisableStatus && DisableIsAssignedToMe)
             DisableSubmit = true;
         else
             DisableSubmit = false;
@@ -115,6 +128,7 @@ partial class DepartmentTaskComponent
         else if (_updateResult.data != null)
         {
             task = _updateResult.data;
+            await UpdateAwardedPointsForUserAsync();
             FormResultComponent.SetFormResult(new FormResult { Succeeded = true, ErrorList = ["Task added/updated successfully!"] }, 2);
         }
         await OnTaskAddedOrUpdatedEvent.InvokeAsync(task);
@@ -125,7 +139,7 @@ partial class DepartmentTaskComponent
     /// </summary>
     /// <param name="userId">The ID of the user that was selected from the dropdown. This can be an integer representing the user's ID, or it can be an empty string if the user selects the option to unassign the task.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
-    private void SetAssignedUser(string userId)
+    private async Task SetAssignedUser(string userId)
     {
         FormResultComponent.ClearFormResult();
         if (string.IsNullOrEmpty(userId))
@@ -140,6 +154,7 @@ partial class DepartmentTaskComponent
             if (selectedUser != null)            
             {
                 ChildContent.AssignedUser = new AppUser { Id = selectedUser.Id, UserName = selectedUser.UserName };
+                await UpdateAwardedPointsForUserAsync();
             }
         }
         StateHasChanged(); // Trigger re-render to update the dropdown selection
@@ -164,6 +179,7 @@ partial class DepartmentTaskComponent
         if (_deleteResult != null && _deleteResult.Succeeded)
         {
             await OnTaskDeletedEvent.InvokeAsync(ChildContent.Id);
+            await UpdateAwardedPointsForUserAsync();
         }
         else
         {
@@ -171,8 +187,29 @@ partial class DepartmentTaskComponent
         }
     }
 
+    /// <summary>
+    /// Update Awarded Points for the user in StaticUserInfoBlazor.
+    /// </summary> <returns>A task representing the asynchronous operation.</returns>
+    private async Task UpdateAwardedPointsForUserAsync()
+    {
+        if (StaticUserInfoBlazor.User == null)        {
+            Debug.WriteLine("No user is currently logged in.");
+            return;
+        }
+        CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
+        var result = await DepartmentTaskService.GetTasksWithPointsAwardedByUserIdAsync(StaticUserInfoBlazor.User!.Id, cts.Token);
+        if (result.formResult != null && !result.formResult.Succeeded)        {
+            Debug.WriteLine($"Error fetching awarded points for user: {string.Join(", ", result.formResult.ErrorList)}");
+            return;
+        }
+        StaticUserInfoBlazor.User.TotalPointsAwarded = result.data?.Sum(t => t.TaskPointsAwarded) ?? 0;
+        UiStateService.NotifyUserUpdated();
+    }
 
-
+    /// <summary>
+    /// OnInitializedAsync is called when the component is initialized. It sets the DisplayDetails property based on the InitDisplayDetails parameter and calls SetDisableProperties to set the appropriate disable states for the form fields and buttons based on the current user's permissions and whether they are creating a new task or editing an existing one. This ensures that the form is displayed correctly based on the context in which it is being used.
+    /// </summary>
+    /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
         DisplayDetails = InitDisplayDetails;

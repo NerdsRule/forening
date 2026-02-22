@@ -14,6 +14,12 @@
     </div>
 
     <div class="mb-3">
+        <label for="displayName" class="form-label">Display Name</label>
+        <InputText id="displayName" class="form-control" @bind-Value="_registerModel.DisplayName" />
+        <ValidationMessage For="@(() => _registerModel.DisplayName)" />
+    </div>
+
+    <div class="mb-3">
         <label for="password" class="form-label">Password</label>
         <InputText id="password" type="password" class="form-control" @bind-Value="_registerModel.Password" />
         <ValidationMessage For="@(() => _registerModel.Password)" />

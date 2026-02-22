@@ -9,8 +9,12 @@ partial class MyProfile
     /// Form where user change selected department or organization
     /// </summary>
     private OrganizationDepartmentForm _organizationDepartmentForm { get; set; } = new();
-
-    private bool _showSuccessMessage = false;
+    private FormResultComponent FormResult { get; set; } = null!;
+    private bool IsUpdating { get; set; } = false;
+    [Inject] NavigationManager Navigation { get; set; } = null!;
+    [Inject] ILocalStorageService LocalStorageService { get; set; } = null!;
+    [Inject] private IAccountService AccountService { get; set; } = null!;
+    [Inject] IUiStateService UiStateService { get; set; } = null!;
 
     /// <summary>
     /// Handle valid form submission
@@ -19,7 +23,7 @@ partial class MyProfile
     {
         StaticUserInfoBlazor.SelectedOrganization = StaticUserInfoBlazor.User!.AppUserOrganizations.FirstOrDefault(o => o.OrganizationId == _organizationDepartmentForm.SelectedOrganizationId);
         StaticUserInfoBlazor.SelectedDepartment = StaticUserInfoBlazor.User!.AppUserDepartments.FirstOrDefault(d => d.DepartmentId == _organizationDepartmentForm.SelectedDepartmentId);
-        _showSuccessMessage = true;
+        IsUpdating = true;
         // save to local storage
         var userLocalStorage = new UserLocalStorage
         {
@@ -27,6 +31,9 @@ partial class MyProfile
             SelectedDepartmentId = _organizationDepartmentForm.SelectedDepartmentId ?? 0,
         };
         LocalStorageService.SetItemAsync(StaticUserInfoBlazor.UserLocalStorageKey, userLocalStorage);
+        FormResult.SetFormResult(new FormResult { Succeeded = true, ErrorList = ["Profile updated successfully!"] }, timeoutSeconds: 2);
+        UiStateService.NotifyUserUpdated();
+        IsUpdating = false;
     }
 
     /// <summary>
@@ -34,7 +41,7 @@ partial class MyProfile
     /// </summary>
     private void OnOrganizationChanged()
     {
-        _showSuccessMessage = false;
+        IsUpdating = true;
         _organizationDepartmentForm.SelectedDepartmentId = null;
         _organizationDepartmentForm.SelectedDepartment = null;
         if (_organizationDepartmentForm.SelectedOrganizationId != null)
@@ -48,6 +55,9 @@ partial class MyProfile
         {
             _organizationDepartmentForm.Departments = [];
         }
+        FormResult.SetFormResult(new FormResult { Succeeded = true, ErrorList = ["Organization changed. Please select a department."] });
+        UiStateService.NotifyUserUpdated();
+        IsUpdating = false;
     }
 
     /// <summary>
@@ -78,7 +88,5 @@ partial class MyProfile
         _organizationDepartmentForm.Departments = [.. StaticUserInfoBlazor.User.AppUserDepartments.Where(d => d.AppUserId == StaticUserInfoBlazor.User.Id).Select(c => c.Department!)];
         await base.OnInitializedAsync();
     }
-    [Inject] NavigationManager Navigation { get; set; } = null!;
-    [Inject] ILocalStorageService LocalStorageService { get; set; } = null!;
-    [Inject] private IAccountService AccountService { get; set; } = default!;
+    
 }

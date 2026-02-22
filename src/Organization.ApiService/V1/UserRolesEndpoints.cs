@@ -253,7 +253,8 @@ public static class UserRolesEndpoints
             var newUser = new AppUser
             {
                 UserName = string.IsNullOrWhiteSpace(model.UserName) ? model.Email : model.UserName,
-                Email = model.Email
+                Email = model.Email,
+                DisplayName = string.IsNullOrWhiteSpace(model.DisplayName) ? model.UserName ?? model.Email : model.DisplayName
             };
 
             var createResult = await userManager.CreateAsync(newUser, model.Password);

@@ -1,4 +1,6 @@
 
+using System.Runtime.InteropServices;
+
 namespace Organization.Blazor.Layout.User;
 
 partial class AuthenticationComponent : ComponentBase
@@ -7,8 +9,8 @@ partial class AuthenticationComponent : ComponentBase
     FormResultComponent FormResult { get; set; } = null!;
     private LoginModel loginModel = new();
     private bool isLoading = false;
-    [Inject] private IAccountService AccountService { get; set; } = default!;
-    [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private IAccountService AccountService { get; set; } = null!;
+    [Inject] private NavigationManager Navigation { get; set; } = null!;
     [Parameter] public string? Action { get; set; }
 
     /// <summary>

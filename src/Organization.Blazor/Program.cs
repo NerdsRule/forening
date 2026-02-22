@@ -10,6 +10,7 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<IPrivateLocalStorageService, PrivateLocalStorageService>();
+builder.Services.AddScoped<IUiStateService, UiStateService>();
 
 #region Authentication
 // register the cookie handler

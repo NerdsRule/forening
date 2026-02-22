@@ -324,5 +324,35 @@ public class DepartmentTaskService(IHttpClientFactory httpClientFactory, ILogger
             return (null, new FormResult { Succeeded = false, ErrorList = ["Error retrieving tasks with points awarded"] });
         }
     }
+
+    /// <summary>
+    /// Get VTaskPointsAwarded for a specific user.
+    /// </summary>
+    /// <param name="userId">The ID of the user</param>
+    /// <param name="cancellationToken">Cancellation token for the operation</param>
+    /// <returns>A list of tasks with points awarded for the user</returns>
+    public async Task<(List<VTaskPointsAwarded>? data, FormResult? formResult)> GetTasksWithPointsAwardedByUserIdAsync(string userId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            logger.LogInformation("Retrieving tasks with points awarded for user {UserId}", userId);
+            var response = await httpClient.GetAsync($"/v1/api/TaskPointsAwarded/ByUser/{userId}", cancellationToken);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var tasksWithPoints = await response.Content.ReadFromJsonAsync<List<VTaskPointsAwarded>>(jsonSerializerOptions, cancellationToken);
+                return (tasksWithPoints, null);
+            }
+            
+            logger.LogWarning("Failed to retrieve tasks with points awarded for user {UserId}. Status: {StatusCode}", userId, response.StatusCode);
+            var formResult = await response.Content.ReadFromJsonAsync<FormResult>(jsonSerializerOptions, cancellationToken);
+            return (null, formResult ?? new FormResult { Succeeded = false, ErrorList = ["Failed to retrieve tasks with points awarded"] });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving tasks with points awarded for user {UserId}", userId);
+            return (null, new FormResult { Succeeded = false, ErrorList = ["Error retrieving tasks with points awarded"] });
+        }
+    }
     #endregion
 }

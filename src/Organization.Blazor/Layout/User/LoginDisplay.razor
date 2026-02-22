@@ -4,7 +4,7 @@
         <span style="color: white;">@StaticUserInfoBlazor.User?.DisplayName</span>
         <span style="color: white;">&nbsp;- Points: @(StaticUserInfoBlazor.User?.TotalPointsAwarded ?? 0)</span>
         <button class="nav-link btn btn-link" @onclick="BeginLogOut">Log out</button>
-        <button class="ms-2 btn btn-sm btn-success oi oi-person" @onclick="MyProfileClick"></button>
+        <button class="ms-2 btn btn-sm btn-success oi oi-person" @onclick="MyProfileClick" title="My profile"></button>
     </Authorized>
     <NotAuthorized>
         

@@ -2,52 +2,71 @@
 
 <PageTitle>My profile</PageTitle>
 
-        <div class="container">
-            <h3>My Profile - @StaticUserInfoBlazor.User?.UserName</h3>
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h3>Your Profile Information</h3>
+        </div>
+        <div class="card-body">
             @if (StaticUserInfoBlazor.User != null)
             {
-                <p><strong>User Name:</strong> @StaticUserInfoBlazor.User.DisplayName</p>
-                <p><strong>Email:</strong> @StaticUserInfoBlazor.User.Email</p>
-                <p><strong>Member number:</strong> @StaticUserInfoBlazor.User.MemberNumber</p>
+                <div class="mb-3">
+                    <label class="form-label">Display Name:</label>
+                    <InputText class="form-control" @bind-Value="StaticUserInfoBlazor.User.DisplayName" disabled />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Email:</label>
+                    <InputText class="form-control" @bind-Value="StaticUserInfoBlazor.User.Email" disabled />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Member number:</label>
+                    <InputText class="form-control" @bind-Value="StaticUserInfoBlazor.User.MemberNumber" disabled />
+                </div>
+                <button class="btn btn-success" @onclick="NavigateToChangePassword">Change Password</button>
             }
-            <p><button class="btn btn-success" @onclick="NavigateToChangePassword">Change Password</button></p>
-            <div class="section">
-                <h3>Change Organization & Department</h3>
-                <EditForm Model="_organizationDepartmentForm" OnValidSubmit="HandleValidSubmit">
-                    <DataAnnotationsValidator />
-                    <ValidationSummary />
-                    
-                    <div class="form-group">
-                        <label for="organization">Organization:</label>
-                        <InputSelect id="organization" @bind-Value="_organizationDepartmentForm.SelectedOrganizationId" class="form-control" @bind-Value:after="OnOrganizationChanged">
-                            <option value="">Select Organization</option>
-                                @foreach (var org in _organizationDepartmentForm.Organizations)
-                                {
-                                    <option value="@org.Id">@org.Name (@StaticUserInfoBlazor.OrganizationRole)</option>
-                                }
-                        </InputSelect>
-                        <ValidationMessage For="@(() => _organizationDepartmentForm.SelectedOrganizationId)" />
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="department">Department:</label>
-                        <InputSelect id="department" @bind-Value="_organizationDepartmentForm.SelectedDepartmentId" class="form-control">
-                            <option value="">Select Department</option>
-                                @foreach (var dept in _organizationDepartmentForm.Departments)
-                                {
-                                    <option value="@dept.Id">@dept.Name (@StaticUserInfoBlazor.DepartmentRole)</option>
-                                }
-                        </InputSelect>
-                        <ValidationMessage For="@(() => _organizationDepartmentForm.SelectedDepartmentId)" />
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary">Update</button>
-                    @if (_showSuccessMessage)
-                    {
-                        <div class="alert alert-success mt-2" role="alert">
-                            Profile updated successfully!
-                        </div>
-                    }
-                </EditForm>
-            </div>
         </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h3>Your Organization & Department</h3>
+        </div>
+        <div class="card-body">
+            <h3>Change Organization & Department</h3>
+            <EditForm Model="_organizationDepartmentForm" OnValidSubmit="HandleValidSubmit">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                    
+                <div class="mb-3">
+                    <label for="organization">Organization:</label>
+                    <InputSelect id="organization" @bind-Value="_organizationDepartmentForm.SelectedOrganizationId"
+                                 class="form-control" @bind-Value:after="OnOrganizationChanged">
+                        <option value="">Select Organization</option>
+                        @foreach (var org in _organizationDepartmentForm.Organizations)
+                        {
+                            <option value="@org.Id">@org.Name (@StaticUserInfoBlazor.OrganizationRole)</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="@(() => _organizationDepartmentForm.SelectedOrganizationId)" />
+                </div>
+                    
+                <div class="mb-3">
+                    <label for="department">Department:</label>
+                    <InputSelect id="department" @bind-Value="_organizationDepartmentForm.SelectedDepartmentId"
+                                 class="form-control">
+                        <option value="">Select Department</option>
+                        @foreach (var dept in _organizationDepartmentForm.Departments)
+                        {
+                            <option value="@dept.Id">@dept.Name (@StaticUserInfoBlazor.DepartmentRole)</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="@(() => _organizationDepartmentForm.SelectedDepartmentId)" />
+                </div>
+                    
+                <button type="submit" class="btn btn-primary">Update</button>
+                <SpinnerComponent ShowSpinner="@IsUpdating" />
+            </EditForm>
+            <FormResultComponent @ref="FormResult" />
+        </div>
+    </div>
+</div>

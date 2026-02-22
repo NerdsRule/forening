@@ -65,6 +65,14 @@ public class RegisterModel
     /// </summary>
     [EmailAddress, Required(ErrorMessage = "Email is required.")]
     public string? Email { get; set; }
+
+    /// <summary>
+    /// Gets or sets the display name for the new account.
+    /// Optional; can be used as a friendly name for the user in the UI.
+    /// </summary>
+    [StringLength(200, ErrorMessage = "Display Name cannot exceed 200 characters.")]
+    public string? DisplayName { get; set; }
+
     /// <summary>
     /// Gets or sets the password for the new account.
     /// Must meet configured password complexity rules. Treat this value as sensitive.
@@ -78,19 +86,6 @@ public class RegisterModel
     [Required(ErrorMessage = "Confirm Password is required.")]
     [Compare("Password", ErrorMessage = "Password and confirmation password do not match.")]
     public string? ConfirmPassword { get; set; }
-    /// <summary>
-    /// Gets or sets the user's given name (first name).
-    /// </summary>
-    public string? FirstName { get; set; }
-    /// <summary>
-    /// Gets or sets the user's family name (last name).
-    /// </summary>
-    public string? LastName { get; set; }
-    /// <summary>
-    /// Gets or sets the user's phone number.
-    /// Optional; validate format according to application requirements.
-    /// </summary>
-    public string? PhoneNumber { get; set; }
     /// <summary>
     /// Gets or sets the optional identifier of the organization the user belongs to.
     /// Null or empty when the user is not associated with any organization.

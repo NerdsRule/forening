@@ -83,5 +83,13 @@ public interface IDepartmentTaskService
     /// <param name="cancellationToken">Cancellation token for the operation</param>
     /// <returns>A list of tasks with points awarded for the department</returns>
     Task<(List<VTaskPointsAwarded>? data, FormResult? formResult)> GetTasksWithPointsAwardedByDepartmentIdAsync(int departmentId, CancellationToken cancellationToken);
+
+     /// <summary>
+    /// Get VTaskPointsAwarded for a specific user.
+    /// </summary>
+    /// <param name="userId">The ID of the user</param>
+    /// <param name="cancellationToken">Cancellation token for the operation</param>
+    /// <returns>A list of tasks with points awarded for the user</returns>
+    public Task<(List<VTaskPointsAwarded>? data, FormResult? formResult)> GetTasksWithPointsAwardedByUserIdAsync(string userId, CancellationToken cancellationToken);
     #endregion
 }
