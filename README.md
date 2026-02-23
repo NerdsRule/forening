@@ -7,6 +7,6 @@ Hjemmesiden er et open‑source projekt, der har til formål at motivere frivill
 
 # Migrations
 To create a new migration, run the following command in the terminal from the `Organization.ApiService` project directory:
-```dotnet ef migrations add Initial --context AppDbContext --project ../Organization.Infrastructure/Organization.Infrastructure.csproj --verbose```
-- To apply migrations to the database, run:
-```dotnet ef database update --context AppDbContext --project ../Organization.Infrastructure/Organization.Infrastructure.csproj --verbose```
+- ```dotnet ef migrations add Initial --context AppDbContext --project ../Organization.Infrastructure/Organization.Infrastructure.csproj --verbose```   
+To apply migrations to the database, run:
+- ```dotnet ef database update --context AppDbContext --project ../Organization.Infrastructure/Organization.Infrastructure.csproj --verbose```
