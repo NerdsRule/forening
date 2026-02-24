@@ -13,17 +13,26 @@ public class SeedData
     [
         new ()
         {
-            Email = "lasse.tarp@space4it.dk", 
-            NormalizedEmail = "LASSE.TARP@SPACE4IT.DK", 
-            NormalizedUserName = "LASSE.TARP@SPACE4IT.DK", 
-            RoleList = [ RolesEnum.EnterpriseAdmin.ToString() ], 
-            UserName = "lasse.tarp@space4it.dk"
+            Email = "first.user@forening.dk",
+            NormalizedEmail = "FIRST.USER@FORENING.DK",
+            NormalizedUserName = "FIRST.USER@FORENING.DK",
+            DisplayName = "First User",
+            UserName = "first.user@forening.dk"
+        },
+        new ()
+        {
+            Email = "another.user@forening.dk",
+            NormalizedEmail = "ANOTHER.USER@FORENING.DK",
+            NormalizedUserName = "ANOTHER.USER@FORENING.DK",
+            DisplayName = "Another User",
+            UserName = "another.user@forening.dk"
         }
     ];
 
     public static async Task InitializeAsync(IServiceProvider serviceProvider)
     {
         using var context = serviceProvider.GetRequiredService<AppDbContext>();
+        await context.Database.EnsureCreatedAsync();
 
         if (context.Users.Any())
         {
@@ -32,17 +41,6 @@ public class SeedData
 
         var userStore = new UserStore<AppUser>(context);
         var password = new PasswordHasher<AppUser>();
-
-        using var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-
-        // Add roles from RoskildeRoleNames
-        foreach (var roleName in Enum.GetNames(typeof(RolesEnum)))
-        {
-            if (!await roleManager.RoleExistsAsync(roleName))
-            {
-                await roleManager.CreateAsync(new IdentityRole(roleName));
-            }
-        }
 
         using var userManager = serviceProvider.GetRequiredService<UserManager<AppUser>>();
         // Create users
@@ -61,6 +59,7 @@ public class SeedData
             CreatedAt = DateTime.UtcNow
         };
         var org = await context.Organizations.AddAsync(organization);
+        await context.SaveChangesAsync();
 
         // Add Department seed data if needed
         var department = new TDepartment
@@ -70,7 +69,18 @@ public class SeedData
             IsActive = true,
         };
         var dept = await context.Departments.AddAsync(department);
+        await context.SaveChangesAsync();
 
+        // Add Department seed data if needed
+        var department2 = new TDepartment
+        {
+            Name = "Department Two",
+            OrganizationId = org.Entity.Id,
+            IsActive = true,
+        };
+        await context.Departments.AddAsync(department2);
+        await context.SaveChangesAsync();
+        #region First user assignment and task seeding
         // Assign first user to Organization and Department as EnterpriseAdmin
         var firstUser = await userManager.FindByEmailAsync(seedUsers.First().Email!);
         if (firstUser is not null)
@@ -82,7 +92,7 @@ public class SeedData
                 Role = RolesEnum.EnterpriseAdmin
             };
             await context.AppUserOrganizations.AddAsync(userOrg);
-
+            await context.SaveChangesAsync();
             var userDept = new TAppUserDepartment
             {
                 AppUserId = firstUser.Id,
@@ -90,9 +100,62 @@ public class SeedData
                 Role = RolesEnum.DepartmentAdmin
             };
             await context.AppUserDepartments.AddAsync(userDept);
+            await context.SaveChangesAsync();
+            var userDept2 = new TAppUserDepartment
+            {
+                AppUserId = firstUser.Id,
+                DepartmentId = department2.Id,
+                Role = RolesEnum.DepartmentAdmin
+            };
+            await context.AppUserDepartments.AddAsync(userDept2);
+            await context.SaveChangesAsync();
+            // Add a task to the department
+            var task = new TTask
+            {
+                Name = "Initial Task",
+                Description = "This is a seeded task for the department.",
+                DepartmentId = dept.Entity.Id,
+                CreatorUserId = firstUser.Id,
+                EstimatedTimeMinutes = 60,
+                PointsAwarded = 100,
+                Status = TaskStatusEnum.NotStarted,
+                DueDateUtc = DateTime.UtcNow.AddDays(7)
+            };
+            await context.Tasks.AddAsync(task);
+            await context.SaveChangesAsync();
         }
-
-        await context.SaveChangesAsync();
+        #endregion
+        #region Second user assignment
+        // Assign second user to Organization and Department as User
+        var secondUser = await userManager.FindByEmailAsync(seedUsers.Last().Email!);
+        if (secondUser is not null)
+        {
+            var userOrg = new TAppUserOrganization
+            {
+                AppUserId = secondUser.Id,
+                OrganizationId = org.Entity.Id,
+                Role = RolesEnum.OrganizationMember
+            };
+            await context.AppUserOrganizations.AddAsync(userOrg);
+            await context.SaveChangesAsync();
+            var userDept = new TAppUserDepartment
+            {
+                AppUserId = secondUser.Id,
+                DepartmentId = dept.Entity.Id,
+                Role = RolesEnum.DepartmentMember
+            };
+            await context.AppUserDepartments.AddAsync(userDept);
+            await context.SaveChangesAsync();
+            var userDept2 = new TAppUserDepartment
+            {
+                AppUserId = secondUser.Id,
+                DepartmentId = department2.Id,
+                Role = RolesEnum.DepartmentMember
+            };
+            await context.AppUserDepartments.AddAsync(userDept2);
+            await context.SaveChangesAsync();
+        }
+        #endregion
     }
     private class SeedUser : AppUser
     {

@@ -6,7 +6,7 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+//builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<IPrivateLocalStorageService, PrivateLocalStorageService>();
@@ -34,6 +34,7 @@ builder.Services.AddHttpClient("Auth", client =>
 {
     //client.BaseAddress = new Uri("https+http://apiservice");
     client.BaseAddress = new Uri("https://localhost:7375");
+    //client.BaseAddress = new Uri("https://localhost:8080");
     client.Timeout = TimeSpan.FromMinutes(1);
 }).AddHttpMessageHandler<CookieHandler>();
 
@@ -48,11 +49,6 @@ builder.Services.AddHttpClient("Auth", client =>
 
 #endregion
 
-builder.Services.AddScoped<IDepartmentTaskService, DepartmentTaskService>()
-.AddHttpClient("DepartmentTaskService", client =>
-{
-    client.BaseAddress = new Uri("https://localhost:7375");
-    client.Timeout = TimeSpan.FromMinutes(1);
-});
+builder.Services.AddScoped<IDepartmentTaskService, DepartmentTaskService>();
 
 await builder.Build().RunAsync();

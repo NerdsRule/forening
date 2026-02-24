@@ -16,7 +16,7 @@ builder.Services.AddCors(options =>
     
     options.AddPolicy("AllowLocalhost", policy =>
     {
-        policy.WithOrigins("https://localhost:7145", "http://localhost:5179")
+        policy.WithOrigins("https://localhost:7145", "http://localhost:5179", "https://localhost:8081")
                     .SetIsOriginAllowedToAllowWildcardSubdomains()
                     .AllowAnyHeader()
                     .WithMethods("GET", "PUT", "DELETE", "POST")
@@ -57,17 +57,6 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
     options.SlidingExpiration = true;
 });
-
-// Add additional authentication schemes if needed
-// builder.Services.AddAuthentication()
-//     .AddCookie("Cookies", options =>
-//     {
-//         options.LoginPath = "/Account/Login";
-//         options.LogoutPath = "/Account/Logout";
-//         options.AccessDeniedPath = "/Account/AccessDenied";
-//         options.ExpireTimeSpan = TimeSpan.FromHours(8);
-//         options.SlidingExpiration = true;
-//     });
 #endregion
 
 var app = builder.Build();

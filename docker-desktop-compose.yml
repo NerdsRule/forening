@@ -1,0 +1,20 @@
+services:
+  api:
+    image: organization-api:0.0.2
+    build:
+      context: .
+      dockerfile: api-dockerfile
+    ports:
+      - "8080:80"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+
+  blazor:
+    image: organization-blazor:0.0.2
+    build:
+      context: .
+      dockerfile: blazor-dockerfile
+    ports:
+      - "8081:80"
+    depends_on:
+      - api
