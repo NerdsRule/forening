@@ -33,8 +33,8 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddHttpClient("Auth", client =>
 {
     //client.BaseAddress = new Uri("https+http://apiservice");
-    client.BaseAddress = new Uri("https://localhost:7375");
-    //client.BaseAddress = new Uri("https://localhost:8080");
+    //client.BaseAddress = new Uri("https://localhost:7375");
+    client.BaseAddress = new Uri("http://localhost:8080");
     client.Timeout = TimeSpan.FromMinutes(1);
 }).AddHttpMessageHandler<CookieHandler>();
 

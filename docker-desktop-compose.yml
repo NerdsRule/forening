@@ -1,6 +1,6 @@
 services:
   api:
-    image: organization-api:0.0.2
+    image: organization-api:0.0.4
     build:
       context: .
       dockerfile: api-dockerfile
@@ -10,7 +10,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
 
   blazor:
-    image: organization-blazor:0.0.2
+    image: organization-blazor:0.0.4
     build:
       context: .
       dockerfile: blazor-dockerfile
