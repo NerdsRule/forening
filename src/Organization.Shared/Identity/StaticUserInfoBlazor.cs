@@ -52,4 +52,9 @@ public static class StaticUserInfoBlazor
     /// </summary>
     public const string UserLocalStorageKey = "UserInfo";
 
+    /// <summary>
+    /// Key used for local storage user name used for passkey login
+    /// </summary>
+    public const string PasskeyLoginEmailStorageKey = "PasskeyLoginEmail";
+
 }

@@ -39,6 +39,198 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
     /// </summary>
     private readonly ClaimsPrincipal unauthenticated = new(new ClaimsIdentity());
 
+    # region Web Authn / Passkey Management
+
+    /// <summary>
+    /// Handle the initiation of passkey registration by generating FIDO2 credential options and storing the request state in memory cache for later verification.
+    /// </summary>
+    /// <returns>The asynchronous task resulting in a tuple containing the credential options for registration or an error result if the operation fails.</returns>
+    public async Task<(WebAuthnBeginPasskeyRegistrationResult? result, FormResult? error)> BeginPasskeyRegistrationAsync()
+    {
+        try
+        {
+            const string Empty = "{}";
+            var emptyContent = new StringContent(Empty, Encoding.UTF8, "application/json");
+            var response = await httpClient.PostAsync("/v1/api/users/webauthn/register/begin", emptyContent);
+            if (response.IsSuccessStatusCode)
+            {
+                var payload = await response.Content.ReadFromJsonAsync<WebAuthnBeginPasskeyRegistrationResult>(jsonSerializerOptions);
+                return (payload, null);
+            }
+
+            var details = await response.Content.ReadAsStringAsync();
+            var formResult = JsonHelpers.JsonDeSerialize<FormResult>(details);
+            return (null, formResult ?? new FormResult { Succeeded = false, ErrorList = ["Unable to start passkey registration."] });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "App error");
+            return (null, new FormResult { Succeeded = false, ErrorList = ["Unable to start passkey registration."] });
+        }
+    }
+
+    /// <summary>
+    /// Handle the completion of passkey registration by validating the client's response, updating the database with the new credential information, and returning an appropriate response indicating success or failure of the operation.
+    /// </summary>
+    /// <param name="model">The request model containing the credential information from the client.</param>
+    /// <returns>The asynchronous task resulting in a <see cref="FormResult"/> indicating the success or failure of the passkey registration completion process.</returns>
+    public async Task<FormResult> CompletePasskeyRegistrationAsync(WebAuthnCompleteRequest model)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync("/v1/api/users/webauthn/register/complete", model);
+            if (response.IsSuccessStatusCode)
+            {
+                return new FormResult { Succeeded = true, ErrorList = ["Passkey registered successfully."] };
+            }
+
+            var details = await response.Content.ReadAsStringAsync();
+            var formResult = JsonHelpers.JsonDeSerialize<FormResult>(details);
+            return formResult ?? new FormResult { Succeeded = false, ErrorList = ["Passkey registration failed."] };
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "App error");
+            return new FormResult { Succeeded = false, ErrorList = ["Passkey registration failed."] };
+        }
+    }
+
+    /// <summary>
+    /// Retrieve the list of passkey credentials registered for the authenticated user by making an API call to the server and returning the credentials or an empty list if the operation fails.
+    /// </summary>
+    /// <returns>The asynchronous task resulting in a list of <see cref="WebAuthnCredentialModel"/> representing the registered passkey credentials for the authenticated user.</returns>
+    public async Task<List<WebAuthnCredentialModel>> GetPasskeyCredentialsAsync()
+    {
+        try
+        {
+            CancellationToken cancellationToken = new CancellationTokenSource(TimeSpan.FromSeconds(30)).Token;
+            var response = await httpClient.GetAsync("/v1/api/users/webauthn/credentials", cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                var credentials = await response.Content.ReadFromJsonAsync<List<WebAuthnCredentialModel>>(jsonSerializerOptions, cancellationToken);
+                return credentials ?? [];
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "App error");
+        }
+
+        return [];
+    }
+
+    /// <summary>
+    /// Handle the deletion of a registered passkey credential by making an API call to the server to remove the specified credential and returning a <see cref="FormResult"/> indicating the success or failure of the operation.
+    /// </summary>
+    /// <param name="credentialId">The ID of the credential to be deleted.</param>
+    /// <returns>The asynchronous task resulting in a <see cref="FormResult"/> indicating whether the credential was successfully removed or if an error occurred during the process.</returns>
+    public async Task<FormResult> DeletePasskeyCredentialAsync(int credentialId)
+    {
+        try
+        {
+            var response = await httpClient.DeleteAsync($"/v1/api/users/webauthn/credentials/{credentialId}");
+            if (response.IsSuccessStatusCode)
+            {
+                return new FormResult { Succeeded = true, ErrorList = ["Passkey removed."] };
+            }
+
+            var details = await response.Content.ReadAsStringAsync();
+            var formResult = JsonHelpers.JsonDeSerialize<FormResult>(details);
+            return formResult ?? new FormResult { Succeeded = false, ErrorList = ["Unable to remove passkey."] };
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "App error");
+            return new FormResult { Succeeded = false, ErrorList = ["Unable to remove passkey."] };
+        }
+    }
+
+    /// <summary>
+    /// Update the friendly name of a registered passkey credential by making an API call to the server and returning a <see cref="FormResult"/> indicating the success or failure of the operation.
+    /// </summary>
+    /// <param name="credentialId">The ID of the credential to be updated.</param>
+    /// <param name="friendlyName">The new friendly name for the credential.</param>
+    /// <returns>The asynchronous task resulting in a <see cref="FormResult"/> indicating whether the friendly name was successfully updated or if an error occurred during the process.</returns>
+    public async Task<FormResult> UpdatePasskeyFriendlyNameAsync(int credentialId, string friendlyName)
+    {
+        try
+        {
+            var response = await httpClient.PutAsJsonAsync($"/v1/api/users/webauthn/credentials/{credentialId}/friendly-name", new WebAuthnUpdateFriendlyNameRequest
+            {
+                FriendlyName = friendlyName
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                return new FormResult { Succeeded = true, ErrorList = ["Friendly name updated."] };
+            }
+
+            var details = await response.Content.ReadAsStringAsync();
+            var formResult = JsonHelpers.JsonDeSerialize<FormResult>(details);
+            return formResult ?? new FormResult { Succeeded = false, ErrorList = ["Unable to update friendly name."] };
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "App error");
+            return new FormResult { Succeeded = false, ErrorList = ["Unable to update friendly name."] };
+        }
+    }
+
+    /// <summary>
+    /// Handle the initiation of passkey login by generating FIDO2 assertion options based on the user's registered credentials and storing the request state in memory cache for later verification.
+    /// </summary>
+    /// <param name="email">The email of the user attempting to log in with a passkey.</param>
+    /// <returns>The asynchronous task resulting in a tuple containing the assertion options for login or an error result if the operation fails.</returns>
+    public async Task<(WebAuthnBeginPasskeyRegistrationResult? result, FormResult? error)> BeginPasskeyLoginAsync(string email)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync("/v1/api/users/webauthn/login/begin", new WebAuthnBeginPasskeyLoginRequest { Email = email });
+            if (response.IsSuccessStatusCode)
+            {
+                var payload = await response.Content.ReadFromJsonAsync<WebAuthnBeginPasskeyRegistrationResult>(jsonSerializerOptions);
+                return (payload, null);
+            }
+
+            var details = await response.Content.ReadAsStringAsync();
+            var formResult = JsonHelpers.JsonDeSerialize<FormResult>(details);
+            return (null, formResult ?? new FormResult { Succeeded = false, ErrorList = ["Unable to start passkey login."] });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "App error");
+            return (null, new FormResult { Succeeded = false, ErrorList = ["Unable to start passkey login."] });
+        }
+    }
+
+    /// <summary>
+    /// Handle the completion of passkey login assertion by validating the client's response, verifying the assertion against the stored credential information, and returning an appropriate response indicating success or failure of the login attempt.
+    /// </summary>
+    /// <param name="model">The request model containing the assertion information from the client.</param>
+    /// <returns>The asynchronous task resulting in a <see cref="FormResult"/> indicating the success or failure of the passkey login attempt, and if successful, triggering an authentication state change to reflect the logged-in status of the user.</returns>
+    public async Task<FormResult> CompletePasskeyLoginAsync(WebAuthnCompleteRequest model)
+    {
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync("/v1/api/users/webauthn/login/complete", model);
+            if (response.IsSuccessStatusCode)
+            {
+                NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+                return new FormResult { Succeeded = true };
+            }
+
+            var details = await response.Content.ReadAsStringAsync();
+            var formResult = JsonHelpers.JsonDeSerialize<FormResult>(details);
+            return formResult ?? new FormResult { Succeeded = false, ErrorList = ["Passkey login failed."] };
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "App error");
+            return new FormResult { Succeeded = false, ErrorList = ["Passkey login failed."] };
+        }
+    }
+    #endregion
+
     #region User Management
     /// <summary>
     /// Register a new user.
@@ -71,7 +263,6 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
             ErrorList = defaultDetail
         };
     }
-
     /// <summary>
     /// User login.
     /// </summary>
@@ -111,7 +302,6 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
             ErrorList = ["Invalid email and/or password."]
         };
     }
-
     /// <summary>
     /// Get authentication state.
     /// </summary>

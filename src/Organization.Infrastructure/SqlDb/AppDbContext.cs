@@ -24,6 +24,11 @@ public class AppDbContext : IdentityDbContext<AppUser>
         {
             entity.Property(e => e.MemberNumber).HasMaxLength(50);
         });
+        builder.Entity<TFidoCredential>(entity =>
+        {
+            entity.HasIndex(c => c.CredentialId).IsUnique();
+            entity.HasIndex(c => c.AppUserId);
+        });
         builder.Entity<TAppUserOrganization>().HasIndex(u => new { u.AppUserId, u.OrganizationId }).IsUnique();
         builder.Entity<TAppUserDepartment>().HasIndex(u => new { u.AppUserId, u.DepartmentId }).IsUnique();
         builder.Entity<TTaskDepartment>().HasIndex(u => new { u.TaskId, u.DepartmentId }).IsUnique();
@@ -61,5 +66,6 @@ public class AppDbContext : IdentityDbContext<AppUser>
     public DbSet<TTask> Tasks { get; set; } = null!;
     public DbSet<TTaskDepartment> TaskDepartments { get; set; } = null!;
     public DbSet<TPrize> Prizes { get; set; } = null!;
+    public DbSet<TFidoCredential> FidoCredentials { get; set; } = null!;
     #endregion
 }

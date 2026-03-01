@@ -1,0 +1,102 @@
+
+@if (AllowLogin || AllowRegistration)
+{
+    <div class="card mt-2">
+        <div class="card-header">
+            <span class="fs-4 fw-bold">Add, Update, and Delete Passkey</span>
+        </div>
+        <div class="card-body">
+            
+            @if (AllowLogin)
+            {
+                <div class="mb-3">
+                    <label class="form-label">Passkey Email</label>
+                    <input class="form-control"
+                           value="@PasskeyLoginEmail"
+                           @oninput="OnPasskeyEmailInput" />
+                    <small class="text-muted">Use the email address associated with your registered passkey.</small>
+                </div>
+                <button type="button" class="btn btn-outline-primary me-2" @onclick="HandlePasskeyLoginAsync" disabled="@isBusy">
+                    Login with Passkey
+                </button>
+                <SpinnerComponent ShowSpinner="isBusy" />
+            }
+
+            @if (AllowRegistration)
+            {
+                <div class="row border border-secondary rounded rounded-1 my-2 p-2">
+                    <div class="col-12 mb-1">
+                        <span>Register a new passkey credential for passwordless authentication.</span>
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <span>Friendly Name:</span>
+                    </div>
+                    <div class="col-12 col-md-8">
+                        <InputText class="form-control" @bind-Value="NewPasskeyFriendlyName" placeholder="e.g. Work Laptop" />
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <button type="button" class="btn btn-outline-success" @onclick="HandlePasskeyRegistrationAsync" disabled="@isBusy">
+                            Register Passkey
+                        </button>
+                    </div>
+                </div>
+
+                @if (PasskeyCredentials.Count > 0)
+                {
+                    <span class="fs-5 fw-bold">Registered Passkeys</span>
+                    @foreach (var credential in PasskeyCredentials)
+                    {
+                        <div class="row border border-secondary rounded rounded-1 my-1 p-2">
+                            <div class="col-12 col-md-2">
+                                <span>Friendly Name:</span>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <input class="form-control" type="text"
+                                       value="@GetFriendlyNameEdit(credential.Id)"
+                                       @oninput="(e => SetFriendlyNameEdit(credential.Id, e.Value?.ToString()))" />
+                            </div>
+                            <div class="col-12 col-md-2">
+                                <button type="button" class="btn btn-outline-primary" @onclick="() => HandleUpdateFriendlyNameAsync(credential.Id)" disabled="@isBusy">
+                                    Save
+                                </button>
+                            </div>
+                            <div class="col-12 col-md-2">
+                                <button type="button" class="btn btn-outline-danger" @onclick="() => HandleDeletePasskeyAsync(credential.Id)" disabled="@isBusy">
+                                    Remove
+                                </button>
+                            </div>
+                            <div class="col-12">
+                                <div class="text-muted small mt-1">
+                                    @credential.CredentialType
+                                    <span> - @credential.CredentialHint</span>
+                                    @if (!string.IsNullOrWhiteSpace(credential.Fingerprint))
+                                    {
+                                        <span> - Fingerprint: [@credential.Fingerprint]</span>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(credential.Transports))
+                                    {
+                                        <span> - Transports: (@credential.Transports)</span>
+                                    }
+                                    <span> - Created: @credential.CreatedAt.LocalDateTime</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    
+                    <SpinnerComponent ShowSpinner="isBusy" />
+                }
+                else
+                {
+                    <div class="text-muted mt-3">No passkeys registered yet.</div>
+                }
+            }
+            <div class="text-muted border rounded p-2 mt-3 alert alert-info" role="alert">
+                Passkeys allow you to log in without a password using biometric authentication or a hardware security key. 
+                Passkeys provide a secure and convenient way to access your account without needing to remember a password.
+                Before login you have to register a passkey. After registration, you can use the "Login with Passkey" button to authenticate using your registered passkey. 
+                Go to My Profile to register Passkeys.
+            </div>
+            <FormResultComponent @ref="formResult" />
+        </div>
+    </div>
+}

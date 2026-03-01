@@ -6,6 +6,7 @@ builder.AddServiceDefaults();
 
 // Add services to the container.
 builder.Services.AddProblemDetails();
+builder.Services.AddMemoryCache();
 
 // Enable authorization services - policies can be added here as needed
 builder.Services.AddAuthorization();

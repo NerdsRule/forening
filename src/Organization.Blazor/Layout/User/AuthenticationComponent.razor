@@ -6,7 +6,7 @@
         <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
-                    <h3>Login</h3>
+                    <span class="fs-4 fw-bold">Login</span>
                 </div>
                 <div class="card-body">
                     <EditForm Model="loginModel" OnValidSubmit="HandleLogin">
@@ -24,12 +24,18 @@
                             <InputText type="password" class="form-control" @bind-Value="loginModel.Password" />
                             <ValidationMessage For="@(() => loginModel.Password)" />
                         </div>
-                        <button type="submit" class="btn btn-primary" disabled="@isLoading">Login</button>
+                        <button type="submit" class="btn btn-primary me-4" disabled="@isLoading">Login</button>
                         <SpinnerComponent ShowSpinner="isLoading" />
                     </EditForm>
                     <FormResultComponent @ref="FormResult" />
+                    
                 </div>
             </div>
         </div>
-    </div>   
+    </div>
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <WebAuthnComponent AllowLogin="true" AllowRegistration="false" NavigateOnLoginSuccess="true" />
+        </div>
+    </div>  
 </div>
