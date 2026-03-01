@@ -50,5 +50,7 @@ builder.Services.AddHttpClient("Auth", client =>
 #endregion
 
 builder.Services.AddScoped<IDepartmentTaskService, DepartmentTaskService>();
+builder.Services.AddScoped<IOrganizationService, OrganizationService>();
+builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 
 await builder.Build().RunAsync();

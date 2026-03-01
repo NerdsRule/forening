@@ -1,7 +1,4 @@
 
-using SQLitePCL;
-
-
 /// <summary>
 /// Defines and groups HTTP endpoints for organization-related operations exposed by the API service.
 /// </summary>

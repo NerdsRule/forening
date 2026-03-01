@@ -1,0 +1,10 @@
+@page "/organization-edit"
+@attribute [Authorize(Roles = "EnterpriseAdmin")]
+
+@using Organization.Blazor.Layout.OrganizationComponents
+
+<PageTitle>Organization Edit</PageTitle>
+
+<div class="container-fluid mt-4">
+    <OrganizationEditComponent />
+</div>
