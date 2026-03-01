@@ -25,6 +25,7 @@
                             <ValidationMessage For="@(() => loginModel.Password)" />
                         </div>
                         <button type="submit" class="btn btn-primary" disabled="@isLoading">Login</button>
+                        <WebAuthComponent ShowLogin="true" Email="@loginModel.Email" />
                         <SpinnerComponent ShowSpinner="isLoading" />
                     </EditForm>
                     <FormResultComponent @ref="FormResult" />

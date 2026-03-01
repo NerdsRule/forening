@@ -30,9 +30,8 @@ namespace Organization.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "TEXT", nullable: false),
-                    Points = table.Column<int>(type: "INTEGER", nullable: false, defaultValue: 0),
-                    UsedPoints = table.Column<int>(type: "INTEGER", nullable: false, defaultValue: 0),
                     MemberNumber = table.Column<string>(type: "TEXT", maxLength: 50, nullable: true),
+                    DisplayName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
                     UserName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "TEXT", maxLength: 256, nullable: true),
@@ -186,10 +185,11 @@ namespace Organization.Infrastructure.Migrations
                         .Annotation("Sqlite:Autoincrement", true),
                     Name = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
                     Description = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: true),
-                    Amount = table.Column<double>(type: "REAL", nullable: false),
+                    PointsCost = table.Column<int>(type: "INTEGER", nullable: false, defaultValue: 0),
                     DepartmentId = table.Column<int>(type: "INTEGER", nullable: false),
                     CreatorUserId = table.Column<string>(type: "TEXT", nullable: false),
-                    AssignedUserId = table.Column<string>(type: "TEXT", nullable: true)
+                    AssignedUserId = table.Column<string>(type: "TEXT", nullable: true),
+                    Status = table.Column<int>(type: "INTEGER", nullable: false, defaultValue: 0)
                 },
                 constraints: table =>
                 {
@@ -208,30 +208,51 @@ namespace Organization.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "TTasks",
+                name: "TWebAuthChallenges",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "INTEGER", nullable: false)
                         .Annotation("Sqlite:Autoincrement", true),
-                    Name = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
-                    Description = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: true),
-                    EstimatedTimeMinutes = table.Column<double>(type: "REAL", nullable: false),
-                    DueDateUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    DepartmentId = table.Column<int>(type: "INTEGER", nullable: false),
-                    CreatorUserId = table.Column<string>(type: "TEXT", nullable: false),
-                    AssignedUserId = table.Column<string>(type: "TEXT", nullable: true)
+                    AppUserId = table.Column<string>(type: "TEXT", nullable: false),
+                    Purpose = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    Challenge = table.Column<string>(type: "TEXT", maxLength: 256, nullable: false),
+                    Origin = table.Column<string>(type: "TEXT", maxLength: 256, nullable: false),
+                    RelyingPartyId = table.Column<string>(type: "TEXT", maxLength: 200, nullable: false),
+                    CreatedAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    ExpiresAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_TTasks", x => x.Id);
+                    table.PrimaryKey("PK_TWebAuthChallenges", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_TTasks_AspNetUsers_AssignedUserId",
-                        column: x => x.AssignedUserId,
+                        name: "FK_TWebAuthChallenges_AspNetUsers_AppUserId",
+                        column: x => x.AppUserId,
                         principalTable: "AspNetUsers",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TWebAuthCredentials",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    AppUserId = table.Column<string>(type: "TEXT", nullable: false),
+                    CredentialId = table.Column<string>(type: "TEXT", maxLength: 512, nullable: false),
+                    PublicKeySpki = table.Column<byte[]>(type: "BLOB", nullable: false),
+                    PublicKeyAlgorithm = table.Column<int>(type: "INTEGER", nullable: false),
+                    SignatureCounter = table.Column<uint>(type: "INTEGER", nullable: false),
+                    FriendlyName = table.Column<string>(type: "TEXT", maxLength: 200, nullable: true),
+                    CreatedAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    LastUsedAtUtc = table.Column<DateTime>(type: "TEXT", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TWebAuthCredentials", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_TTasks_AspNetUsers_CreatorUserId",
-                        column: x => x.CreatorUserId,
+                        name: "FK_TWebAuthCredentials_AspNetUsers_AppUserId",
+                        column: x => x.AppUserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -314,6 +335,70 @@ namespace Organization.Infrastructure.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "TTasks",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    Name = table.Column<string>(type: "TEXT", maxLength: 500, nullable: false),
+                    Description = table.Column<string>(type: "TEXT", maxLength: 2000, nullable: true),
+                    EstimatedTimeMinutes = table.Column<double>(type: "REAL", nullable: false),
+                    DueDateUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
+                    DepartmentId = table.Column<int>(type: "INTEGER", nullable: false),
+                    CreatorUserId = table.Column<string>(type: "TEXT", nullable: false),
+                    AssignedUserId = table.Column<string>(type: "TEXT", nullable: true),
+                    PointsAwarded = table.Column<int>(type: "INTEGER", nullable: false, defaultValue: 0),
+                    Status = table.Column<int>(type: "INTEGER", nullable: false, defaultValue: 0)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TTasks", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_TTasks_AspNetUsers_AssignedUserId",
+                        column: x => x.AssignedUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_TTasks_AspNetUsers_CreatorUserId",
+                        column: x => x.CreatorUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_TTasks_TDepartments_DepartmentId",
+                        column: x => x.DepartmentId,
+                        principalTable: "TDepartments",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TTaskDepartments",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "INTEGER", nullable: false)
+                        .Annotation("Sqlite:Autoincrement", true),
+                    TaskId = table.Column<int>(type: "INTEGER", nullable: false),
+                    DepartmentId = table.Column<int>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TTaskDepartments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_TTaskDepartments_TDepartments_DepartmentId",
+                        column: x => x.DepartmentId,
+                        principalTable: "TDepartments",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_TTaskDepartments_TTasks_TaskId",
+                        column: x => x.TaskId,
+                        principalTable: "TTasks",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
                 table: "AspNetRoleClaims",
@@ -389,6 +474,17 @@ namespace Organization.Infrastructure.Migrations
                 column: "CreatorUserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_TTaskDepartments_DepartmentId",
+                table: "TTaskDepartments",
+                column: "DepartmentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TTaskDepartments_TaskId_DepartmentId",
+                table: "TTaskDepartments",
+                columns: new[] { "TaskId", "DepartmentId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_TTasks_AssignedUserId",
                 table: "TTasks",
                 column: "AssignedUserId");
@@ -397,6 +493,27 @@ namespace Organization.Infrastructure.Migrations
                 name: "IX_TTasks_CreatorUserId",
                 table: "TTasks",
                 column: "CreatorUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TTasks_DepartmentId",
+                table: "TTasks",
+                column: "DepartmentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TWebAuthChallenges_AppUserId_Purpose",
+                table: "TWebAuthChallenges",
+                columns: new[] { "AppUserId", "Purpose" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TWebAuthCredentials_AppUserId",
+                table: "TWebAuthCredentials",
+                column: "AppUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_TWebAuthCredentials_CredentialId",
+                table: "TWebAuthCredentials",
+                column: "CredentialId",
+                unique: true);
         }
 
         /// <inheritdoc />
@@ -427,16 +544,25 @@ namespace Organization.Infrastructure.Migrations
                 name: "TPrizes");
 
             migrationBuilder.DropTable(
-                name: "TTasks");
+                name: "TTaskDepartments");
+
+            migrationBuilder.DropTable(
+                name: "TWebAuthChallenges");
+
+            migrationBuilder.DropTable(
+                name: "TWebAuthCredentials");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
-                name: "TDepartments");
+                name: "TTasks");
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");
+
+            migrationBuilder.DropTable(
+                name: "TDepartments");
 
             migrationBuilder.DropTable(
                 name: "TOrganizations");

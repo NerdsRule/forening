@@ -14,6 +14,57 @@ public interface IAccountService
     public Task<FormResult> LoginAsync(LoginModel model);
 
     /// <summary>
+    /// Start passkey registration for the authenticated user.
+    /// </summary>
+    /// <returns>WebAuth options for navigator.credentials.create.</returns>
+    public Task<WebAuthOptionsResponse?> BeginWebAuthRegistrationAsync();
+
+    /// <summary>
+    /// Complete passkey registration for the authenticated user.
+    /// </summary>
+    /// <param name="model">Client attestation payload.</param>
+    /// <returns>Result of registration.</returns>
+    public Task<FormResult> CompleteWebAuthRegistrationAsync(WebAuthRegisterCompleteRequest model);
+
+    /// <summary>
+    /// Start passkey authentication for a user email.
+    /// </summary>
+    /// <param name="email">User email address.</param>
+    /// <returns>WebAuth options for navigator.credentials.get.</returns>
+    public Task<WebAuthOptionsResponse?> BeginWebAuthAuthenticationAsync(string email);
+
+    /// <summary>
+    /// Complete passkey authentication and sign in.
+    /// </summary>
+    /// <param name="model">Client assertion payload.</param>
+    /// <returns>Result of authentication.</returns>
+    public Task<FormResult> CompleteWebAuthAuthenticationAsync(WebAuthAuthenticateCompleteRequest model);
+
+    /// <summary>
+    /// Get passkeys for the authenticated user.
+    /// </summary>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>List of passkeys.</returns>
+    public Task<List<WebAuthCredentialModel>> GetWebAuthCredentialsAsync(CancellationToken ct);
+
+    /// <summary>
+    /// Rename a passkey for the authenticated user.
+    /// </summary>
+    /// <param name="credentialId">Credential record id.</param>
+    /// <param name="friendlyName">Friendly passkey name.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>Operation result.</returns>
+    public Task<FormResult> RenameWebAuthCredentialAsync(int credentialId, string? friendlyName, CancellationToken ct);
+
+    /// <summary>
+    /// Delete a passkey for the authenticated user.
+    /// </summary>
+    /// <param name="credentialId">Credential record id.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>Operation result.</returns>
+    public Task<FormResult> DeleteWebAuthCredentialAsync(int credentialId, CancellationToken ct);
+
+    /// <summary>
     /// Log out the logged in user.
     /// </summary>
     /// <returns>The asynchronous task.</returns>

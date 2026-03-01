@@ -27,6 +27,9 @@ public class AppDbContext : IdentityDbContext<AppUser>
         builder.Entity<TAppUserOrganization>().HasIndex(u => new { u.AppUserId, u.OrganizationId }).IsUnique();
         builder.Entity<TAppUserDepartment>().HasIndex(u => new { u.AppUserId, u.DepartmentId }).IsUnique();
         builder.Entity<TTaskDepartment>().HasIndex(u => new { u.TaskId, u.DepartmentId }).IsUnique();
+        builder.Entity<TWebAuthCredential>().HasIndex(c => c.CredentialId).IsUnique();
+        builder.Entity<TWebAuthCredential>().HasIndex(c => c.AppUserId);
+        builder.Entity<TWebAuthChallenge>().HasIndex(c => new { c.AppUserId, c.Purpose });
         builder.Entity<TTask>(entity =>
         {
             entity.Property(e => e.PointsAwarded).IsRequired().HasDefaultValue(0);
@@ -61,5 +64,7 @@ public class AppDbContext : IdentityDbContext<AppUser>
     public DbSet<TTask> Tasks { get; set; } = null!;
     public DbSet<TTaskDepartment> TaskDepartments { get; set; } = null!;
     public DbSet<TPrize> Prizes { get; set; } = null!;
+    public DbSet<TWebAuthCredential> WebAuthCredentials { get; set; } = null!;
+    public DbSet<TWebAuthChallenge> WebAuthChallenges { get; set; } = null!;
     #endregion
 }

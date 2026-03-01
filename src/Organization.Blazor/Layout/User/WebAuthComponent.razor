@@ -1,0 +1,22 @@
+@if (ShowLogin)
+{
+    <button type="button" title="Using PassKey is a more secure login that does not require password but does not work on all devices" 
+        class="btn btn-outline-primary" @onclick="HandlePasskeyLoginAsync" disabled="@IsBusy">Sign in with Passkey</button>
+}
+@if (ShowRegister)
+{
+    <div class="card mt-2">
+        <div class="card-header">
+            <span class="fs-4 fw-bold">Register Passkey used for login</span>
+        </div>
+        <div class="card-body">
+            <span class="text-muted">Registering a passkey allows you to sign in without a password on supported devices. You can have multiple passkeys, e.g. for different devices.</span>
+            <div class="mb-2">
+                <label class="form-label">Passkey name</label>
+                <InputText class="form-control" @bind-Value="PasskeyFriendlyName" placeholder="e.g. Work Laptop" disabled="@IsBusy" />
+            </div>
+            <button type="button" class="btn btn-outline-secondary ms-2" @onclick="HandlePasskeyRegistrationAsync" disabled="@IsBusy">Register Passkey</button>
+        </div>
+    </div>
+}
+<FormResultComponent @ref="ResultComponent" />

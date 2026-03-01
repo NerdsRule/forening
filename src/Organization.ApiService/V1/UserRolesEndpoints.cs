@@ -151,8 +151,151 @@ public static class UserRolesEndpoints
             TotalPointsAwarded = totalPointsAwarded.Sum(t => t.TaskPointsAwarded)
         };
     }
+
+    /// <summary>
+    /// Helper method to encode byte array to Base64 URL format.
+    /// </summary>
+    /// <param name="data">The byte array to encode.</param>
+    /// <returns>A Base64 URL encoded string.</returns>
+    private static string Base64UrlEncode(byte[] data)
+    {
+        return Convert.ToBase64String(data).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    }
+
+    /// <summary>
+    /// Helper method to decode a Base64 URL encoded string to a byte array.
+    /// </summary>
+    /// <param name="data">The Base64 URL encoded string to decode.</param>
+    /// <returns>The decoded byte array.</returns>
+    private static byte[] Base64UrlDecode(string data)
+    {
+        var incoming = data.Replace('-', '+').Replace('_', '/');
+        switch (incoming.Length % 4)
+        {
+            case 2:
+                incoming += "==";
+                break;
+            case 3:
+                incoming += "=";
+                break;
+        }
+        return Convert.FromBase64String(incoming);
+    }
+
+    /// <summary>
+    /// Validates the client data received from the WebAuthn API against expected values for type, challenge, and origin.
+    /// </summary>
+    /// <param name="clientDataJsonBase64Url">The client data in Base64 URL encoded format.</param>
+    /// <param name="expectedType">The expected type of the WebAuthn operation (e.g., "webauthn.create" or "webauthn.get").</param>
+    /// <param name="expectedChallenge">The expected challenge that was originally sent to the client.</param>
+    /// <param name="expectedOrigin">The expected origin (e.g., "https://example.com") that should match the client's origin.</param>
+    /// <returns>True if the client data is valid and matches the expected values; otherwise, false.</returns>
+    private static bool TryValidateClientData(string clientDataJsonBase64Url, string expectedType, string expectedChallenge, string expectedOrigin)
+    {
+        try
+        {
+            var clientDataBytes = Base64UrlDecode(clientDataJsonBase64Url);
+            using var document = JsonDocument.Parse(clientDataBytes);
+
+            var root = document.RootElement;
+            var type = root.GetProperty("type").GetString();
+            var challenge = root.GetProperty("challenge").GetString();
+            var origin = root.GetProperty("origin").GetString();
+
+            var challengeMatches = false;
+            if (!string.IsNullOrWhiteSpace(challenge))
+            {
+                var incomingChallengeBytes = Base64UrlDecode(challenge);
+                var expectedChallengeBytes = Base64UrlDecode(expectedChallenge);
+                challengeMatches = incomingChallengeBytes.AsSpan().SequenceEqual(expectedChallengeBytes);
+            }
+
+            return string.Equals(type, expectedType, StringComparison.Ordinal)
+                && challengeMatches
+                && string.Equals(origin, expectedOrigin, StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Verifies the RP ID hash in the authenticator data against the expected RP ID and extracts the signature counter if valid.
+    /// </summary>
+    /// <param name="authenticatorDataBase64Url">The authenticator data in Base64 URL encoded format.</param>
+    /// <param name="rpId">The expected RP ID (e.g., "example.com") that should match the hash in the authenticator data.</param>
+    /// <param name="signCounter">Outputs the signature counter extracted from the authenticator data if the RP ID hash is valid.</param>
+    /// <returns>True if the RP ID hash is valid and matches the expected RP ID; otherwise, false.</returns>
+    private static bool TryVerifyAuthenticatorDataRpIdHash(string authenticatorDataBase64Url, string rpId, out uint signCounter)
+    {
+        signCounter = 0;
+        try
+        {
+            var authenticatorData = Base64UrlDecode(authenticatorDataBase64Url);
+            if (authenticatorData.Length < 37)
+            {
+                return false;
+            }
+
+            var expectedRpIdHash = System.Security.Cryptography.SHA256.HashData(Encoding.UTF8.GetBytes(rpId));
+            for (var i = 0; i < 32; i++)
+            {
+                if (authenticatorData[i] != expectedRpIdHash[i])
+                {
+                    return false;
+                }
+            }
+
+            signCounter = (uint)(authenticatorData[33] << 24 | authenticatorData[34] << 16 | authenticatorData[35] << 8 | authenticatorData[36]);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Verifies the signature of the assertion using the provided public key and client data.
+    /// </summary>
+    /// <param name="publicKeySpki">The public key in Subject Public Key Info (SPKI) format.</param>
+    /// <param name="authenticatorDataBase64Url">The authenticator data in Base64 URL encoded format.</param>
+    /// <param name="clientDataJsonBase64Url">The client data in Base64 URL encoded format.</param>
+    /// <param name="signatureBase64Url">The signature in Base64 URL encoded format.</param>
+    /// <returns>True if the signature is valid; otherwise, false.</returns>
+    private static bool VerifyAssertionSignature(byte[] publicKeySpki, string authenticatorDataBase64Url, string clientDataJsonBase64Url, string signatureBase64Url)
+    {
+        try
+        {
+            var authenticatorData = Base64UrlDecode(authenticatorDataBase64Url);
+            var clientDataJson = Base64UrlDecode(clientDataJsonBase64Url);
+            var signature = Base64UrlDecode(signatureBase64Url);
+            var clientDataHash = System.Security.Cryptography.SHA256.HashData(clientDataJson);
+
+            var signedData = new byte[authenticatorData.Length + clientDataHash.Length];
+            Buffer.BlockCopy(authenticatorData, 0, signedData, 0, authenticatorData.Length);
+            Buffer.BlockCopy(clientDataHash, 0, signedData, authenticatorData.Length, clientDataHash.Length);
+
+            using var ecdsa = System.Security.Cryptography.ECDsa.Create();
+            ecdsa.ImportSubjectPublicKeyInfo(publicKeySpki, out _);
+            return ecdsa.VerifyData(
+                signedData,
+                signature,
+                System.Security.Cryptography.HashAlgorithmName.SHA256,
+                System.Security.Cryptography.DSASignatureFormat.Rfc3279DerSequence);
+        }
+        catch
+        {
+            return false;
+        }
+    }
     #endregion
 
+    /// <summary>
+    /// Registers user-role-related endpoints on the provided <see cref="WebApplication"/> instance.
+    /// </summary>
+    /// <param name="app">The <see cref="WebApplication"/> to which the user roles endpoints will be mapped.</param>
     public static void MapUserRolesEndpoints(this WebApplication app)
     {
 
@@ -219,6 +362,401 @@ public static class UserRolesEndpoints
             if (userInfo is null) return Results.Unauthorized();
             return Results.Ok(userInfo);
         }).AllowAnonymous();
+
+        /// <summary>
+        /// WebAuthn registration options endpoint
+        /// </summary>
+        /// <param name="user">ClaimsPrincipal</param>
+        /// <param name="userManager">UserManager</param>
+        /// <param name="appDbContext">AppDbContext</param>
+        /// <param name="httpContext">HttpContext</param>
+        /// <param name="cancellationToken">CancellationToken</param>
+        /// <returns>Result</returns>
+        v1.MapPost("/api/users/webauth/register/options", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, AppDbContext appDbContext, HttpContext httpContext, CancellationToken cancellationToken) =>
+        {
+            if (user.Identity is null || !user.Identity.IsAuthenticated)
+            {
+                return Results.Unauthorized();
+            }
+
+            var identity = (ClaimsIdentity)user.Identity;
+            var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return Results.Unauthorized();
+            }
+
+            var appUser = await userManager.FindByIdAsync(userId);
+            if (appUser is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var rpId = httpContext.Request.Host.Host;
+            var originHeader = httpContext.Request.Headers.Origin.ToString();
+            var origin = string.IsNullOrWhiteSpace(originHeader)
+                ? $"{httpContext.Request.Scheme}://{httpContext.Request.Host}"
+                : originHeader;
+            var challenge = Base64UrlEncode(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
+
+            appDbContext.WebAuthChallenges.RemoveRange(appDbContext.WebAuthChallenges.Where(c => c.AppUserId == userId && c.Purpose == "register"));
+
+            await appDbContext.WebAuthChallenges.AddAsync(new TWebAuthChallenge
+            {
+                AppUserId = userId,
+                Purpose = "register",
+                Challenge = challenge,
+                Origin = origin,
+                RelyingPartyId = rpId,
+                ExpiresAtUtc = DateTime.UtcNow.AddMinutes(5)
+            }, cancellationToken);
+            await appDbContext.SaveChangesAsync(cancellationToken);
+
+            var options = new WebAuthOptionsResponse
+            {
+                Challenge = challenge,
+                RpId = rpId,
+                RpName = "Organization",
+                UserId = Base64UrlEncode(Encoding.UTF8.GetBytes(appUser.Id)),
+                UserName = appUser.UserName ?? appUser.Email ?? string.Empty,
+                DisplayName = appUser.DisplayName ?? appUser.UserName ?? appUser.Email ?? string.Empty,
+                TimeoutMs = 60000
+            };
+
+            return Results.Ok(options);
+        }).RequireAuthorization();
+
+        /// <summary>
+        /// WebAuthn registration verification endpoint
+        /// </summary>
+        /// <param name="user">ClaimsPrincipal</param>
+        /// <param name="model">WebAuthRegisterCompleteRequest</param>
+        /// <param name="appDbContext">AppDbContext</param>
+        /// <param name="cancellationToken">CancellationToken</param>
+        /// <returns>Result</returns>
+        v1.MapPost("/api/users/webauth/register/verify", async Task<IResult> (ClaimsPrincipal user, [FromBody] WebAuthRegisterCompleteRequest model, AppDbContext appDbContext, CancellationToken cancellationToken) =>
+        {
+            if (user.Identity is null || !user.Identity.IsAuthenticated)
+            {
+                return Results.Unauthorized();
+            }
+
+            var identity = (ClaimsIdentity)user.Identity;
+            var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return Results.Unauthorized();
+            }
+
+            var challenge = await appDbContext.WebAuthChallenges
+                .Where(c => c.AppUserId == userId && c.Purpose == "register")
+                .OrderByDescending(c => c.CreatedAtUtc)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (challenge is null || challenge.ExpiresAtUtc < DateTime.UtcNow)
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Registration challenge expired."] });
+            }
+
+            var validClientData = TryValidateClientData(model.ClientDataJson, "webauthn.create", challenge.Challenge, challenge.Origin);
+            if (!validClientData)
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Invalid WebAuth client data."] });
+            }
+
+            var existing = await appDbContext.WebAuthCredentials.FirstOrDefaultAsync(c => c.CredentialId == model.CredentialId, cancellationToken);
+            if (existing is not null)
+            {
+                return Results.Conflict(new FormResult { Succeeded = false, ErrorList = ["Credential already registered."] });
+            }
+
+            byte[] publicKeySpki;
+            try
+            {
+                publicKeySpki = Base64UrlDecode(model.PublicKeySpki);
+            }
+            catch
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Invalid public key payload."] });
+            }
+
+            await appDbContext.WebAuthCredentials.AddAsync(new TWebAuthCredential
+            {
+                AppUserId = userId,
+                CredentialId = model.CredentialId,
+                PublicKeySpki = publicKeySpki,
+                PublicKeyAlgorithm = model.PublicKeyAlgorithm,
+                FriendlyName = model.FriendlyName,
+                SignatureCounter = 0,
+                CreatedAtUtc = DateTime.UtcNow
+            }, cancellationToken);
+
+            appDbContext.WebAuthChallenges.Remove(challenge);
+            await appDbContext.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(new FormResult { Succeeded = true, ErrorList = ["Passkey registered successfully."] });
+        }).RequireAuthorization();
+
+        /// <summary>
+        /// WebAuthn login options endpoint
+        /// </summary> 
+        /// <param name="model">WebAuthAuthenticationOptionsRequest</param>
+        /// <param name="userManager">UserManager<AppUser></param>
+        /// <param name="appDbContext">AppDbContext</param>
+        /// <param name="httpContext">HttpContext</param>
+        /// <param name="cancellationToken">CancellationToken</param>
+        /// <returns>Result</returns>
+        v1.MapPost("/api/users/webauth/login/options", async Task<IResult> ([FromBody] WebAuthAuthenticationOptionsRequest model, UserManager<AppUser> userManager, AppDbContext appDbContext, HttpContext httpContext, CancellationToken cancellationToken) =>
+        {
+            if (model is null || string.IsNullOrWhiteSpace(model.Email))
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Email is required."] });
+            }
+
+            var appUser = await userManager.FindByEmailAsync(model.Email);
+            if (appUser is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var credentials = await appDbContext.WebAuthCredentials
+                .Where(c => c.AppUserId == appUser.Id)
+                .Select(c => c.CredentialId)
+                .ToListAsync(cancellationToken);
+
+            if (credentials.Count == 0)
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["No passkey is registered for this user."] });
+            }
+
+            var rpId = httpContext.Request.Host.Host;
+            var originHeader = httpContext.Request.Headers.Origin.ToString();
+            var origin = string.IsNullOrWhiteSpace(originHeader)
+                ? $"{httpContext.Request.Scheme}://{httpContext.Request.Host}"
+                : originHeader;
+            var challenge = Base64UrlEncode(System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
+
+            appDbContext.WebAuthChallenges.RemoveRange(appDbContext.WebAuthChallenges.Where(c => c.AppUserId == appUser.Id && c.Purpose == "authenticate"));
+
+            await appDbContext.WebAuthChallenges.AddAsync(new TWebAuthChallenge
+            {
+                AppUserId = appUser.Id,
+                Purpose = "authenticate",
+                Challenge = challenge,
+                Origin = origin,
+                RelyingPartyId = rpId,
+                ExpiresAtUtc = DateTime.UtcNow.AddMinutes(5)
+            }, cancellationToken);
+
+            await appDbContext.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(new WebAuthOptionsResponse
+            {
+                Challenge = challenge,
+                RpId = rpId,
+                RpName = "Organization",
+                UserId = Base64UrlEncode(Encoding.UTF8.GetBytes(appUser.Id)),
+                UserName = appUser.UserName ?? appUser.Email ?? string.Empty,
+                DisplayName = appUser.DisplayName ?? appUser.UserName ?? appUser.Email ?? string.Empty,
+                AllowCredentialIds = credentials,
+                TimeoutMs = 60000
+            });
+        }).AllowAnonymous();
+
+        /// <summary>
+        /// WebAuthn login verification endpoint
+        /// </summary>
+        /// <param name="model">WebAuthAuthenticateCompleteRequest</param>
+        /// <param name="signInManager">SignInManager<AppUser></param>
+        /// <param name="userManager">UserManager<AppUser></param>
+        /// <param name="db">IRootDbReadWrite</param>
+        /// <param name="appDbContext">AppDbContext</param>
+        /// <param name="cancellationToken">CancellationToken</param>
+        /// <returns>Result</returns>
+        v1.MapPost("/api/users/webauth/login/verify", async Task<IResult> ([FromBody] WebAuthAuthenticateCompleteRequest model, SignInManager<AppUser> signInManager, UserManager<AppUser> userManager, IRootDbReadWrite db, AppDbContext appDbContext, CancellationToken cancellationToken) =>
+        {
+            if (model is null || string.IsNullOrWhiteSpace(model.Email))
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Email is required."] });
+            }
+
+            var appUser = await userManager.FindByEmailAsync(model.Email);
+            if (appUser is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var challenge = await appDbContext.WebAuthChallenges
+                .Where(c => c.AppUserId == appUser.Id && c.Purpose == "authenticate")
+                .OrderByDescending(c => c.CreatedAtUtc)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (challenge is null || challenge.ExpiresAtUtc < DateTime.UtcNow)
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Authentication challenge expired."] });
+            }
+
+            var credential = await appDbContext.WebAuthCredentials
+                .FirstOrDefaultAsync(c => c.AppUserId == appUser.Id && c.CredentialId == model.CredentialId, cancellationToken);
+
+            if (credential is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var validClientData = TryValidateClientData(model.ClientDataJson, "webauthn.get", challenge.Challenge, challenge.Origin);
+            if (!validClientData)
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Invalid WebAuth client data."] });
+            }
+
+            if (!TryVerifyAuthenticatorDataRpIdHash(model.AuthenticatorData, challenge.RelyingPartyId, out var signCounter))
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Invalid authenticator data."] });
+            }
+
+            var signatureValid = VerifyAssertionSignature(credential.PublicKeySpki, model.AuthenticatorData, model.ClientDataJson, model.Signature);
+            if (!signatureValid)
+            {
+                return Results.Unauthorized();
+            }
+
+            if (signCounter > 0 && credential.SignatureCounter > 0 && signCounter <= credential.SignatureCounter)
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Passkey counter validation failed."] });
+            }
+
+            credential.SignatureCounter = signCounter;
+            credential.LastUsedAtUtc = DateTime.UtcNow;
+            appDbContext.WebAuthChallenges.Remove(challenge);
+            await appDbContext.SaveChangesAsync(cancellationToken);
+
+            await signInManager.SignInAsync(appUser, isPersistent: false);
+
+            var userInfo = await GetUserInfoAsync(appUser.Id, userManager, db, cancellationToken);
+            if (userInfo is null)
+            {
+                return Results.Unauthorized();
+            }
+
+            return Results.Ok(userInfo);
+        }).AllowAnonymous();
+
+        /// <summary>
+        /// Get registered WebAuthn credentials endpoint
+        /// </summary>
+        /// <param name="user">ClaimsPrincipal</param>
+        /// <param name="appDbContext">AppDbContext</param>
+        /// <param name="cancellationToken">CancellationToken</param>
+        /// <returns>Result</returns>
+        v1.MapGet("/api/users/webauth/credentials", async Task<IResult> (ClaimsPrincipal user, AppDbContext appDbContext, CancellationToken cancellationToken) =>
+        {
+            if (user.Identity is null || !user.Identity.IsAuthenticated)
+            {
+                return Results.Unauthorized();
+            }
+
+            var identity = (ClaimsIdentity)user.Identity;
+            var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return Results.Unauthorized();
+            }
+
+            var credentials = await appDbContext.WebAuthCredentials
+                .Where(c => c.AppUserId == userId)
+                .OrderByDescending(c => c.CreatedAtUtc)
+                .Select(c => new WebAuthCredentialModel
+                {
+                    Id = c.Id,
+                    CredentialId = c.CredentialId,
+                    FriendlyName = c.FriendlyName,
+                    CreatedAtUtc = c.CreatedAtUtc,
+                    LastUsedAtUtc = c.LastUsedAtUtc
+                })
+                .ToListAsync(cancellationToken);
+
+            return Results.Ok(credentials);
+        }).RequireAuthorization();
+
+        /// <summary>
+        /// Update WebAuthn credential friendly name endpoint
+        /// </summary>
+        /// <param name="user">ClaimsPrincipal</param>
+        /// <param name="credentialId">Credential Id</param>
+        /// <param name="model">WebAuthCredentialRenameRequest</param>
+        /// <param name="appDbContext">AppDbContext</param>
+        /// <param name="cancellationToken">CancellationToken</param>
+        /// <returns>Result</returns>
+        v1.MapPut("/api/users/webauth/credentials/{credentialId:int}", async Task<IResult> (ClaimsPrincipal user, int credentialId, [FromBody] WebAuthCredentialRenameRequest model, AppDbContext appDbContext, CancellationToken cancellationToken) =>
+        {
+            if (user.Identity is null || !user.Identity.IsAuthenticated)
+            {
+                return Results.Unauthorized();
+            }
+
+            var identity = (ClaimsIdentity)user.Identity;
+            var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return Results.Unauthorized();
+            }
+
+            var credential = await appDbContext.WebAuthCredentials
+                .FirstOrDefaultAsync(c => c.Id == credentialId && c.AppUserId == userId, cancellationToken);
+
+            if (credential is null)
+            {
+                return Results.NotFound(new FormResult { Succeeded = false, ErrorList = ["Passkey not found."] });
+            }
+
+            var friendlyName = model?.FriendlyName?.Trim();
+            if (!string.IsNullOrWhiteSpace(friendlyName) && friendlyName.Length > 200)
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Passkey name cannot exceed 200 characters."] });
+            }
+
+            credential.FriendlyName = string.IsNullOrWhiteSpace(friendlyName) ? null : friendlyName;
+            await appDbContext.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(new FormResult { Succeeded = true, ErrorList = ["Passkey name updated."] });
+        }).RequireAuthorization();
+
+        /// <summary>
+        /// Delete WebAuthn credential endpoint
+        /// </summary>
+        /// <param name="user">ClaimsPrincipal</param>
+        /// <param name="credentialId">Credential Id</param>
+        /// <param name="appDbContext">AppDbContext</param>
+        /// <param name="cancellationToken">CancellationToken</param>
+        /// <returns>Result</returns>
+        v1.MapDelete("/api/users/webauth/credentials/{credentialId:int}", async Task<IResult> (ClaimsPrincipal user, int credentialId, AppDbContext appDbContext, CancellationToken cancellationToken) =>
+        {
+            if (user.Identity is null || !user.Identity.IsAuthenticated)
+            {
+                return Results.Unauthorized();
+            }
+
+            var identity = (ClaimsIdentity)user.Identity;
+            var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return Results.Unauthorized();
+            }
+
+            var credential = await appDbContext.WebAuthCredentials
+                .FirstOrDefaultAsync(c => c.Id == credentialId && c.AppUserId == userId, cancellationToken);
+
+            if (credential is null)
+            {
+                return Results.NotFound(new FormResult { Succeeded = false, ErrorList = ["Passkey not found."] });
+            }
+
+            appDbContext.WebAuthCredentials.Remove(credential);
+            await appDbContext.SaveChangesAsync(cancellationToken);
+
+            return Results.Ok(new FormResult { Succeeded = true, ErrorList = ["Passkey deleted."] });
+        }).RequireAuthorization();
 
         /// <summary>
         /// Registration endpoint

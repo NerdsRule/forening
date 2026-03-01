@@ -113,6 +113,193 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
     }
 
     /// <summary>
+    /// Initiate WebAuthn registration by requesting options from the server.
+    /// </summary>
+    /// <returns>The WebAuthn options response from the server, or null if the request failed.</returns>
+    public async Task<WebAuthOptionsResponse?> BeginWebAuthRegistrationAsync()
+    {
+        try
+        {
+            CancellationToken cancellationToken = new CancellationTokenSource(TimeSpan.FromSeconds(30)).Token;
+            var response = await httpClient.PostAsync("/v1/api/users/webauth/register/options", new StringContent("{}", Encoding.UTF8, "application/json"), cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var options = await response.Content.ReadFromJsonAsync<WebAuthOptionsResponse>(jsonSerializerOptions, cancellationToken);
+            return options;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error starting WebAuth registration");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Complete WebAuthn registration by sending the client's attestation response to the server for verification and user registration.
+    /// </summary>
+    /// <param name="model">The client's attestation response containing credential ID, client data JSON, public key SPKI, algorithm, and an optional friendly name.</param>
+    /// <returns>A <see cref="FormResult"/> indicating the success or failure of the registration completion.</returns>
+    public async Task<FormResult> CompleteWebAuthRegistrationAsync(WebAuthRegisterCompleteRequest model)
+    {
+        try
+        {
+            CancellationToken cancellationToken = new CancellationTokenSource(TimeSpan.FromSeconds(30)).Token;
+            var response = await httpClient.PostAsJsonAsync("/v1/api/users/webauth/register/verify", model, cancellationToken);
+            if (response.IsSuccessStatusCode)
+            {
+                return new FormResult { Succeeded = true, ErrorList = ["Passkey registered successfully."] };
+            }
+
+            var details = await response.Content.ReadAsStringAsync(cancellationToken);
+            var problemDetails = JsonHelpers.JsonDeSerialize<FormResult>(details);
+            return problemDetails ?? new FormResult { Succeeded = false, ErrorList = ["Passkey registration failed."] };
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error completing WebAuth registration");
+            return new FormResult { Succeeded = false, ErrorList = ["Passkey registration failed."] };
+        }
+    }
+
+    /// <summary>
+    /// Initiate WebAuthn authentication by requesting options from the server.
+    /// </summary>
+    /// <param name="email">The email of the user attempting to authenticate.</param>
+    /// <returns>The WebAuthn options response from the server, or null if the request failed.</returns>
+    public async Task<WebAuthOptionsResponse?> BeginWebAuthAuthenticationAsync(string email)
+    {
+        try
+        {
+            CancellationToken cancellationToken = new CancellationTokenSource(TimeSpan.FromSeconds(30)).Token;
+            var response = await httpClient.PostAsJsonAsync("/v1/api/users/webauth/login/options", new WebAuthAuthenticationOptionsRequest { Email = email }, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var options = await response.Content.ReadFromJsonAsync<WebAuthOptionsResponse>(jsonSerializerOptions, cancellationToken);
+            return options;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error starting WebAuth authentication");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Complete WebAuthn authentication by sending the client's assertion response to the server for verification and user authentication.
+    /// </summary>
+    /// <param name="model">The client's assertion response containing credential ID, client data JSON, authenticator data, signature, and an optional user handle.</param>
+    /// <returns>A <see cref="FormResult"/> indicating the success or failure of the authentication completion.</returns>
+    public async Task<FormResult> CompleteWebAuthAuthenticationAsync(WebAuthAuthenticateCompleteRequest model)
+    {
+        try
+        {
+            CancellationToken cancellationToken = new CancellationTokenSource(TimeSpan.FromSeconds(30)).Token;
+            var response = await httpClient.PostAsJsonAsync("/v1/api/users/webauth/login/verify", model, cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+                return new FormResult { Succeeded = true, ErrorList = ["Passkey login succeeded."] };
+            }
+
+            var details = await response.Content.ReadAsStringAsync(cancellationToken);
+            var problemDetails = JsonHelpers.JsonDeSerialize<FormResult>(details);
+            return problemDetails ?? new FormResult { Succeeded = false, ErrorList = ["Passkey login failed."] };
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error completing WebAuth authentication");
+            return new FormResult { Succeeded = false, ErrorList = ["Passkey login failed."] };
+        }
+    }
+
+    /// <summary>
+    /// Get the list of WebAuthn credentials (passkeys) registered to the authenticated user by making a request to the server. This is used to display the user's passkeys and manage them (e.g., rename or delete) in the UI.
+    /// </summary>
+    /// <param name="ct">Cancellation token for the request.</param>
+    /// <returns>A list of <see cref="WebAuthCredentialModel"/> representing the user's registered passkeys, or an empty list if the request fails or the user has no passkeys.</returns>
+    public async Task<List<WebAuthCredentialModel>> GetWebAuthCredentialsAsync(CancellationToken ct)
+    {
+        try
+        {
+            var response = await httpClient.GetAsync("/v1/api/users/webauth/credentials", ct);
+            if (!response.IsSuccessStatusCode)
+            {
+                return [];
+            }
+
+            var credentials = await response.Content.ReadFromJsonAsync<List<WebAuthCredentialModel>>(jsonSerializerOptions, ct);
+            return credentials ?? [];
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error fetching WebAuth credentials");
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// Rename a WebAuthn credential (passkey) for the authenticated user by making a request to the server.
+    /// </summary>
+    /// <param name="credentialId">The ID of the credential to rename.</param>
+    /// <param name="friendlyName">The new friendly name for the credential.</param>
+    /// <param name="ct">Cancellation token for the request.</param>
+    /// <returns>A <see cref="FormResult"/> indicating the success or failure of the rename operation.</returns>
+    public async Task<FormResult> RenameWebAuthCredentialAsync(int credentialId, string? friendlyName, CancellationToken ct)
+    {
+        try
+        {
+            var response = await httpClient.PutAsJsonAsync($"/v1/api/users/webauth/credentials/{credentialId}", new WebAuthCredentialRenameRequest { FriendlyName = friendlyName }, ct);
+            if (response.IsSuccessStatusCode)
+            {
+                return new FormResult { Succeeded = true, ErrorList = ["Passkey updated."] };
+            }
+
+            var details = await response.Content.ReadAsStringAsync(ct);
+            var problemDetails = JsonHelpers.JsonDeSerialize<FormResult>(details);
+            return problemDetails ?? new FormResult { Succeeded = false, ErrorList = ["Unable to update passkey."] };
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error renaming WebAuth credential");
+            return new FormResult { Succeeded = false, ErrorList = ["Unable to update passkey."] };
+        }
+    }
+
+    /// <summary>
+    /// Delete a WebAuthn credential (passkey) for the authenticated user by making a request to the server.
+    /// </summary>
+    /// <param name="credentialId">The ID of the credential to delete.</param>
+    /// <param name="ct">Cancellation token for the request.</param>
+    /// <returns>A <see cref="FormResult"/> indicating the success or failure of the delete operation.</returns>
+    public async Task<FormResult> DeleteWebAuthCredentialAsync(int credentialId, CancellationToken ct)
+    {
+        try
+        {
+            var response = await httpClient.DeleteAsync($"/v1/api/users/webauth/credentials/{credentialId}", ct);
+            if (response.IsSuccessStatusCode)
+            {
+                return new FormResult { Succeeded = true, ErrorList = ["Passkey deleted."] };
+            }
+
+            var details = await response.Content.ReadAsStringAsync(ct);
+            var problemDetails = JsonHelpers.JsonDeSerialize<FormResult>(details);
+            return problemDetails ?? new FormResult { Succeeded = false, ErrorList = ["Unable to delete passkey."] };
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error deleting WebAuth credential");
+            return new FormResult { Succeeded = false, ErrorList = ["Unable to delete passkey."] };
+        }
+    }
+
+    /// <summary>
     /// Get authentication state.
     /// </summary>
     /// <remarks>

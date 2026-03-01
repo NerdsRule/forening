@@ -1,0 +1,46 @@
+<div class="card mt-2">
+<div class="card-header">
+    <span class="fs-4 fw-bold">Your Passkeys </span>
+    <button type="button" class="btn btn-outline-secondary btn-sm mb-2" @onclick="LoadCredentialsAsync" disabled="@IsBusy">Refresh</button>
+    <SpinnerComponent ShowSpinner="@IsBusy" />
+</div>
+<div class="card-body">
+<div class="row border border-secondary rounded rounded-1 my-2 p-2">
+    @if (Credentials.Count == 0)
+    {
+        <div class="col-12 text-muted">Press refresh to load your passkeys.</div>
+    }
+    else
+    {
+        @foreach (var item in Credentials)
+        {
+            <div class="col-12 col-md-1">
+                Name:
+            </div>
+            <div class="col-12 col-md-4">
+                <InputText class="form-control" @bind-Value="item.FriendlyName" disabled="@IsBusy" />
+            </div>
+            <div class="col-12 col-md-1">
+            Created:
+            </div>
+            <div class="col-12 col-md-1 text-muted text-sm">
+                @item.CreatedAtUtc.ToLocalTime()
+            </div>
+            <div class="col-12 col-md-1">
+                Last used:
+            </div>
+            <div class="col-12 col-md-1 text-muted text-sm">
+                @item.LastUsedAtUtc?.ToLocalTime()
+            </div>
+            <div class="col-12 col-md-2">
+                <button type="button" class="btn btn-primary btn-sm me-2" @onclick="() => RenameAsync(item)" disabled="@IsBusy">Save name</button>
+            </div>
+            <div class="col-12 col-md-1">
+                <button type="button" class="btn btn-danger btn-sm" @onclick="() => DeleteAsync(item)" disabled="@IsBusy">Delete</button>
+            </div>
+        }
+    }
+    </div>
+</div>
+</div>
+<FormResultComponent @ref="ResultComponent" />

@@ -5,7 +5,7 @@
 <div class="container">
     <div class="card">
         <div class="card-header">
-            <h3>Your Profile Information</h3>
+            <span class="fs-4 fw-bold">Your Profile Information</span>
         </div>
         <div class="card-body">
             @if (StaticUserInfoBlazor.User != null)
@@ -23,16 +23,19 @@
                     <InputText class="form-control" @bind-Value="StaticUserInfoBlazor.User.MemberNumber" disabled />
                 </div>
                 <button class="btn btn-success" @onclick="NavigateToChangePassword">Change Password</button>
+                
+                
             }
         </div>
     </div>
+    <WebAuthComponent ShowRegister="true" />
+    <WebAuthEditComponent />
     
-    <div class="card">
+    <div class="card mt-2">
         <div class="card-header">
-            <h3>Your Organization & Department</h3>
+            <span class="fs-4 fw-bold">Change organization & Department</span>
         </div>
         <div class="card-body">
-            <h3>Change Organization & Department</h3>
             <EditForm Model="_organizationDepartmentForm" OnValidSubmit="HandleValidSubmit">
                 <DataAnnotationsValidator />
                 <ValidationSummary />
