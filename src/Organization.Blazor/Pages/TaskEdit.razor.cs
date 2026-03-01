@@ -30,7 +30,7 @@ public partial class TaskEdit
     /// </summary> <returns>A task that represents the asynchronous operation.</returns>
     private void BuildEmptyTask()
     {
-        _newTask = new TTask { CreatorUserId = StaticUserInfoBlazor.User!.Id, CreatorUser = new AppUser { Id = StaticUserInfoBlazor.User.Id, UserName = StaticUserInfoBlazor.User.UserName }, DueDateUtc = DateTime.UtcNow.AddDays(7), DepartmentId = StaticUserInfoBlazor.SelectedDepartment!.Id, Department = StaticUserInfoBlazor.SelectedDepartment!.Department };
+        _newTask = new TTask { CreatorUserId = StaticUserInfoBlazor.User!.Id, CreatorUser = new AppUser { Id = StaticUserInfoBlazor.User.Id, UserName = StaticUserInfoBlazor.User.DisplayName ?? StaticUserInfoBlazor.User.UserName, DisplayName = StaticUserInfoBlazor.User.DisplayName ?? StaticUserInfoBlazor.User.UserName }, DueDateUtc = DateTime.UtcNow.AddDays(7), DepartmentId = StaticUserInfoBlazor.SelectedDepartment!.DepartmentId, Department = StaticUserInfoBlazor.SelectedDepartment!.Department };
     }
 
     /// <summary>
@@ -61,8 +61,8 @@ public partial class TaskEdit
             else if (usersWithAccessToOrganization is not null)
                 UsersWithAccessToOrganization = usersWithAccessToOrganization;
         }
-
-        var (usersWithAccessToDepartment, formResultUsersWithAccessToDepartment) = await DepartmentTaskService.GetUsersWithAccessToDepartmentAsync(StaticUserInfoBlazor.SelectedDepartment!.Id, CancellationToken.None);
+        //Console.WriteLine($"Selected department: {StaticUserInfoBlazor.SelectedDepartment?.DepartmentId}");
+        var (usersWithAccessToDepartment, formResultUsersWithAccessToDepartment) = await DepartmentTaskService.GetUsersWithAccessToDepartmentAsync(StaticUserInfoBlazor.SelectedDepartment!.DepartmentId, CancellationToken.None);
         if (formResultUsersWithAccessToDepartment is not null && FormResult is not null)
             FormResult.SetFormResult(formResultUsersWithAccessToDepartment);
         else if (usersWithAccessToDepartment is not null)

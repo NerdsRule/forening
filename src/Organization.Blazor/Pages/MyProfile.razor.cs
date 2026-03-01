@@ -23,6 +23,7 @@ partial class MyProfile
     {
         StaticUserInfoBlazor.SelectedOrganization = StaticUserInfoBlazor.User!.AppUserOrganizations.FirstOrDefault(o => o.OrganizationId == _organizationDepartmentForm.SelectedOrganizationId);
         StaticUserInfoBlazor.SelectedDepartment = StaticUserInfoBlazor.User!.AppUserDepartments.FirstOrDefault(d => d.DepartmentId == _organizationDepartmentForm.SelectedDepartmentId);
+        Console.WriteLine($"Selected organization: {StaticUserInfoBlazor.SelectedOrganization?.Organization?.Id}, Selected department: {StaticUserInfoBlazor.SelectedDepartment?.Department?.Id}");
         IsUpdating = true;
         // save to local storage
         var userLocalStorage = new UserLocalStorage
