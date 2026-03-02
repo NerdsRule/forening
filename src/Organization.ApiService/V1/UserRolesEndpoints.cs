@@ -625,10 +625,17 @@ public static class UserRolesEndpoints
             if (userId is null) 
                 return Results.Unauthorized();
 
-            var userInfo = await GetUserInfoAsync(userId, userManager, db, cancellationToken);
-            if (userInfo is null) 
-                return Results.Unauthorized();
-            return Results.Ok(userInfo);
+            try
+            {
+                var userInfo = await GetUserInfoAsync(userId, userManager, db, cancellationToken);
+                if (userInfo is null) 
+                    return Results.Unauthorized();
+                return Results.Ok(userInfo);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                return Results.StatusCode(StatusCodes.Status499ClientClosedRequest);
+            }
         }).RequireAuthorization();
 
         /// <summary>
@@ -1058,8 +1065,8 @@ public static class UserRolesEndpoints
             }
 
             var appUserOrganizations = await db.GetRowsAsync<TAppUserOrganization>(cancellationToken);
-            var hasOrganizationMapping = appUserOrganizations.Any(o => o.AppUserId == testUser.Id && o.OrganizationId == organizationId && o.Role == RolesEnum.EnterpriseAdmin);
-            if (!hasOrganizationMapping)
+            var existingOrganizationMapping = appUserOrganizations.FirstOrDefault(o => o.AppUserId == testUser.Id && o.OrganizationId == organizationId);
+            if (existingOrganizationMapping is null)
             {
                 await db.AddRowAsync<TAppUserOrganization>(new TAppUserOrganization
                 {
@@ -1068,8 +1075,13 @@ public static class UserRolesEndpoints
                     Role = RolesEnum.EnterpriseAdmin
                 }, cancellationToken);
             }
+            else if (existingOrganizationMapping.Role != RolesEnum.EnterpriseAdmin)
+            {
+                existingOrganizationMapping.Role = RolesEnum.EnterpriseAdmin;
+                await db.UpdateRowAsync(existingOrganizationMapping, cancellationToken);
+            }
 
-            return Results.Ok(new UserModel { Id = testUser.Id, UserName = testUser.UserName, Email = testUser.Email });
+            return Results.Ok(new UserModel { Id = testUser.Id, UserName = testUser.UserName ?? string.Empty, Email = testUser.Email ?? string.Empty });
         }).AllowAnonymous();
         #endregion
     }

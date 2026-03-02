@@ -30,14 +30,16 @@ builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 
 #region Database
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+//var connectionString = builder.Configuration.GetConnectionString("MemoryConnection");
 //builder.Services.AddDbContext<AppDbContext>(options => {options.UseInMemoryDatabase("TestDb");});
-builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
-//builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
+//var connectionString = builder.Configuration.GetConnectionString("LocalConnection");
+//builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
 
 
 // Register RootDbReadWrite with scoped lifetime to ensure a new instance per request
-builder.Services.AddScoped<IRootDbReadWrite>(x => new RootDbReadWrite(builder.Services));
+builder.Services.AddScoped<IRootDbReadWrite, RootDbReadWrite>();
 
 // Add Identity services
 builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
