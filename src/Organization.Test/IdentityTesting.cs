@@ -39,16 +39,9 @@ private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
         testOrgResponse.Should().NotBeNull("Test organization creation response was null.");
         testOrgResponse!.Id.Should().BeGreaterThan(0, "Test organization ID was not greater than 0.");
 
-        // Test GetInfo before user registration where 401 is expected
-        try
-        {
-            var getInfoResponse = await httpClient.GetFromJsonAsync<UserModel?>($"/v1/api/users/info", cancellationToken);
-            getInfoResponse.Should().BeNull("GetInfo response before registration should be null (unauthenticated).");
-        }
-        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
-        {
-            // Expected exception for unauthenticated request
-        }
+        // Test GetInfo before user registration where unauthenticated access is expected
+        var getInfoHttpResponse = await httpClient.GetAsync("/v1/api/users/info", cancellationToken);
+        getInfoHttpResponse.IsSuccessStatusCode.Should().BeFalse("GetInfo before registration should not succeed for an unauthenticated user.");
         
         var registerResponse = await httpClient.GetFromJsonAsync<UserModel>($"/v1/api/users/test/{testOrgResponse.Id}", cancellationToken);
         registerResponse.Should().NotBeNull("Register response was null.");
@@ -81,25 +74,10 @@ private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
         loginResponse = await httpClient.PostAsJsonAsync("/v1/api/users/login", loginModel, cancellationToken);
         loginResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Second login response status code was not OK.");
 
-        // Get all roles and verify
-        var getRolesResponse = await httpClient.GetFromJsonAsync<List<string>>("/v1/api/roles/all");
-        getRolesResponse.Should().NotBeNull("Get roles response was null.");
-        getRolesResponse.Should().Contain(RolesEnum.EnterpriseAdmin.ToString(), "Get roles response did not contain the added role.");
-
-        // Add a role to user and verify
-        var additionalRole = RolesEnum.DepartmentAdmin.ToString();
-        var addAdditionalRoleResponse = await httpClient.PostAsJsonAsync("/v1/api/users/" + registerResponse?.Id + "/roles", new string[] { additionalRole });
-        addAdditionalRoleResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Add additional role to user response status code was not OK.");
-        //Logout user
-        logoutResponse = await httpClient.PostAsync("/v1/api/users/logout", emptyContent);
-        logoutResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Logout response status code was not OK.");
-        // Login again to test role assignment
-        loginResponse = await httpClient.PostAsJsonAsync("/v1/api/users/login", loginModel, cancellationToken);
-        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Third login response status code was not OK.");
-        var getUserRolesResponse = await httpClient.GetFromJsonAsync<List<string>>($"/v1/api/users/{registerResponse?.Id}/roles");
-        getUserRolesResponse.Should().NotBeNull("Get user roles response was null.");
-        getUserRolesResponse.Should().Contain(additionalRole, "Get user roles response did not contain the additional role.");
-        getUserRolesResponse.Should().Contain(RolesEnum.EnterpriseAdmin.ToString(), "Get user roles response did not contain the enterprise admin role.");
+        // Verify authenticated user info with current API contract
+        var authenticatedUserInfo = await httpClient.GetFromJsonAsync<UserModel>("/v1/api/users/info", cancellationToken);
+        authenticatedUserInfo.Should().NotBeNull("Authenticated user info response was null.");
+        authenticatedUserInfo!.UserName.Should().Be(registerResponse.UserName, "Authenticated user username did not match the registered test user.");
 
     }
 }

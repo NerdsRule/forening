@@ -173,7 +173,7 @@ public static class OrganizationEndpoints
                 
                 if (existingOrganizations != null && existingOrganizations.Any())
                 {
-                    return Results.Ok("Organizations already exist in the database.");
+                    return Results.Ok(existingOrganizations.First());
                 }
 
                 var testOrganization = new TOrganization
@@ -190,8 +190,8 @@ public static class OrganizationEndpoints
                 return Results.Problem(detail: e.Message, statusCode: StatusCodes.Status500InternalServerError);
             }
         })
+        .Produces<TOrganization>(StatusCodes.Status200OK)
         .Produces<TOrganization>(StatusCodes.Status201Created)
-        .Produces<string>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status500InternalServerError);
     }
 }

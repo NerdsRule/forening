@@ -7,8 +7,7 @@
         <div class="card-body">
             <p class="card-text">
                 This section allows you to view and edit the details of the selected user. 
-                You can update the user's username, display name, and member number. 
-                The email address is displayed for reference but cannot be edited. 
+                You can update the user's username, email address, display name, and member number. 
                 After making any changes, click the "Update" button to save the changes to the user's profile. 
                 If you wish to remove the user from the system, you can click the "Delete User" button, which will permanently delete the user's account and all associated data. 
                 Please proceed with caution when deleting a user, as this action cannot be undone.
@@ -25,7 +24,8 @@
             </div>
             <div class="mb-3">
                 <label class="form-label">Email</label>
-                <InputText @bind-Value="User.Email" class="form-control" disabled />
+                <InputText @bind-Value="User.Email" class="form-control" />
+                <ValidationMessage For="@(() => User.Email)" />
             </div>
             <div class="mb-3">
                 <label class="form-label">Display Name</label>

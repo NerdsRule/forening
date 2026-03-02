@@ -27,6 +27,8 @@ public class UserModel
     /// <summary>
     /// Email of the user
     /// </summary>
+    [EmailAddress(ErrorMessage = "Email format is invalid.")]
+    [Required(ErrorMessage = "Email is required")]
     public string Email { get; set; } = null!;
 
     /// <summary>

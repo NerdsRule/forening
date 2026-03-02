@@ -52,6 +52,10 @@ public class OrganizationTesting
         loginResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Login response status code was not OK.");
         #endregion
 
+        var organizationsBeforeAdd = await httpClient.GetFromJsonAsync<List<TOrganization>>("/v1/api/organization/all", cancellationToken);
+        organizationsBeforeAdd.Should().NotBeNull("Organizations before add response content was null.");
+        var organizationCountBeforeAdd = organizationsBeforeAdd!.Count;
+
         // Add an organization
         var newOrg = new TOrganization
         {
@@ -67,8 +71,8 @@ public class OrganizationTesting
         // Get all organizations again
         var getAllResponse = await httpClient.GetFromJsonAsync<List<TOrganization>>("/v1/api/organization/all", cancellationToken);
         getAllResponse.Should().NotBeNull("Get all response content was null.");
-        getAllResponse.Should().HaveCount(2, "There should be exactly two organizations after adding one.");
-        getAllResponse![1].Id.Should().Be(createdOrg.Id, "The ID of the retrieved organization did not match the created one.");
+        getAllResponse.Should().HaveCount(organizationCountBeforeAdd + 1, "There should be exactly one additional organization after adding one.");
+        getAllResponse.Should().Contain(o => o.Id == createdOrg.Id, "The created organization should be present in the retrieved list.");
         // Get the organization by ID
         var getByIdResponse = await httpClient.GetFromJsonAsync<TOrganization>($"/v1/api/organization/{createdOrg.Id}", cancellationToken);
         getByIdResponse.Should().NotBeNull("Get by ID response content was null.");
@@ -80,7 +84,8 @@ public class OrganizationTesting
         // Verify deletion
         var verifyDeleteResponse = await httpClient.GetFromJsonAsync<List<TOrganization>>("/v1/api/organization/all", cancellationToken);
         verifyDeleteResponse.Should().NotBeNull("Verify delete response content was null.");
-        verifyDeleteResponse.Should().HaveCount(1, "There should be exactly one organization after deletion.");
+        verifyDeleteResponse.Should().HaveCount(organizationCountBeforeAdd, "Organization count should return to the baseline after deletion.");
+        verifyDeleteResponse.Should().NotContain(o => o.Id == createdOrg.Id, "Deleted organization should not be present in the retrieved list.");
 
     }
 }
