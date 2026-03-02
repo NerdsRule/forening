@@ -65,8 +65,8 @@ public static class UserRolesEndpoints
     {
         if (user.Identity is not null && user.Identity.IsAuthenticated && organizationId > 0)
         {
-            var identity = (ClaimsIdentity)user.Identity;
-            var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            var userId = GetAuthenticatedUserId(user);
 
             if (userId is null) return false;
 
@@ -92,8 +92,7 @@ public static class UserRolesEndpoints
     {
         if (user.Identity is not null && user.Identity.IsAuthenticated && departmentId > 0)
         {
-            var identity = (ClaimsIdentity)user.Identity;
-            var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = GetAuthenticatedUserId(user);
 
             if (userId is null) return false;
 
@@ -119,8 +118,7 @@ public static class UserRolesEndpoints
     /// <returns>Returns true if the user is in the same organization and has one of the specified roles; otherwise, false.</returns>
     public static async Task<(bool hasAccess, UserModel? user)> IsUserInSameOrganizationAndInRoleAsync(ClaimsPrincipal user, string userId, RolesEnum[] rolesToCheck, UserManager<AppUser> userManager, IRootDbReadWrite db, CancellationToken cancellationToken)
     {
-        var identity = (ClaimsIdentity)user.Identity!;
-        var _loggedInUserId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var _loggedInUserId = GetAuthenticatedUserId(user);
         // Build logged in user roles
         var loggedInUser = await GetUserInfoAsync(_loggedInUserId!, userManager, db, cancellationToken);
         var _user = await GetUserInfoAsync(userId, userManager, db, cancellationToken);
@@ -193,15 +191,15 @@ public static class UserRolesEndpoints
     /// Extracts the authenticated user's ID from the provided <see cref="ClaimsPrincipal"/>. Returns an empty string if the user is not authenticated or if the ID claim is missing.
     /// </summary>
     /// <param name="user">The <see cref="ClaimsPrincipal"/> representing the current user.</param>
-    /// <returns>The authenticated user's ID as a string, or an empty string if not authenticated.</returns>
-    private static string GetAuthenticatedUserId(ClaimsPrincipal user)
+    /// <returns>The authenticated user's ID as a string, or null if not authenticated.</returns>
+    private static string? GetAuthenticatedUserId(ClaimsPrincipal user)
     {
         if (user.Identity is not ClaimsIdentity identity || !identity.IsAuthenticated)
         {
-            return string.Empty;
+            return null;
         }
 
-        return identity.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+        return identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
     }
     #endregion
 
@@ -623,18 +621,14 @@ public static class UserRolesEndpoints
         /// <returns>Result</returns>
         v1.MapGet("/api/users/info", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, IRootDbReadWrite db, CancellationToken cancellationToken) =>
         {
-            if (user.Identity is not null && user.Identity.IsAuthenticated)
-            {
-                var identity = (ClaimsIdentity)user.Identity;
-                var userId = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                if (userId is null) return Results.Unauthorized();
+            var userId = GetAuthenticatedUserId(user);
+            if (userId is null) 
+                return Results.Unauthorized();
 
-                var userInfo = await GetUserInfoAsync(userId, userManager, db, cancellationToken);
-                if (userInfo is null) return Results.Unauthorized();
-                return Results.Ok(userInfo);
-            }
-            //return Results.Ok();
-            return Results.Unauthorized();
+            var userInfo = await GetUserInfoAsync(userId, userManager, db, cancellationToken);
+            if (userInfo is null) 
+                return Results.Unauthorized();
+            return Results.Ok(userInfo);
         }).RequireAuthorization();
 
         /// <summary>

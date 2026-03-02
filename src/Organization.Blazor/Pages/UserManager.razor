@@ -3,19 +3,30 @@
 
 <title>User Manager</title>
 
-<div class="container mt-4">
-    <div class="mb-3">
-        <label for="userDropdown" class="form-label">Select User</label>
-        <InputSelect Value="selectedUserId" ValueChanged="((string value) => SelectedUserChangedAsync(value))" ValueExpression="() => selectedUserId" class="form-select form-select-sm" >
-                <option selected value="">Select  a user</option>
-                @if (_users != null)
-            {
-                @foreach (var user in _users)
-                {
-                    <option value="@user.Id">@user.UserName (@user.Email)</option>
-                }
-            }
-        </InputSelect>
+<div class="container-fluid mt-2">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title fs-4 fw-bold">User Manager</span>
+        </div>
+        <div class="card-body">
+            <p class="card-text">
+                This page allows organization and enterprise administrators to manage users within their respective scopes. 
+                You can select a user from the dropdown list to view and edit their details, including their roles, department assignments, and organizational affiliations. 
+                The user information is displayed in an editable form, and any changes can be saved to update the user's profile. 
+                This tool is essential for maintaining accurate user records and ensuring that users have the appropriate access and permissions within the organization.
+            </p>
+            <label for="userDropdown" class="form-label fs-5 fw-bold">Select User</label>
+            <InputSelect Value="selectedUserId" ValueChanged="((string value) => SelectedUserChangedAsync(value))" ValueExpression="() => selectedUserId" class="form-select form-select-sm" >
+                    <option selected value="">Select  a user</option>
+                    @if (_users != null)
+                    {
+                        @foreach (var user in _users)
+                        {
+                            <option value="@user.Id">@user.UserName (@user.Email)</option>
+                        }
+                    }
+            </InputSelect>
+        </div>
     </div>
     <UserComponent User="selectedUser" />
 </div>

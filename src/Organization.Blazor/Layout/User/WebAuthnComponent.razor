@@ -3,20 +3,20 @@
 {
     <div class="card mt-2">
         <div class="card-header">
-            <span class="fs-4 fw-bold">Add, Update, and Delete Passkey</span>
+            <span class="fs-4 fw-bold">Passkey</span>
         </div>
         <div class="card-body">
             
             @if (AllowLogin)
             {
                 <div class="mb-3">
-                    <label class="form-label">Passkey Email</label>
+                    <label class="form-label">Email</label>
                     <input class="form-control"
                            value="@PasskeyLoginEmail"
                            @oninput="OnPasskeyEmailInput" />
                     <small class="text-muted">Use the email address associated with your registered passkey.</small>
                 </div>
-                <button type="button" class="btn btn-outline-primary me-2" @onclick="HandlePasskeyLoginAsync" disabled="@isBusy">
+                <button type="button" class="btn btn-primary me-2" @onclick="HandlePasskeyLoginAsync" disabled="@isBusy">
                     Login with Passkey
                 </button>
                 <SpinnerComponent ShowSpinner="isBusy" />
