@@ -1,40 +1,41 @@
-@if (StaticUserInfoBlazor.SelectedDepartment != null)
-{
-    <div class="row alert alert-info rounded rounded-1 my-2 p-2 text-center">
-        <div class="col-12">
-        <h4>Tasks for department: @StaticUserInfoBlazor.SelectedDepartment.Department?.Name</h4>
-        </div>
-    </div>
-}
-<FormResultComponent @ref="_taskResult" />
 
-@if (_tasks.Any())
-{
-<div class="d-none d-sm-block">
-    <div class="row">
-        <div class="col-12 col-md-3">
-            <strong>Department</strong>
-        </div>
-        <div class="col-12 col-md-3">
-            <strong>Name</strong>
-        </div>
-        <div class="col-12 col-md-1">
-            <strong>Points</strong>
-        </div>
-        <div class="col-12 col-md-1">
-            <strong>Status</strong>
-        </div>
-        <div class="col-12 col-md-3">
-            <strong>Assigned</strong>
-        </div>
-        <div class="col-12 col-md-1">
-            <strong>Details</strong>
-            <button class="btn btn-primary oi oi-reload" @onclick="RefreshTasks" title="Refresh the list"></button>
-        </div>
+<div class="card mt-2">
+    <div class="card-header">
+        <span class="card-title fs-5 fw-bold">Department Task - Task List for @StaticUserInfoBlazor.SelectedDepartment?.Department?.Name</span>
+        <button class="btn btn-primary ms-4 oi oi-reload" @onclick="RefreshTasks" title="Refresh the list"></button>
+    </div>
+    <div class="card-body">
+        @if (_tasks.Any())
+        {
+            <div class="d-none d-sm-block">
+                <div class="row">
+                    <div class="col-12 col-md-3">
+                        <strong>Department</strong>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <strong>Name</strong>
+                    </div>
+                    <div class="col-12 col-md-1">
+                        <strong>Points</strong>
+                    </div>
+                    <div class="col-12 col-md-1">
+                        <strong>Status</strong>
+                    </div>
+                    <div class="col-12 col-md-3">
+                        <strong>Assigned</strong>
+                    </div>
+                    <div class="col-12 col-md-1">
+                        <strong>Details</strong>
+                    </div>
+                </div>
+            </div>
+            @foreach (var task in _tasks)
+            {
+                <DepartmentTaskComponent @ref="_taskComponents[task.Id]" ChildContent="task" InitDisplayDetails="false" OnTaskDeletedEvent="RemoveTaskFromList" UsersWithAccess="UsersWithAccess" />
+            }
+        }
+        <FormResultComponent @ref="_taskResult" />
     </div>
 </div>
-    @foreach (var task in _tasks)
-    {
-        <DepartmentTaskComponent @ref="_taskComponents[task.Id]" ChildContent="task" InitDisplayDetails="false" OnTaskDeletedEvent="RemoveTaskFromList" UsersWithAccess="UsersWithAccess" />
-    }
-}
+
+

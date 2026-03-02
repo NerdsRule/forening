@@ -2,6 +2,8 @@ global using Organization.Blazor;
 global using Organization.Blazor.Pages;
 global using Organization.Blazor.Layout;
 global using Organization.Blazor.Layout.User;
+global using Organization.Blazor.Layout.DepartmentComponents;
+global using Organization.Blazor.Layout.OrganizationComponents;
 global using Microsoft.AspNetCore.Components.Web;
 global using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 

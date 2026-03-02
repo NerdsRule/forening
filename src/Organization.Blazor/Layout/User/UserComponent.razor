@@ -1,55 +1,48 @@
 ﻿
 @if (User != null) {
-    <div class="container">
+    <div class="card mt-2">
+        <div class="card-header">
+            <span class="card-title fs-4 fw-bold">User Details</span>
+        </div>
+        <div class="card-body">
+            <p class="card-text">
+                This section allows you to view and edit the details of the selected user. 
+                You can update the user's username, email address, display name, and member number. 
+                After making any changes, click the "Update" button to save the changes to the user's profile. 
+                If you wish to remove the user from the system, you can click the "Delete User" button, which will permanently delete the user's account and all associated data. 
+                Please proceed with caution when deleting a user, as this action cannot be undone.
+            </p>
+    
         <EditForm Model="User" OnValidSubmit="HandleSubmitUser">
                         <DataAnnotationsValidator />
                         <ValidationSummary />
             
-            <div class="row rounded rounded-1 p-2 border border-1 border-secondary">
-                <div class="col-12 col-md-3">
-                    <strong>User:</strong>
-                </div>
-                <div class="col-12 col-md-9">
-                    <InputText @bind-Value="User.UserName" class="form-control" />
-                    <ValidationMessage For="@(() => User.UserName)" />
-                </div>
+            <div class="mb-3">
+                <label class="form-label">User</label>
+                <InputText @bind-Value="User.UserName" class="form-control" />
+                <ValidationMessage For="@(() => User.UserName)" />
             </div>
-            <div class="row rounded rounded-1 my-1 p-2 border border-1 border-secondary">
-                <div class="col-12 col-md-3">
-                    <strong>Email:</strong>
-                </div>
-                <div class="col-12 col-md-9">
-                    @User.Email
-                </div>
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <InputText @bind-Value="User.Email" class="form-control" />
+                <ValidationMessage For="@(() => User.Email)" />
             </div>
-            <div class="row rounded rounded-1 my-1 p-2 border border-1 border-secondary">
-                <div class="col-12 col-md-3">
-                    <strong>Display Name:</strong>
-                </div>
-                <div class="col-12 col-md-9">
-                    <InputText @bind-Value="User.DisplayName" class="form-control" />
-                    <ValidationMessage For="@(() => User.DisplayName)" />
-                </div>
+            <div class="mb-3">
+                <label class="form-label">Display Name</label>
+                <InputText @bind-Value="User.DisplayName" class="form-control" />
+                <ValidationMessage For="@(() => User.DisplayName)" />
             </div>
-            <div class="row rounded rounded-1 my-1 p-2 border border-1 border-secondary">
-                <div class="col-12 col-md-3">
-                    <strong>Member number:</strong>
-                </div>
-                <div class="col-12 col-md-9">
-                    <InputText @bind-Value="User.MemberNumber" class="form-control" />
-                    <ValidationMessage For="@(() => User.MemberNumber)" />
-                </div>
+            <div class="mb-3">
+                <label class="form-label">Member number</label>
+                <InputText @bind-Value="User.MemberNumber" class="form-control" />
+                <ValidationMessage For="@(() => User.MemberNumber)" />
             </div>
+            <button type="submit" class="btn btn-primary">Update</button>
+            <button type="button" class="btn btn-danger ms-4" @onclick="HandleDeleteUserAsync">Delete User</button>
             <FormResultComponent @ref="_formResult" />
-            <div class="row rounded rounded-1 my-1 p-2">
-                <div class="col-12 col-md-2 offset-md-8">
-                    <button type="submit" class="btn btn-primary">Update</button>
-                </div>
-                <div class="col-12 col-md-2">
-                    <button type="button" class="btn btn-danger" @onclick="HandleDeleteUserAsync">Delete User</button>
-                </div>
-            </div>
         </EditForm>
+        </div>
+    </div>
         @if (User.AppUserOrganizations != null && User.AppUserOrganizations.Any())
         {
             @foreach (var userOrganization in User.AppUserOrganizations)
@@ -57,6 +50,5 @@
                 <OrganizationComponent @ref="_userOrganizationsDict[userOrganization.Id]" AppUserOrganization="userOrganization" AppUserDepartments="User.AppUserDepartments?.Where(d => d.Department!.OrganizationId == userOrganization.OrganizationId).ToList()" />
             }
         }
-    </div>
 }
 

@@ -1,72 +1,79 @@
 ﻿@if (AppUserOrganization != null)
 {
-    <EditForm Model="@AppUserOrganization" OnValidSubmit="@HandleUpdateRoleAsync">
-        <div class="row rounded rounded-1 my-1 p-2 border border-1 border-secondary">
-            <div class="col-12 col-md-2">
-                <strong>Organization:</strong>
-            </div>
-            <div class="col-12 col-md-3">
-                @AppUserOrganization.Organization!.Name
-            </div>
-            <div class="col-12 col-md-1">
-                <strong>Role:</strong>
-            </div>
-            <div class="col-12 col-md-3">
-                <InputSelect @bind-Value="AppUserOrganization.Role" class="form-select">
-                    @foreach (var role in RoleHelper.GetOrganizationRoles())
-                    {
-                        <option value="@role">@role.ToString()</option>
-                    }
-                </InputSelect>
-            </div>
-            <div class="col-12 col-md-2">
-                <button type="submit" class="btn btn-primary btn-sm">Update</button>
-            </div>
-            <div class="col-12 col-md-1">
-                <button type="button" class="btn btn-danger btn-sm" @onclick="HandleDeleteAsync">Delete</button>
-            </div>
+    <div class="card mt-2">
+        <div class="card-header">
+            <span class="card-title fs-5 fw-bold">Edit Organization for selected user</span>
         </div>
-    </EditForm>
-    
-    <FormResultComponent @ref="_updateResult" />
-    
-    <h5>Departments</h5>
+        <div class="card-body">
+            <EditForm Model="@AppUserOrganization" OnValidSubmit="@HandleUpdateRoleAsync">
+                    <div class="mb-3">
+                        <label class="form-label">Organization:</label>
+                        <span class="text-muted ms-2">@AppUserOrganization.Organization!.Name</span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        <InputSelect @bind-Value="AppUserOrganization.Role" class="form-select">
+                            @foreach (var role in RoleHelper.GetOrganizationRoles())
+                            {
+                                <option value="@role">@role.ToString()</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Update</button>
+                    <button type="button" class="btn btn-danger ms-4" @onclick="HandleDeleteAsync">Delete</button>
+            </EditForm>
+        </div>
+    </div>
+    <FormResultComponent @ref="_updateResult" />    
     @if (_departments != null)
     {
-        <EditForm Model="@_newAppUserDepartment" OnValidSubmit="@HandleAddDepartmentAsync">
-            <div class="row rounded rounded-1 my-1 p-2 border border-1 border-light">
-                <div class="col-12 col-md-3">
-                    <InputSelect @bind-Value="_newAppUserDepartment.DepartmentId" class="form-select">
-                        <option value="">Select Department</option>
-                        @if (_departments != null)
-                        {
-                            @foreach (var dept in _departments)
-                            {
-                                <option value="@dept.Id">@dept.Name</option>
-                            }
-                        }
-                    </InputSelect>
-                </div>
-                <div class="col-12 col-md-3">
-                    <InputSelect @bind-Value="_newAppUserDepartment.Role" class="form-select">
-                        <option value="">Select Role</option>
-                        @foreach (var role in RoleHelper.GetDepartmentRoles())
-                        {
-                            <option value="@role">@role.ToString()</option>
-                        }
-                    </InputSelect>
-                </div>
-                <div class="col-12 col-md-2">
-                    <button type="submit" class="btn btn-success btn-sm">Add</button>
-                </div>
+        <div class="card mt-2">
+            <div class="card-header">
+                <span class="card-title fs-6 fw-bold">Add user to department</span>
             </div>
-        </EditForm>
+            <div class="card-body">
+                <EditForm Model="@_newAppUserDepartment" OnValidSubmit="@HandleAddDepartmentAsync">
+                    <div class="mb-3">
+                        <label class="form-label">Department</label>
+                        <InputSelect @bind-Value="_newAppUserDepartment.DepartmentId" class="form-select">
+                            <option value="">Select Department</option>
+                            @if (_departments != null)
+                            {
+                                @foreach (var dept in _departments)
+                                {
+                                    <option value="@dept.Id">@dept.Name</option>
+                                }
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        <InputSelect @bind-Value="_newAppUserDepartment.Role" class="form-select">
+                            <option value="">Select Role</option>
+                            @foreach (var role in RoleHelper.GetDepartmentRoles())
+                            {
+                                <option value="@role">@role.ToString()</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <button type="submit" class="btn btn-success btn-sm">Add</button>
+                </EditForm>
+            </div>
+        </div>
+        
     }
     @if (AppUserDepartments != null && AppUserDepartments.Any())
     {
-        @foreach (var dept in AppUserDepartments)
-        {
-            <DepartmentComponent @ref="_userDepartmentsDict[dept.Id]" AppUserDepartment="dept" />
-        }
+        <div class="card mt-2">
+            <div class="card-header">
+                <span class="card-title fs-6 fw-bold">Edit existing department access</span>
+            </div>
+            <div class="card-body">
+                @foreach (var dept in AppUserDepartments)
+                {
+                    <DepartmentComponent @ref="_userDepartmentsDict[dept.Id]" AppUserDepartment="dept" />
+                }
+            </div>
+        </div>
     }
 }

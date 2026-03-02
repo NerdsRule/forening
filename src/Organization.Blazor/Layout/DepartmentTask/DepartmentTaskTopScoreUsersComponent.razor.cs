@@ -20,7 +20,7 @@ partial class DepartmentTaskTopScoreUsersComponent
         IsLoading = true;
         if (FormResult != null)
             FormResult.ClearFormResult();
-        var (data, formResult) = await DepartmentTaskService.GetTopUsersWithPointsAwardedByDepartmentAsync("userId", 1, 10, CancellationToken.None);
+        var (data, formResult) = await DepartmentTaskService.GetTopUsersWithPointsAwardedByDepartmentAsync(StaticUserInfoBlazor.User!.Id, StaticUserInfoBlazor.SelectedDepartment!.DepartmentId, 10, CancellationToken.None);
         if (data != null)
         {
             TopUsersWithPointsAwarded = data;

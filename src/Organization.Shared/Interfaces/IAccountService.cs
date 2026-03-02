@@ -14,6 +14,20 @@ public interface IAccountService
     public Task<FormResult> LoginAsync(LoginModel model);
 
     /// <summary>
+    /// Begin passkey login challenge for a user email.
+    /// </summary>
+    /// <param name="email">User email.</param>
+    /// <returns>Passkey challenge and options or an error result.</returns>
+    public Task<(WebAuthnBeginPasskeyRegistrationResult? result, FormResult? error)> BeginPasskeyLoginAsync(string email);
+
+    /// <summary>
+    /// Complete passkey login assertion.
+    /// </summary>
+    /// <param name="model">Completion request payload.</param>
+    /// <returns>Operation status.</returns>
+    public Task<FormResult> CompletePasskeyLoginAsync(WebAuthnCompleteRequest model);
+
+    /// <summary>
     /// Log out the logged in user.
     /// </summary>
     /// <returns>The asynchronous task.</returns>
@@ -26,6 +40,40 @@ public interface IAccountService
     /// <param name="password">User's password.</param>
     /// <returns>The result of the request serialized to <see cref="FormResult"/>.</returns>
     public Task<FormResult> RegisterAsync(RegisterModel model);
+
+    /// <summary>
+    /// Begin passkey registration for the authenticated user.
+    /// </summary>
+    /// <returns>Passkey challenge and options or an error result.</returns>
+    public Task<(WebAuthnBeginPasskeyRegistrationResult? result, FormResult? error)> BeginPasskeyRegistrationAsync();
+
+    /// <summary>
+    /// Complete passkey registration attestation.
+    /// </summary>
+    /// <param name="model">Completion request payload.</param>
+    /// <returns>Operation status.</returns>
+    public Task<FormResult> CompletePasskeyRegistrationAsync(WebAuthnCompleteRequest model);
+
+    /// <summary>
+    /// Get passkeys registered for the authenticated user.
+    /// </summary>
+    /// <returns>Registered passkeys.</returns>
+    public Task<List<WebAuthnCredentialModel>> GetPasskeyCredentialsAsync();
+
+    /// <summary>
+    /// Remove a passkey credential for the authenticated user.
+    /// </summary>
+    /// <param name="credentialId">Credential row id.</param>
+    /// <returns>Operation status.</returns>
+    public Task<FormResult> DeletePasskeyCredentialAsync(int credentialId);
+
+    /// <summary>
+    /// Update friendly name for an existing passkey.
+    /// </summary>
+    /// <param name="credentialId">Credential row id.</param>
+    /// <param name="friendlyName">Friendly name to store.</param>
+    /// <returns>Operation status.</returns>
+    public Task<FormResult> UpdatePasskeyFriendlyNameAsync(int credentialId, string friendlyName);
 
     /// <summary>
     /// Check if the user is authenticated.

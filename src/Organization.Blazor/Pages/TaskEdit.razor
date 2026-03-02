@@ -2,11 +2,16 @@
 @attribute [Authorize(Roles = "OrganizationAdmin,EnterpriseAdmin,DepartmentAdmin")]
 <PageTitle>Edit task</PageTitle>
 
-<div class="container-fluid mt-4">
+<div class="container-fluid mt-2">
     <FormResultComponent @ref="FormResult" />
     <SpinnerComponent ShowSpinner="@ShowSpinner" />
-<h3>Add new task</h3>
-<DepartmentTaskComponent ChildContent="_newTask" OnTaskAddedOrUpdatedEvent="OnTaskAddedOrUpdated" InitDisplayDetails="false" UsersWithAccess="UsersWithAccess"/>
-<h3>Edit task</h3>
-<TaskListComponent @ref="_taskListComponent" UsersWithAccess="UsersWithAccess"/>
+    <div class="card mt-2">
+        <div class="card-header">
+            <span class="card-title fs-4 fw-bold">Add new task</span>
+        </div>
+        <div class="card-body">
+            <DepartmentTaskComponent ChildContent="_newTask" OnTaskAddedOrUpdatedEvent="OnTaskAddedOrUpdated" InitDisplayDetails="false" UsersWithAccess="UsersWithAccess"/>
+        </div>
+    </div>
+    <TaskListComponent @ref="_taskListComponent" UsersWithAccess="UsersWithAccess"/>
 </div>

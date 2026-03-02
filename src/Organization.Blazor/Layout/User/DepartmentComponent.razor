@@ -1,6 +1,5 @@
 ﻿@if (AppUserDepartment != null)
-{
-
+{    
     <EditForm Model="@AppUserDepartment" OnValidSubmit="@HandleUpdateRoleAsync">
         <div class="row rounded rounded-1 my-1 p-2 border border-1 border-secondary">
             <div class="col-12 col-md-2">
@@ -29,4 +28,5 @@
         </div>
     </EditForm>
     <FormResultComponent @ref="_updateResult" />
+    
 }

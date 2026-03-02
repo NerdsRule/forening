@@ -6,6 +6,7 @@ builder.AddServiceDefaults();
 
 // Add services to the container.
 builder.Services.AddProblemDetails();
+builder.Services.AddMemoryCache();
 
 // Enable authorization services - policies can be added here as needed
 builder.Services.AddAuthorization();
@@ -16,7 +17,7 @@ builder.Services.AddCors(options =>
     
     options.AddPolicy("AllowLocalhost", policy =>
     {
-        policy.WithOrigins("https://localhost:7145", "http://localhost:5179")
+        policy.WithOrigins("https://localhost:7145", "http://localhost:5179", "https://localhost:8081", "http://localhost:8081")
                     .SetIsOriginAllowedToAllowWildcardSubdomains()
                     .AllowAnyHeader()
                     .WithMethods("GET", "PUT", "DELETE", "POST")
@@ -29,14 +30,16 @@ builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 
 #region Database
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+//var connectionString = builder.Configuration.GetConnectionString("MemoryConnection");
 //builder.Services.AddDbContext<AppDbContext>(options => {options.UseInMemoryDatabase("TestDb");});
-builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
-//builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
+//var connectionString = builder.Configuration.GetConnectionString("LocalConnection");
+//builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
 
 
 // Register RootDbReadWrite with scoped lifetime to ensure a new instance per request
-builder.Services.AddScoped<IRootDbReadWrite>(x => new RootDbReadWrite(builder.Services));
+builder.Services.AddScoped<IRootDbReadWrite, RootDbReadWrite>();
 
 // Add Identity services
 builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
@@ -57,17 +60,6 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
     options.SlidingExpiration = true;
 });
-
-// Add additional authentication schemes if needed
-// builder.Services.AddAuthentication()
-//     .AddCookie("Cookies", options =>
-//     {
-//         options.LoginPath = "/Account/Login";
-//         options.LogoutPath = "/Account/Logout";
-//         options.AccessDeniedPath = "/Account/AccessDenied";
-//         options.ExpireTimeSpan = TimeSpan.FromHours(8);
-//         options.SlidingExpiration = true;
-//     });
 #endregion
 
 var app = builder.Build();

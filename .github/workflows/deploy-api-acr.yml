@@ -1,0 +1,81 @@
+name: Build and Deploy ApiService to ACR
+
+on:
+  push:
+    tags:
+      - 'api*.*.*'
+
+jobs:
+  verify-production-tag:
+    runs-on: ubuntu-latest
+    outputs:
+      on_production: ${{ steps.verify.outputs.on_production }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag commit is on Production
+        id: verify
+        shell: bash
+        run: |
+          git fetch origin Production --prune
+
+          if git merge-base --is-ancestor "$GITHUB_SHA" "origin/Production"; then
+            echo "on_production=true" >> "$GITHUB_OUTPUT"
+            echo "Tag commit is on Production branch."
+          else
+            echo "on_production=false" >> "$GITHUB_OUTPUT"
+            echo "Tag commit is NOT on Production branch. Skipping deploy."
+          fi
+
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    needs: verify-production-tag
+    if: needs.verify-production-tag.outputs.on_production == 'true'
+    env:
+      REGISTRY: ${{ secrets.ACR_ENDPOINT }}
+      REGISTRY_USER: ${{ secrets.ACR_USERNAME }}
+      REGISTRY_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+      IMAGE_NAME: ${{ github.event.repository.name }}-apiservice
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Derive image version from tag
+        id: version
+        shell: bash
+        run: |
+          TAG_NAME="${GITHUB_REF_NAME}"
+          VERSION="${TAG_NAME#api}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          [[ -n "$REGISTRY" ]] || (echo "Missing secret: ACR_ENDPOINT" && exit 1)
+          [[ -n "$REGISTRY_USER" ]] || (echo "Missing secret: ACR_USERNAME" && exit 1)
+          [[ -n "$REGISTRY_PASSWORD" ]] || (echo "Missing secret: ACR_PASSWORD" && exit 1)
+
+      - name: Log in to Azure Container Registry
+        shell: bash
+        run: |
+          echo "$REGISTRY_PASSWORD" | docker login "$REGISTRY" --username "$REGISTRY_USER" --password-stdin
+
+      - name: Build Docker image
+        shell: bash
+        run: |
+          docker build \
+            -f api-dockerfile \
+            -t "$REGISTRY/$IMAGE_NAME:${{ steps.version.outputs.version }}" \
+            .
+
+      - name: Push Docker image
+        shell: bash
+        run: |
+          docker push "$REGISTRY/$IMAGE_NAME:${{ steps.version.outputs.version }}"
+
+      - name: Log out from Azure Container Registry
+        if: always()
+        run: docker logout "$REGISTRY" || true

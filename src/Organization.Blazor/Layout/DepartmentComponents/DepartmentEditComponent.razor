@@ -1,0 +1,88 @@
+	
+    <div class="card mt-2">
+        <div class="card-header">
+            <span class="fs-4 fw-bold">Departments</span>
+            <SpinnerComponent ShowSpinner="_showSpinner" />
+        </div>
+        <div class="card-body">
+	<FormResultComponent @ref="_formResult" />
+
+	@if (OrganizationId <= 0)
+	{
+		<div class="alert alert-info">Select an organization to manage departments.</div>
+	}
+	else
+	{
+		<div class="row border border-secondary rounded rounded-1 my-2 p-3">
+			<div class="col-12">
+				<EditForm Model="_department" OnValidSubmit="HandleAddUpdateAsync">
+					<DataAnnotationsValidator />
+					<ValidationSummary />
+
+					<div class="row g-3">
+						<div class="col-12 col-md-4">
+							<label class="form-label">Name</label>
+							<InputText class="form-control" @bind-Value="_department.Name" />
+							<ValidationMessage For="() => _department.Name" />
+						</div>
+						<div class="col-12 col-md-2">
+							<label class="form-label">Code</label>
+							<InputText class="form-control" @bind-Value="_department.Code" />
+							<ValidationMessage For="() => _department.Code" />
+						</div>
+						<div class="col-12 col-md-4">
+							<label class="form-label">Description</label>
+							<InputText class="form-control" @bind-Value="_department.Description" />
+							<ValidationMessage For="() => _department.Description" />
+						</div>
+						<div class="col-12 col-md-2 d-flex align-items-end">
+							<div class="form-check mb-2">
+								<InputCheckbox class="form-check-input" @bind-Value="_department.IsActive" />
+								<label class="form-check-label">Active</label>
+							</div>
+						</div>
+					</div>
+
+					<div class="row mt-3">
+						<div class="col-auto">
+							<button type="submit" class="btn btn-primary">@AddUpdateText Department</button>
+						</div>
+						<div class="col-auto">
+							<button type="button" class="btn btn-secondary" @onclick="NewDepartment">New</button>
+						</div>
+					</div>
+				</EditForm>
+			</div>
+		</div>
+
+		@if (_departments.Any())
+		{
+			@foreach (var department in _departments.OrderBy(d => d.Name))
+			{
+				<div class="row border border-1 border-light rounded rounded-1 my-2 p-2 align-items-center">
+					<div class="col-12 col-md-4">
+						<strong>@department.Name</strong>
+					</div>
+					<div class="col-12 col-md-2">
+						@department.Code
+					</div>
+					<div class="col-12 col-md-3">
+						@department.Description
+					</div>
+					<div class="col-12 col-md-1">
+						@(department.IsActive ? "Active" : "Inactive")
+					</div>
+					<div class="col-12 col-md-2 text-md-end">
+						<button type="button" class="btn btn-sm btn-outline-primary me-2" @onclick="() => EditDepartment(department)">Edit</button>
+						<button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => DeleteDepartmentAsync(department.Id)">Delete</button>
+					</div>
+				</div>
+			}
+		}
+		else
+		{
+			<div class="alert alert-info mt-3">No departments found for this organization.</div>
+		}
+	}
+        </div>
+    </div>
