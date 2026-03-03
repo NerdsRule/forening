@@ -30,7 +30,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 
 #region Database
-var connectionString = Environment.GetEnvironmentVariable("SQLCONNSTR_DefaultConnection") 
+var connectionString = Environment.GetEnvironmentVariable("SQLCONNSTR_DefaultConnection")
     ?? builder.Configuration.GetConnectionString("DefaultConnection");
 //var connectionString = builder.Configuration.GetConnectionString("MemoryConnection");
 //builder.Services.AddDbContext<AppDbContext>(options => {options.UseInMemoryDatabase("TestDb");});
@@ -58,6 +58,9 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.Name = "OrgAuth";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
     options.SlidingExpiration = true;
 });
