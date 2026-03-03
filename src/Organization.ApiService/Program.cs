@@ -30,11 +30,12 @@ builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 
 #region Database
+var connectionString = Environment.GetEnvironmentVariable("SQLCONNSTR_DefaultConnection") 
+    ?? builder.Configuration.GetConnectionString("DefaultConnection");
 //var connectionString = builder.Configuration.GetConnectionString("MemoryConnection");
 //builder.Services.AddDbContext<AppDbContext>(options => {options.UseInMemoryDatabase("TestDb");});
 //var connectionString = builder.Configuration.GetConnectionString("LocalConnection");
 //builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlite(connectionString));
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
 
 
