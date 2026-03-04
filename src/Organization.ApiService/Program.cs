@@ -1,4 +1,6 @@
 
+using Organization.Shared.Helpers;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add service defaults & Aspire client integrations.
@@ -12,12 +14,19 @@ builder.Services.AddMemoryCache();
 builder.Services.AddAuthorization();
 
 // Add CORS support for Blazor WebAssembly
+// Read endpoints from Environment variable or configuration if needed, for now we hardcode localhost origins for development
+ApiServiceStatic.AllowedOrigins = Environment.GetEnvironmentVariable("CORS")?
+    .Split(';', StringSplitOptions.RemoveEmptyEntries)
+    .Select(origin => origin.Trim())
+    .ToArray() ?? ["https://localhost:7145", "http://localhost:5179", "https://localhost:8081", "http://localhost:8081"];
+//new[] { "https://localhost:7145", "http://localhost:5179", "https://localhost:8081", "http://localhost:8081" };
+
 builder.Services.AddCors(options =>
 {
     
     options.AddPolicy("AllowLocalhost", policy =>
     {
-        policy.WithOrigins("https://localhost:7145", "http://localhost:5179", "https://localhost:8081", "http://localhost:8081")
+        policy.WithOrigins(ApiServiceStatic.AllowedOrigins)
                     .SetIsOriginAllowedToAllowWildcardSubdomains()
                     .AllowAnyHeader()
                     .WithMethods("GET", "PUT", "DELETE", "POST")
