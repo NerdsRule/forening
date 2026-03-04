@@ -167,22 +167,41 @@ public static class UserRolesEndpoints
     /// <returns>A configured Fido2 service instance.</returns>
     private static Fido2 GetFido2(HttpContext httpContext)
     {
-        var host = httpContext.Request.Host.Host;
-        var allowedOrigins = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        var configuration = httpContext.RequestServices.GetRequiredService<IConfiguration>();
+        var originHeader = httpContext.Request.Headers.Origin.ToString();
+        Uri.TryCreate(originHeader, UriKind.Absolute, out var originUri);
+
+        var configuredRpId = configuration["WebAuthn:RpId"];
+        var rpId = !string.IsNullOrWhiteSpace(configuredRpId)
+            ? configuredRpId
+            : (originUri?.Host ?? httpContext.Request.Host.Host);
+
+        var configuredServerName = configuration["WebAuthn:ServerName"];
+        var serverName = string.IsNullOrWhiteSpace(configuredServerName) ? "Organization" : configuredServerName;
+
+        var allowedOrigins = ApiServiceStatic.AllowedOriginsSet;
+
+        var configuredOrigins = configuration.GetSection("WebAuthn:Origins").Get<string[]>();
+        if (configuredOrigins is not null)
         {
-            "https://localhost:7145",
-            "http://localhost:5179",
-            "https://localhost:8081",
-            "http://localhost:8081"
-        };
+            foreach (var origin in configuredOrigins.Where(o => !string.IsNullOrWhiteSpace(o)))
+            {
+                allowedOrigins.Add(origin);
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(originHeader))
+        {
+            allowedOrigins.Add(originHeader);
+        }
 
         var requestOrigin = $"{httpContext.Request.Scheme}://{httpContext.Request.Host}";
         allowedOrigins.Add(requestOrigin);
 
         return new Fido2(new Fido2Configuration
         {
-            ServerDomain = host,
-            ServerName = "Organization",
+            ServerDomain = rpId,
+            ServerName = serverName,
             Origins = allowedOrigins
         });
     }

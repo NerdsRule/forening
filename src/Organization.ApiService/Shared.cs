@@ -23,6 +23,8 @@ global using Organization.Shared.DatabaseObjects;
 global using Organization.Shared.Interfaces;
 global using Organization.Shared.Identity;
 global using Organization.Infrastructure.SqlDb;
+global using Organization.Shared.Helpers;
+
 global using Microsoft.AspNetCore.Identity;
 global using Microsoft.AspNetCore.Authentication;
 global using Microsoft.AspNetCore.Authorization;
