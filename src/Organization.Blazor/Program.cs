@@ -29,12 +29,10 @@ builder.Services.AddScoped(sp => (IAccountService)sp.GetRequiredService<Authenti
 // To make AuthorizeView work in WASM (Fond in other app)
 builder.Services.AddCascadingAuthenticationState();
 
-var baseAddress = Environment.GetEnvironmentVariable("APP_API_ENDPOINT") ?? "https://localhost:7375";
-
 // configure client for auth interactions
 builder.Services.AddHttpClient("Auth", client =>
 {
-    client.BaseAddress = new Uri(baseAddress);    
+    client.BaseAddress = new Uri("https://space4itorganizationapi-ajgmbdezbnhpe9h0.northeurope-01.azurewebsites.net");    
     client.Timeout = TimeSpan.FromMinutes(1);
 }).AddHttpMessageHandler<CookieHandler>();
 
