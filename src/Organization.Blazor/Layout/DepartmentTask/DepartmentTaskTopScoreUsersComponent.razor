@@ -12,7 +12,7 @@
             {
                 @foreach (var user in TopUsersWithPointsAwarded)
                 {
-                    <div class="row border border-secondary rounded rounded-1 my-2 p-2 @(user.UserId == StaticUserInfoBlazor.User?.Id ? "alert alert-success" : "")">
+                    <div class="row border border-secondary rounded rounded-1 my-2 p-2 @(user.UserId == StaticUserInfoBlazor.User?.Id ? "alert alert-info" : "")">
                         <div class="col-12 col-md-2">
                             Ranking: @user.UserRanking
                         </div>
