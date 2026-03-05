@@ -32,7 +32,7 @@ builder.Services.AddCascadingAuthenticationState();
 // configure client for auth interactions
 builder.Services.AddHttpClient("Auth", client =>
 {
-    client.BaseAddress = new Uri("https://space4itorganizationapi-ajgmbdezbnhpe9h0.northeurope-01.azurewebsites.net");    
+    client.BaseAddress = new Uri("https://api.frivilio.dk");    
     client.Timeout = TimeSpan.FromMinutes(1);
 }).AddHttpMessageHandler<CookieHandler>();
 
@@ -52,3 +52,4 @@ builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 
 await builder.Build().RunAsync();
+
