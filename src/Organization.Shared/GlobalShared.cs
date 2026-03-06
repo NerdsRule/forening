@@ -60,7 +60,11 @@ public enum TaskStatusEnum
     /// <summary> 
     /// Task is verified as completed and approved.
     /// </summary>
-    VerifiedCompleted = 3
+    VerifiedCompleted = 3,
+    /// <summary>
+    /// Task was rejected and needs to be redone or revised.
+    /// </summary>
+    Rejected = 4
 }
 
 /// <summary>

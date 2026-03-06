@@ -61,7 +61,7 @@ partial class DepartmentTaskComponent
         DisableEstimatedTimeMinutes = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
         DisableDueDateUtc = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
         DisablePointsAwarded = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
-        if (isNewTask || ChildContent.Status == Shared.TaskStatusEnum.VerifiedCompleted)
+        if (isNewTask || ChildContent.Status == Shared.TaskStatusEnum.VerifiedCompleted || ChildContent.Status == Shared.TaskStatusEnum.Rejected)
         {
             DisableIsAssignedToMe = true;
         }

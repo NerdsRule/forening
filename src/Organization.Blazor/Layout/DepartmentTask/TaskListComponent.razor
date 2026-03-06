@@ -9,7 +9,10 @@
         {
             <div class="d-none d-sm-block">
                 <div class="row">
-                    <div class="col-12 col-md-3">
+                    <div class="col-12 col-md-1">
+                        <strong>Date</strong>
+                    </div>
+                    <div class="col-12 col-md-2">
                         <strong>Department</strong>
                     </div>
                     <div class="col-12 col-md-3">
@@ -29,7 +32,7 @@
                     </div>
                 </div>
             </div>
-            @foreach (var task in _tasks)
+            @foreach (var task in _sortedAndFilteredTasks)
             {
                 <DepartmentTaskComponent @ref="_taskComponents[task.Id]" ChildContent="task" InitDisplayDetails="false" OnTaskDeletedEvent="RemoveTaskFromList" UsersWithAccess="UsersWithAccess" />
             }

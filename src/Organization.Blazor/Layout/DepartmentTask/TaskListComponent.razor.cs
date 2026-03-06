@@ -5,6 +5,7 @@ partial class TaskListComponent
 {
     private Dictionary<int, DepartmentTaskComponent> _taskComponents = [];
     private List<TTask> _tasks { get; set; } = [];
+    private List<TTask> _sortedAndFilteredTasks => [.. _tasks.OrderByDescending(t => t.DueDateUtc)];
     private List<TDepartment> _departments { get; set; } = [];
     private FormResultComponent _taskResult {get;set;} = null!;
     [Parameter] public List<UserModel> UsersWithAccess { get; set; } = [];
