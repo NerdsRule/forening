@@ -1,6 +1,12 @@
 
-<div class="row border border-secondary @(IsThisTaskAssignedToMe ? "alert alert-secondary" : "") rounded rounded-1 my-2 p-2">
-    <div class="col-12 col-md-3 ">
+<div class="row border border-secondary @(IsThisTaskAssignedToMe && ChildContent.Status == Shared.TaskStatusEnum.VerifiedCompleted ? "alert alert-success" 
+    : IsThisTaskAssignedToMe ? "alert alert-secondary" 
+    : ChildContent.AssignedUserId == null ? "alert alert-warning" 
+    : "") rounded rounded-1 my-2 p-2">
+    <div class="col-12 col-md-1">
+        <strong class="d-md-none">Date:</strong> @ChildContent.DueDateUtc.ToLocalTime().ToString("yyyy-MM-dd")
+    </div>
+    <div class="col-12 col-md-2">
         <strong class="d-md-none">Department:</strong> @ChildContent.Department?.Name
     </div>
     <div class="col-12 col-md-3">

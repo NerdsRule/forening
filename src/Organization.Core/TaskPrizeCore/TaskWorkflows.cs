@@ -11,7 +11,8 @@ public static class TaskWorkflows
         { Shared.TaskStatusEnum.NotStarted, "Not Started" },
         { Shared.TaskStatusEnum.InProgress, "In Progress" },
         { Shared.TaskStatusEnum.Completed, "Completed" },
-        { Shared.TaskStatusEnum.VerifiedCompleted, "Verified" }
+        { Shared.TaskStatusEnum.VerifiedCompleted, "Verified" },
+        { Shared.TaskStatusEnum.Rejected, "Not approved" }
     };
 
         /// <summary>
@@ -31,7 +32,8 @@ public static class TaskWorkflows
                 (StatusTextMapping[Shared.TaskStatusEnum.NotStarted], Shared.TaskStatusEnum.NotStarted),
                 (StatusTextMapping[Shared.TaskStatusEnum.InProgress], Shared.TaskStatusEnum.InProgress),
                 (StatusTextMapping[Shared.TaskStatusEnum.Completed], Shared.TaskStatusEnum.Completed),
-                (StatusTextMapping[Shared.TaskStatusEnum.VerifiedCompleted], Shared.TaskStatusEnum.VerifiedCompleted)
+                (StatusTextMapping[Shared.TaskStatusEnum.VerifiedCompleted], Shared.TaskStatusEnum.VerifiedCompleted),
+                (StatusTextMapping[Shared.TaskStatusEnum.Rejected], Shared.TaskStatusEnum.Rejected)
             ]);
         }
         else if (userRole.Contains(Shared.RolesEnum.DepartmentMember) && isAssignedToMe)

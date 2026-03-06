@@ -32,7 +32,8 @@ builder.Services.AddCascadingAuthenticationState();
 // configure client for auth interactions
 builder.Services.AddHttpClient("Auth", client =>
 {
-    client.BaseAddress = new Uri("https://api.frivilio.dk");    
+    client.BaseAddress = new Uri("https://api.frivilio.dk");
+    //client.BaseAddress = new Uri("https://localhost:7375");
     client.Timeout = TimeSpan.FromMinutes(1);
 }).AddHttpMessageHandler<CookieHandler>();
 
