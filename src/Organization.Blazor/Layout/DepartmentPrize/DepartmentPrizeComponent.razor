@@ -1,0 +1,96 @@
+<div class="row border border-secondary @(IsPrizeAssignedToMe && ChildContent.Status == Shared.PrizeStatusEnum.Redeemed ? "alert alert-success"
+	: IsPrizeAssignedToMe ? "alert alert-secondary"
+	: ChildContent.AssignedUserId == null ? "alert alert-warning"
+	: "") rounded rounded-1 my-2 p-2">
+	<div class="col-12 col-md-3">
+		<strong class="d-md-none">Name:</strong> @ChildContent.Name
+	</div>
+	<div class="col-12 col-md-2">
+		<strong class="d-md-none">Points:</strong> @ChildContent.PointsCost
+	</div>
+	<div class="col-12 col-md-2">
+		<strong class="d-md-none">Status:</strong> @(PrizeWorkflows.StatusTextMapping[ChildContent.Status])
+	</div>
+	<div class="col-12 col-md-2">
+		<strong class="d-md-none">Assigned:</strong> @(ChildContent.AssignedUser?.DisplayName ?? ChildContent.AssignedUser?.UserName)
+	</div>
+	<div class="col-12 col-md-2">
+		<strong class="d-md-none">Creator:</strong> @CreatorDisplayName
+	</div>
+	<div class="col-12 col-md-1">
+		<button class="btn btn-secondary" @onclick="() => DisplayDetails = !DisplayDetails">@(DisplayDetails ? "Hide" : "Details")</button>
+	</div>
+</div>
+
+@if (DisplayDetails)
+{
+	<div class="row border border-primary rounded rounded-1 my-2 p-2">
+		<EditForm Model="ChildContent" OnValidSubmit="() => OnPrizeAddedOrUpdated(ChildContent)">
+			<DataAnnotationsValidator />
+			<ValidationSummary />
+
+			<div class="mb-3">
+				<label for="creatorUser" class="form-label">Creator</label>
+				<input id="creatorUser" class="form-control" value="@CreatorDisplayName" disabled />
+			</div>
+
+			@if (StaticUserInfoBlazor.SelectedDepartment?.Department != null)
+			{
+				<div class="mb-3">
+					<label for="department" class="form-label">Department</label>
+					<input id="department" class="form-control" value="@StaticUserInfoBlazor.SelectedDepartment.Department.Name" disabled />
+				</div>
+			}
+
+			<div class="mb-3">
+				<label for="prizeName" class="form-label">Prize Name</label>
+				<InputText id="prizeName" class="form-control" @bind-Value="ChildContent.Name" disabled="@DisableName" />
+				<ValidationMessage For="() => ChildContent.Name" />
+			</div>
+
+			<div class="mb-3">
+				<label for="prizeDescription" class="form-label">Description</label>
+				<InputTextArea id="prizeDescription" class="form-control" @bind-Value="ChildContent.Description" disabled="@DisableDescription" />
+				<ValidationMessage For="() => ChildContent.Description" />
+			</div>
+
+			<div class="mb-3">
+				<label for="pointsCost" class="form-label">Points Cost</label>
+				<InputNumber id="pointsCost" class="form-control" @bind-Value="ChildContent.PointsCost" disabled="@DisablePointsCost" />
+				<ValidationMessage For="() => ChildContent.PointsCost" />
+			</div>
+
+			@if (UsersWithAccess != null && UsersWithAccess.Any())
+			{
+				<div class="mb-3">
+					<label for="assignedUser" class="form-label">Assigned User</label>
+					<InputSelect id="assignedUser" class="form-select" Value="ChildContent.AssignedUserId" ValueChanged="((string value) => SetAssignedUser(value))" ValueExpression="() => ChildContent.AssignedUserId" disabled="@DisableAssignedUser">
+						<option value="">-- Select user --</option>
+						@foreach (var user in UsersWithAccess)
+						{
+							<option value="@user.Id">@user.UserName</option>
+						}
+					</InputSelect>
+					<ValidationMessage For="() => ChildContent.AssignedUserId" />
+				</div>
+			}
+
+			<div class="mb-3">
+				<label for="prizeStatus" class="form-label">Status</label>
+				<InputSelect id="prizeStatus" class="form-select" @bind-Value="ChildContent.Status" disabled="@DisableStatus">
+					@foreach (var status in StatusOptions)
+					{
+						<option value="@status.enumValue">@status.text</option>
+					}
+				</InputSelect>
+				<ValidationMessage For="() => ChildContent.Status" />
+			</div>
+
+			<button type="submit" class="btn btn-primary" disabled="@DisableSubmit">@AddUpdateText</button>
+			<button type="button" class="btn btn-danger ms-5" @onclick="DeletePrizeAsync" disabled="@DisableDelete">Delete</button>
+			<SpinnerComponent ShowSpinner="@ShowSpinner" />
+		</EditForm>
+	</div>
+}
+
+<FormResultComponent @ref="FormResultComponent" />

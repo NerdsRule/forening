@@ -6,6 +6,54 @@ namespace Organization.Core.TaskPrizeCore;
 /// </summary>
 public static class PrizeWorkflows
 {
+    public static Dictionary<Shared.PrizeStatusEnum, string> StatusTextMapping = new()
+    {
+        { Shared.PrizeStatusEnum.Available, "Available" },
+        { Shared.PrizeStatusEnum.PendingRedemption, "Pending Redemption" },
+        { Shared.PrizeStatusEnum.Redeemed, "Redeemed" }
+    };
+
+    /// <summary>
+    /// Returns the statuses a user can select based on role and assignment.
+    /// </summary>
+    /// <param name="currentStatus">Current prize status.</param>
+    /// <param name="userRole">Roles of the current user.</param>
+    /// <param name="isAssignedToMe">True when the prize is assigned to the current user.</param>
+    /// <returns>Tuple array with display text and enum value.</returns>
+    public static (string text, Shared.PrizeStatusEnum enumValue)[] GetAvailablePrizeStatus(Shared.PrizeStatusEnum currentStatus, Shared.RolesEnum[] userRole, bool isAssignedToMe)
+    {
+        var availableStatuses = new List<(string text, Shared.PrizeStatusEnum enumValue)>();
+
+        if (userRole.Contains(Shared.RolesEnum.DepartmentAdmin) || userRole.Contains(Shared.RolesEnum.OrganizationAdmin) || userRole.Contains(Shared.RolesEnum.EnterpriseAdmin))
+        {
+            availableStatuses.AddRange(
+            [
+                (StatusTextMapping[Shared.PrizeStatusEnum.Available], Shared.PrizeStatusEnum.Available),
+                (StatusTextMapping[Shared.PrizeStatusEnum.PendingRedemption], Shared.PrizeStatusEnum.PendingRedemption),
+                (StatusTextMapping[Shared.PrizeStatusEnum.Redeemed], Shared.PrizeStatusEnum.Redeemed)
+            ]);
+        }
+        else if (userRole.Contains(Shared.RolesEnum.DepartmentMember) && isAssignedToMe)
+        {
+            availableStatuses.AddRange(
+            [
+                (StatusTextMapping[Shared.PrizeStatusEnum.Available], Shared.PrizeStatusEnum.Available),
+                (StatusTextMapping[Shared.PrizeStatusEnum.PendingRedemption], Shared.PrizeStatusEnum.PendingRedemption)
+            ]);
+        }
+        else
+        {
+            availableStatuses.Add((StatusTextMapping[currentStatus], currentStatus));
+        }
+
+        if (!availableStatuses.Any(s => s.enumValue == currentStatus))
+        {
+            availableStatuses.Add((StatusTextMapping[currentStatus], currentStatus));
+        }
+
+        return [.. availableStatuses];
+    }
+
     /// <summary>
     /// Determines the next status of a prize based on its current status and the user's roles.
     /// </summary> <param name="currentStatus">The current status of the prize.</param>

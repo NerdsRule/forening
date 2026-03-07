@@ -22,6 +22,18 @@
                     <label class="form-label">Member number:</label>
                     <InputText class="form-control" @bind-Value="StaticUserInfoBlazor.User.MemberNumber" disabled />
                 </div>
+                <div class="mb-3">
+                    <label class="form-label">Points earned:</label>
+                    <InputNumber class="form-control" @bind-Value="StaticUserInfoBlazor.User.TotalPointsAwarded" disabled />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Points redeemed:</label>
+                    <InputNumber class="form-control" @bind-Value="StaticUserInfoBlazor.User.TotalPointsRedeemed" disabled />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Points balance:</label>
+                    <input class="form-control" value="@StaticUserInfoBlazor.User.PointsBalance" disabled readonly />
+                </div>
                 <button class="btn btn-success" @onclick="NavigateToChangePassword">Change Password</button>
                 
             }

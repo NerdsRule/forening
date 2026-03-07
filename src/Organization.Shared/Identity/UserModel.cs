@@ -50,4 +50,14 @@ public class UserModel
     /// User points awarded across all tasks.
     /// </summary>
     public int TotalPointsAwarded { get; set; }
+
+    /// <summary>
+    /// User points redeemed across all prizes.
+    /// </summary>
+    public int TotalPointsRedeemed { get; set; }
+
+    /// <summary>
+    /// User points balance, calculated as TotalPointsAwarded minus TotalPointsRedeemed.
+    /// </summary>
+    public int PointsBalance => TotalPointsAwarded - TotalPointsRedeemed;
 }

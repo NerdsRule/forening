@@ -19,6 +19,7 @@ global using Organization.Shared.Identity;
 global using Organization.Shared.Helpers;
 global using Organization.Shared.DatabaseObjects;
 global using Organization.Blazor.Layout.DepartmentTask;
+global using Organization.Blazor.Layout.DepartmentPrize;
 global using Organization.Core.TaskPrizeCore;
 
 global using Organization.Infrastructure.Services;

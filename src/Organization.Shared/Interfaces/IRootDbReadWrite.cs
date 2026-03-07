@@ -85,7 +85,32 @@ public interface IRootDbReadWrite
     /// <param name="departmentId">Department Id</param>
     /// <returns>List of tasks</returns>
     public Task<List<TTask>> GetTasksByDepartmentAsync(int departmentId, CancellationToken ct);
-    
+    #endregion
+
+    #region Prizes and Departments
+    /// <summary>
+    /// Get prizes by department id.
+    /// </summary>
+    /// <param name="departmentId">Department Id</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>List of prizes with related users loaded.</returns>
+    public Task<List<TPrize>> GetPrizesByDepartmentAsync(int departmentId, CancellationToken ct);
+
+    /// <summary>
+    /// Get a prize by id with related users loaded.
+    /// </summary>
+    /// <param name="id">Prize id</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Prize or null if not found.</returns>
+    public Task<TPrize?> GetPrizeByIdAsync(int id, CancellationToken ct);
+
+    /// <summary>
+    /// Get prizes by assigned user id.
+    /// </summary>
+    /// <param name="assignedUserId">Assigned user id</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>List of prizes assigned to user.</returns>
+    public Task<List<TPrize>> GetPrizesByAssignedUserIdAsync(string assignedUserId, CancellationToken ct);
     #endregion
 
    #region View for tasks with points awarded

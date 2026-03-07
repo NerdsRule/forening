@@ -1,0 +1,45 @@
+<div class="card mt-4 sand-bg">
+    <div class="card-header">
+        <span class="card-title fs-5 fw-bold">Prize List for @StaticUserInfoBlazor.SelectedDepartment?.Department?.Name</span>
+        <button class="btn btn-primary ms-4 oi oi-reload" @onclick="RefreshPrizes" title="Refresh the list"></button>
+    </div>
+    <div class="card-body">
+        @if (_prizes.Any())
+        {
+            <div class="d-none d-sm-block">
+                <div class="row">
+                    <div class="col-12 col-md-3">
+                        <strong>Name</strong>
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <strong>Points</strong>
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <strong>Status</strong>
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <strong>Assigned</strong>
+                    </div>
+                    <div class="col-12 col-md-2">
+                        <strong>Creator</strong>
+                    </div>
+                    <div class="col-12 col-md-1">
+                        <strong>Details</strong>
+                    </div>
+                </div>
+            </div>
+
+            @foreach (var prize in _sortedAndFilteredPrizes)
+            {
+                <DepartmentPrizeComponent @ref="_prizeComponents[prize.Id]"
+                                        ChildContent="prize"
+                                        InitDisplayDetails="false"
+                                        OnPrizeAddedOrUpdatedEvent="AddPrizeToList"
+                                        OnPrizeDeletedEvent="RemovePrizeFromList"
+                                        UsersWithAccess="UsersWithAccess" />
+            }
+        }
+
+        <FormResultComponent @ref="_prizeResult" />
+    </div>
+</div>
