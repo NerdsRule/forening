@@ -51,6 +51,7 @@ builder.Services.AddHttpClient("Auth", client =>
 builder.Services.AddScoped<IDepartmentTaskService, DepartmentTaskService>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
+builder.Services.AddScoped<IPrizeService, PrizeService>();
 
 await builder.Build().RunAsync();
 
