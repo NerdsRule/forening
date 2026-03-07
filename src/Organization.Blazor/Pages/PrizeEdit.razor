@@ -1,0 +1,20 @@
+@page "/prize-edit"
+@attribute [Authorize(Roles = "OrganizationAdmin,EnterpriseAdmin,DepartmentAdmin")]
+<PageTitle>Edit prize</PageTitle>
+
+<div class="container-fluid mt-2">
+    <FormResultComponent @ref="FormResult" />
+    <SpinnerComponent ShowSpinner="@ShowSpinner" />
+    <div class="card mt-2">
+        <div class="card-header">
+            <span class="card-title fs-4 fw-bold">Add new prize</span>
+        </div>
+        <div class="card-body">
+            <DepartmentPrizeComponent ChildContent="_newPrize"
+                                    OnPrizeAddedOrUpdatedEvent="OnPrizeAddedOrUpdated"
+                                    InitDisplayDetails="false"
+                                    UsersWithAccess="UsersWithAccess" />
+        </div>
+    </div>
+    <PrizeListComponent @ref="_prizeListComponent" UsersWithAccess="UsersWithAccess" />
+</div>

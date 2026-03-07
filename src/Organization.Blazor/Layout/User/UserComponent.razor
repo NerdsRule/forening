@@ -37,6 +37,20 @@
                 <InputText @bind-Value="User.MemberNumber" class="form-control" />
                 <ValidationMessage For="@(() => User.MemberNumber)" />
             </div>
+            <div class="mb-3">
+                <label class="form-label">Points awarded</label>
+                <InputNumber @bind-Value="User.TotalPointsAwarded" class="form-control" />
+                <ValidationMessage For="@(() => User.TotalPointsAwarded)" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Points redeemed</label>
+                <InputNumber @bind-Value="User.TotalPointsRedeemed" class="form-control" />
+                <ValidationMessage For="@(() => User.TotalPointsRedeemed)" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Points balance</label>
+                <input type="number" value="@User.PointsBalance" class="form-control" disabled />
+            </div>
             <button type="submit" class="btn btn-primary">Update</button>
             <button type="button" class="btn btn-danger ms-4" @onclick="HandleDeleteUserAsync">Delete User</button>
             <FormResultComponent @ref="_formResult" />

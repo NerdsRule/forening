@@ -100,13 +100,13 @@ public static class PrizeEndpoint
             {
                 try
                 {
-                    var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
+                    var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin, RolesEnum.DepartmentMember };
                     var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, departmentId, rolesToCheck, db, ct);
                     if (!hasAccess)
                     {
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
                     }
-                    var prizes = (await db.GetRowsAsync<TPrize>(ct)).Where(t => t.DepartmentId == departmentId).ToList();
+                    var prizes = await db.GetPrizesByDepartmentAsync(departmentId, ct);
                     return Results.Ok(prizes);
                 }
                 catch (Exception e)
@@ -137,12 +137,12 @@ public static class PrizeEndpoint
             {
                 try
                 {
-                    var _prize = await db.GetRowAsync<TPrize>(id, ct);
+                    var _prize = await db.GetPrizeByIdAsync(id, ct);
                     if (_prize is null)
                     {
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Price not found"] });
                     }
-                    var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
+                    var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin, RolesEnum.DepartmentMember };
                     var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, _prize.DepartmentId, rolesToCheck, db, ct);
                     if (!hasAccess)
                     {
@@ -158,6 +158,70 @@ public static class PrizeEndpoint
             return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["User not authenticated"] });
         })
         .Produces<TPrize>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .RequireAuthorization();
+
+        /// <summary>
+        /// Get points balance for a specific user.
+        /// Points balance = total awarded points - total redeemed prize points.
+        /// </summary>
+        /// <param name="userId">The user id to calculate balance for.</param>
+        /// <param name="user">The claims principal representing the authenticated user.</param>
+        /// <param name="userManager">User manager used for access checks.</param>
+        /// <param name="db">The database service for data access.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>Points totals and balance for the user.</returns>
+        v1.MapGet("/api/price/PointsBalance/ByUser/{userId}", async Task<IResult> (string userId, ClaimsPrincipal user, UserManager<AppUser> userManager, IRootDbReadWrite db, CancellationToken ct) =>
+        {
+            if (user.Identity is null || !user.Identity.IsAuthenticated)
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["User not authenticated"] });
+            }
+
+            try
+            {
+                var authenticatedUserId = user.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+                var isSelf = string.Equals(authenticatedUserId, userId, StringComparison.Ordinal);
+
+                if (!isSelf)
+                {
+                    var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.OrganizationMember };
+                    var (hasAccess, _) = await UserRolesEndpoints.IsUserInSameOrganizationAndInRoleAsync(user, userId, rolesToCheck, userManager, db, ct);
+                    if (!hasAccess)
+                    {
+                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
+                    }
+                }
+
+                var totalPointsAwarded = await db.GetTasksWithPointsAwardedByUserAsync(userId, ct);
+                var totalPointsRedeemed = await db.GetPrizesByAssignedUserIdAsync(userId, ct);
+                var awarded = totalPointsAwarded.Sum(t => t.TaskPointsAwarded);
+                var redeemed = totalPointsRedeemed.Where(p => p.Status == Shared.PrizeStatusEnum.Redeemed).Sum(p => p.PointsCost);
+                var userInfo = await UserRolesEndpoints.GetUserInfoAsync(userId, userManager, db, ct);
+                if (userInfo is null)
+                {
+                    return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["User not found"] });
+                }
+
+                var points = new UserPointsBalanceModel
+                {
+                    UserId = userInfo.Id,
+                    DisplayName = userInfo.DisplayName,
+                    UserName = userInfo.UserName,
+                    Email = userInfo.Email,
+                    TotalPointsAwarded = awarded,
+                    TotalPointsRedeemed = redeemed,
+                    PointsBalance = awarded - redeemed
+                };
+
+                return Results.Ok(points);
+            }
+            catch (Exception e)
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [e.Message] });
+            }
+        })
+        .Produces<UserPointsBalanceModel>(StatusCodes.Status200OK)
         .Produces(StatusCodes.Status400BadRequest)
         .RequireAuthorization();
     }

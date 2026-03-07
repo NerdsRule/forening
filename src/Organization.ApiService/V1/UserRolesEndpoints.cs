@@ -146,6 +146,7 @@ public static class UserRolesEndpoints
         var userAppUserOrgs = await db.GetUserOrganizationsAsync(userId, cancellationToken);
         var userAppUserDeps = await db.GetUserDepartmentsAsync(userId, cancellationToken);
         var totalPointsAwarded = await db.GetTasksWithPointsAwardedByUserAsync(userId, cancellationToken);
+        var totalPointsRedeemed = await db.GetPrizesByAssignedUserIdAsync(userId, cancellationToken);
 
         return new()
         {
@@ -156,7 +157,8 @@ public static class UserRolesEndpoints
             AppUserOrganizations = userAppUserOrgs,
             AppUserDepartments = userAppUserDeps,
             DisplayName = appUser.DisplayName ?? appUser.UserName ?? appUser.Email,
-            TotalPointsAwarded = totalPointsAwarded.Sum(t => t.TaskPointsAwarded)
+            TotalPointsAwarded = totalPointsAwarded.Sum(t => t.TaskPointsAwarded),
+            TotalPointsRedeemed = totalPointsRedeemed.Where(p => p.Status == PrizeStatusEnum.Redeemed).Sum(p => p.PointsCost)
         };
     }
 

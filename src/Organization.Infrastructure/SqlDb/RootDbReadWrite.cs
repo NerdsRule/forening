@@ -119,6 +119,57 @@ public class RootDbReadWrite : IRootDbReadWrite
         }
         return res;
     }
+
+    #endregion
+
+    #region Prizes and Departments
+    /// <summary>
+    /// Get prizes by department id.
+    /// </summary>
+    /// <param name="departmentId">Department Id</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>List of prizes with related users loaded.</returns>
+    public async Task<List<TPrize>> GetPrizesByDepartmentAsync(int departmentId, CancellationToken ct)
+    {
+        return await Db.Prizes
+            .Where(prize => prize.DepartmentId == departmentId)
+            .Include(prize => prize.CreatorUser)
+            .Include(prize => prize.AssignedUser)
+            .AsNoTracking()
+            .ToListAsync(ct);
+    }
+
+    /// <summary>
+    /// Get a prize by id.
+    /// </summary>
+    /// <param name="id">Prize id</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Prize or null if not found.</returns>
+    public async Task<TPrize?> GetPrizeByIdAsync(int id, CancellationToken ct)
+    {
+        return await Db.Prizes
+            .Where(prize => prize.Id == id)
+            .Include(prize => prize.CreatorUser)
+            .Include(prize => prize.AssignedUser)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(ct);
+    }
+
+    /// <summary>
+    /// Get prices by assigned user id.
+    /// </summary>
+    /// <param name="assignedUserId">Assigned user id</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>List of prizes assigned to user.</returns>
+    public async Task<List<TPrize>> GetPrizesByAssignedUserIdAsync(string assignedUserId, CancellationToken ct)
+    {        
+        return await Db.Prizes
+            .Where(prize => prize.AssignedUserId == assignedUserId)
+            .Include(prize => prize.CreatorUser)
+            .Include(prize => prize.AssignedUser)
+            .AsNoTracking()
+            .ToListAsync(ct);
+    }
     #endregion
 
     #region View for tasks with points awarded
