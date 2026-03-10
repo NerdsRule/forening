@@ -2,10 +2,11 @@
 
 <PageTitle>My profile</PageTitle>
 
-<div class="container">
+<div class="container-fluid">
     <div class="card">
         <div class="card-header">
-            <span class="fs-4 fw-bold">Your Profile Information</span>
+            <span class="card-title fs-6 d-block d-md-none fw-bold">Your Profile Information</span>
+            <span class="card-title fs-4 d-none d-md-block fw-bold">Your Profile Information</span>
         </div>
         <div class="card-body">
             @if (StaticUserInfoBlazor.User != null)
@@ -44,10 +45,10 @@
     
     <div class="card mt-2">
         <div class="card-header">
-            <span class="fs-4 fw-bold">Your Organization & Department</span>
+            <span class="card-title fs-6 d-block d-md-none fw-bold">Your Organization & Department</span>
+            <span class="card-title fs-4 d-none d-md-block fw-bold">Your Organization & Department</span>
         </div>
         <div class="card-body">
-            <span class="fs-4 fw-bold">Change Organization & Department</span>
             <EditForm Model="_organizationDepartmentForm" OnValidSubmit="HandleValidSubmit">
                 <DataAnnotationsValidator />
                 <ValidationSummary />

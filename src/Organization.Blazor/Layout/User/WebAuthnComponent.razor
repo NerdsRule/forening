@@ -3,7 +3,8 @@
 {
     <div class="card mt-2">
         <div class="card-header">
-            <span class="fs-4 fw-bold">Passkey</span>
+            <span class="fs-6 d-block d-md-none fw-bold">Passkey login</span>
+            <span class="fs-4 d-none d-md-block fw-bold">Passkey login</span>
         </div>
         <div class="card-body">
             
@@ -43,7 +44,8 @@
 
                 @if (PasskeyCredentials.Count > 0)
                 {
-                    <span class="fs-5 fw-bold">Registered Passkeys</span>
+                    <span class="fs-6 d-block d-md-none fw-bold">Registered Passkeys</span>
+                    <span class="fs-4 d-none d-md-block fw-bold">Registered Passkeys</span>
                     @foreach (var credential in PasskeyCredentials)
                     {
                         <div class="row border border-secondary rounded rounded-1 my-1 p-2">

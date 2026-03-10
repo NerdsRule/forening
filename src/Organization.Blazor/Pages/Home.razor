@@ -4,16 +4,22 @@
 <div class="container-fluid">
     <AuthorizeView>
         <Authorized>
-            <div class="card mt-2">
-                <div class="card-header text-center">
-                    <span class="card-title fs-4 fw-bold">Optjen point, når du bidrager i din forening – og brug dem på belønninger, der skaber værdi for både dig og fællesskabet</span>
-                </div>
-            </div>
             <LandingPageTaskComponent />
-            <LandingPagePriceComponent />
         </Authorized>
         <NotAuthorized>
-            <div class="card mt-2">
+            
+            <div class="card mt-2 d-block d-md-none">
+                <div class="card-header text-center">
+                    <span class="card-title fs-6 fw-bold">Optjen point i din forening</span>
+                </div>
+                <div class="card-body">
+                    <p class="card-text small">
+                        Deltag i opgaver, optjen point og brug dem på belønninger der gavner fællesskabet.
+                    </p>
+                </div>
+            </div>
+            
+            <div class="card mt-2 d-none d-md-block">
                 <div class="card-header text-center">
                     <span class="card-title fs-4 fw-bold">Optjen point, når du bidrager i din forening – og brug dem på belønninger, der skaber værdi for både dig og fællesskabet</span>
                 </div>
@@ -28,6 +34,7 @@
                     </div>
                 </div>
             </div>
+            
             <AuthenticationComponent />
         </NotAuthorized>
     </AuthorizeView>
