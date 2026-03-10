@@ -7,7 +7,8 @@
     <SpinnerComponent ShowSpinner="@ShowSpinner" />
     <div class="card mt-2">
         <div class="card-header">
-            <span class="card-title fs-4 fw-bold">Add new task</span>
+            <span class="card-title fs-6 d-block d-md-none fw-bold">Add new task</span>
+            <span class="card-title fs-4 d-none d-md-block fw-bold">Add new task</span>
         </div>
         <div class="card-body">
             <DepartmentTaskComponent ChildContent="_newTask" OnTaskAddedOrUpdatedEvent="OnTaskAddedOrUpdated" InitDisplayDetails="false" UsersWithAccess="UsersWithAccess"/>

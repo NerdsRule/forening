@@ -2,7 +2,8 @@
 {
     <div class="card mt-2">
         <div class="card-header">
-            <span class="card-title fs-5 fw-bold">Edit Organization for selected user</span>
+            <span class="card-title fs-6 d-block d-md-none fw-bold">Edit Organization for selected user</span>
+            <span class="card-title fs-4 d-none d-md-block fw-bold">Edit Organization for selected user</span>
         </div>
         <div class="card-body">
             <EditForm Model="@AppUserOrganization" OnValidSubmit="@HandleUpdateRoleAsync">
@@ -29,7 +30,8 @@
     {
         <div class="card mt-2">
             <div class="card-header">
-                <span class="card-title fs-6 fw-bold">Add user to department</span>
+                <span class="card-title fs-6 d-block d-md-none fw-bold">Add user to department</span>
+                <span class="card-title fs-4 d-none d-md-block fw-bold">Add user to department</span>
             </div>
             <div class="card-body">
                 <EditForm Model="@_newAppUserDepartment" OnValidSubmit="@HandleAddDepartmentAsync">
@@ -66,7 +68,8 @@
     {
         <div class="card mt-2">
             <div class="card-header">
-                <span class="card-title fs-6 fw-bold">Edit existing department access</span>
+                <span class="card-title fs-6 d-block d-md-none fw-bold">Edit existing department access</span>
+                <span class="card-title fs-4 d-none d-md-block fw-bold">Edit existing department access</span>
             </div>
             <div class="card-body">
                 @foreach (var dept in AppUserDepartments)

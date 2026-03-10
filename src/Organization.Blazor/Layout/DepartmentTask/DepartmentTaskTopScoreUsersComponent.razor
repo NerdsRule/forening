@@ -1,13 +1,11 @@
     
-    <div class="card mt-4 sand-bg">
+    <div class="card mt-4">
         <div class="card-header">
-            <span class="card-title fs-5 fw-bold">Department Task - Top Score Users</span>
+            <span class="card-title fs-6 d-block d-md-none fw-bold">Top Score Users</span>
+            <span class="card-title fs-4 d-none d-md-block fw-bold">Top Score Users</span>
             <SpinnerComponent ShowSpinner="@IsLoading" />
         </div>
         <div class="card-body">
-            <p class="card-text">
-                This component displays the top ranked users based on the points they have been awarded for completing department tasks. The users are ranked according to their total points, and the top performers are highlighted with star icons to indicate their ranking position. The component also includes a loading spinner that is displayed while the data is being fetched, ensuring a smooth user experience.
-            </p>
             @if (TopUsersWithPointsAwarded != null && TopUsersWithPointsAwarded.Count > 0)
             {
                 @foreach (var user in TopUsersWithPointsAwarded)

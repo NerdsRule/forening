@@ -1,8 +1,11 @@
 
-<div class="card mt-4 sand-bg">
+<div class="card mt-4">
     <div class="card-header">
-        <span class="card-title fs-5 fw-bold">Task List for @StaticUserInfoBlazor.SelectedDepartment?.Department?.Name</span>
-        <button class="btn btn-primary ms-4 oi oi-reload" @onclick="RefreshTasks" title="Refresh the list"></button>
+
+        <span class="card-title fs-6 d-block d-md-none fw-bold">Task List for @StaticUserInfoBlazor.SelectedDepartment?.Department?.Name <button class="btn btn-sm btn-primary ms-4 oi oi-reload" @onclick="RefreshTasks" title="Refresh the list"></button></span>
+        <span class="card-title fs-4 d-none d-md-block fw-bold">Task List for @StaticUserInfoBlazor.SelectedDepartment?.Department?.Name <button class="btn btn-sm btn-primary ms-4 oi oi-reload" @onclick="RefreshTasks" title="Refresh the list"></button></span>
+        
+        
     </div>
     <div class="card-body">
         @if (_tasks.Any())
