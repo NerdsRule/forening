@@ -84,7 +84,7 @@
                             <option value="">-- Select user --</option>
                             @foreach (var user in UsersWithAccess)
                             {
-                                <option value="@user.Id">@user.UserName</option>
+                                <option value="@user.Id">@user.DisplayName (@user.UserName)</option>
                             }
                         </InputSelect>
                         <ValidationMessage For="() => ChildContent.AssignedUserId" />

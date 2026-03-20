@@ -24,7 +24,7 @@
                     {
                         @foreach (var user in _users)
                         {
-                            <option value="@user.Id">@user.UserName (@user.Email)</option>
+                            <option value="@user.Id">@user.DisplayName (@user.Email)</option>
                         }
                     }
             </InputSelect>
