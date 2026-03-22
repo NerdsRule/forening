@@ -5,7 +5,30 @@ partial class TaskListComponent
 {
     private Dictionary<int, DepartmentTaskComponent> _taskComponents = [];
     private List<TTask> _tasks { get; set; } = [];
-    private List<TTask> _sortedAndFilteredTasks => [.. _tasks.OrderByDescending(t => t.DueDateUtc)];
+    private bool _showFilter { get; set; } = false;
+    private DateTime? _filterUtcDate { get; set; } = DateTime.UtcNow;
+    private bool _showVerifiedCompleted { get; set; } = false;
+    private bool _showRejected { get; set; } = false;
+    private bool _showCompleted { get; set; } = false;
+    private bool _showInProgress { get; set; } = true;
+    private bool _showNotStarted { get; set; } = true;
+    private List<TTask> _sortedAndFilteredTasks => 
+        _filterUtcDate.HasValue 
+            ? [.. _tasks
+                .Where(t => t.DueDateUtc.Date >= _filterUtcDate.Value.Date)
+                .Where(t => (t.Status == Shared.TaskStatusEnum.VerifiedCompleted && _showVerifiedCompleted) ||
+                            (t.Status == Shared.TaskStatusEnum.Rejected && _showRejected) ||
+                            (t.Status == Shared.TaskStatusEnum.Completed && _showCompleted) ||
+                            (t.Status == Shared.TaskStatusEnum.InProgress && _showInProgress) ||
+                            (t.Status == Shared.TaskStatusEnum.NotStarted && _showNotStarted))
+                .OrderByDescending(t => t.DueDateUtc)]
+            : [.. _tasks
+                .Where(t => (t.Status == Shared.TaskStatusEnum.VerifiedCompleted && _showVerifiedCompleted) ||
+                            (t.Status == Shared.TaskStatusEnum.Rejected && _showRejected) ||
+                            (t.Status == Shared.TaskStatusEnum.Completed && _showCompleted) ||
+                            (t.Status == Shared.TaskStatusEnum.InProgress && _showInProgress) ||
+                            (t.Status == Shared.TaskStatusEnum.NotStarted && _showNotStarted))
+                .OrderByDescending(t => t.DueDateUtc)];
     private List<TDepartment> _departments { get; set; } = [];
     private FormResultComponent _taskResult {get;set;} = null!;
     [Parameter] public List<UserModel> UsersWithAccess { get; set; } = [];

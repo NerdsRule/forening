@@ -2,10 +2,38 @@
 <div class="card mt-4">
     <div class="card-header">
 
-        <span class="card-title fs-6 d-block d-md-none fw-bold">Task List for @StaticUserInfoBlazor.SelectedDepartment?.Department?.Name <button class="btn btn-sm btn-primary ms-4 oi oi-reload" @onclick="RefreshTasks" title="Refresh the list"></button></span>
-        <span class="card-title fs-4 d-none d-md-block fw-bold">Task List for @StaticUserInfoBlazor.SelectedDepartment?.Department?.Name <button class="btn btn-sm btn-primary ms-4 oi oi-reload" @onclick="RefreshTasks" title="Refresh the list"></button></span>
-        
-        
+        <span class="card-title fs-6 d-block d-md-none fw-bold">Task List for @StaticUserInfoBlazor.SelectedDepartment?.Department?.Name <button class="btn btn-sm btn-primary ms-4 oi oi-reload" @onclick="RefreshTasks" title="Refresh the list"></button><button class="btn btn-sm btn-outline-secondary ms-2 oi oi-magnifying-glass" @onclick="@(() => _showFilter = !_showFilter)" title="Toggle filters"></button></span>
+        <span class="card-title fs-4 d-none d-md-block fw-bold">Task List for @StaticUserInfoBlazor.SelectedDepartment?.Department?.Name <button class="btn btn-sm btn-primary ms-4 oi oi-reload" @onclick="RefreshTasks" title="Refresh the list"></button><button class="btn btn-sm btn-outline-secondary ms-2 oi oi-magnifying-glass" @onclick="@(() => _showFilter = !_showFilter)" title="Toggle filters"></button></span>
+           @if (_showFilter)
+           {
+               <span class="d-block mt-2">
+                    <label class="me-3">
+                        Date
+                        <input type="date" class="form-control form-control-sm d-inline-block ms-2" style="width: auto;" @bind="_filterUtcDate" />
+                    </label>
+                    <button class="btn btn-sm btn-outline-secondary me-3" @onclick="@(() => _filterUtcDate = null)" title="Clear date filter">Clear Date</button>
+                   <label class="form-check-label me-3">
+                       <input type="checkbox" class="form-check-input" @bind="_showNotStarted" />
+                       Not Started
+                   </label>
+                   <label class="form-check-label me-3">
+                       <input type="checkbox" class="form-check-input" @bind="_showInProgress" />
+                       In Progress
+                   </label>
+                   <label class="form-check-label me-3">
+                       <input type="checkbox" class="form-check-input" @bind="_showCompleted" />
+                       Completed
+                   </label>
+                   <label class="form-check-label me-3">
+                       <input type="checkbox" class="form-check-input" @bind="_showVerifiedCompleted" />
+                       Verified Completed
+                   </label>
+                   <label class="form-check-label">
+                       <input type="checkbox" class="form-check-input" @bind="_showRejected" />
+                       Rejected
+                   </label>
+               </span>
+           }
     </div>
     <div class="card-body">
         @if (_tasks.Any())
