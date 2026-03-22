@@ -8,6 +8,9 @@ global using System.ComponentModel.DataAnnotations.Schema;
 
 global using Organization.Shared.Identity;
 global using Organization.Shared.DatabaseObjects;
+global using Organization.Shared.Helpers;
+global using Organization.Shared.Interfaces;
+global using Organization.Shared;
 
 namespace Organization.Shared;
 
@@ -81,4 +84,17 @@ public enum PrizeStatusEnum
     /// <summary> Prize has been redeemed and is no longer available.
     /// </summary>
     Redeemed = 2
+}
+
+public static class GlobalShared
+{
+    /// <summary>
+    /// Api version number. This is used by the frontend to verify that the backend API is compatible with the expected version. It can be incremented when breaking changes are made to the API.
+    /// </summary>
+    public const string ApiVersion = "0.3.0";
+
+    /// <summary>
+    /// Blazor version number. This is used to verify that the frontend Blazor is up to date.
+    /// </summary>
+    public const string BlazorVersion = "0.14.0";  //Guid.NewGuid().ToString();
 }

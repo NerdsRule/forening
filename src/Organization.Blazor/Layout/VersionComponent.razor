@@ -1,0 +1,39 @@
+@if (ShowFullVersionInfo || !BlazorMatch)
+{
+    <div class="card mt-2 shadow-sm">
+        <div class="card-header py-2 px-3">
+            <span class="fw-bold">Version Status</span>
+        </div>
+        <div class="card-body py-2 px-3">
+            <SpinnerComponent ShowSpinner="@IsLoading" />
+
+            @if (!IsLoading && ServiceVersion is not null)
+            {
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>Api</span>
+                    <span>
+                        @ApiVersionDisplay
+                        <span class="badge @(ApiMatch ? "text-bg-success" : "text-bg-danger") ms-2">@ApiStatusText</span>
+                    </span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>Blazor</span>
+                    <span>
+                        @BlazorVersionDisplay
+                        <span class="badge @(BlazorMatch ? "text-bg-success" : "text-bg-danger") ms-2">@BlazorStatusText</span>
+                    </span>
+                </div>
+            }
+
+            
+            @if (!BlazorMatch)
+            {
+                <div class="text-danger ms-3">Blazor version mismatch detected. Please reload the application and make sure you are using the latest version.</div>
+                <button class="btn btn-sm btn-outline-danger mt-3 ms-2" @onclick="FullRefresh" disabled="@IsLoading">Reload application</button>
+            }
+            <button class="btn btn-sm btn-outline-primary mt-3" @onclick="RefreshVersionInfoAsync" disabled="@IsLoading">Refresh status</button>
+
+            <FormResultComponent @ref="StatusResult" />
+        </div>
+    </div>
+}

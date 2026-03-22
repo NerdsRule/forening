@@ -118,6 +118,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 WeatherEndpointsV2.MapWeatherEndpointsV2(app);
+VersionEndpoint.MapVersionEndpoints(app);
 OrganizationEndpoints.MapOrganizationEndpoints(app);
 UserRolesEndpoints.MapUserRolesEndpoints(app);
 AppUserOrganizationEndpoints.MapAppUserOrganizationEndpoints(app);
