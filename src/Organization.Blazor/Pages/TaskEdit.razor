@@ -1,6 +1,7 @@
 ﻿@page "/task-edit"
 @attribute [Authorize(Roles = "OrganizationAdmin,EnterpriseAdmin,DepartmentAdmin")]
-<PageTitle>Edit task</PageTitle>
+
+<PageTitle>Edit Task</PageTitle>
 
 <div class="container-fluid mt-2">
     <FormResultComponent @ref="FormResult" />
