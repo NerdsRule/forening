@@ -784,6 +784,7 @@ public static class UserRolesEndpoints
                 {
                     Id = u.Id,
                     UserName = u.UserName ?? string.Empty,
+                    DisplayName = u.DisplayName ?? u.UserName ?? string.Empty,
                     Email = u.Email ?? string.Empty,
                     MemberNumber = u.MemberNumber
                 }).ToList();
