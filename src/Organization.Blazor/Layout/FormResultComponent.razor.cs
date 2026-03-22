@@ -6,7 +6,7 @@ namespace Organization.Blazor.Layout;
 /// </summary>
 partial class FormResultComponent
 {
-    private FormResult? Result { get; set; }
+    [Parameter] public FormResult? Result { get; set; }
     private string? FadeCssClass { get; set; }
 
     /// <summary>
