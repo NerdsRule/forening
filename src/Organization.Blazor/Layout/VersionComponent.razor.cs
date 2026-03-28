@@ -23,6 +23,7 @@ partial class VersionComponent
     /// </summary>
     [Parameter] public bool ShowFullVersionInfo { get; set; } = true;
     [Inject] private IVersionService VersionService { get; set; } = default!;
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
 
     /// <summary>
@@ -69,8 +70,15 @@ partial class VersionComponent
     /// <summary>
     /// Do a full refresh of the application.
     /// </summary>
-    private void FullRefresh()
+    private async Task FullRefresh()
     {
-        NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("organizationApp.hardRefresh", NavigationManager.Uri);
+        }
+        catch (JSException)
+        {
+            NavigationManager.NavigateTo(NavigationManager.Uri, forceLoad: true);
+        }
     }
 }
