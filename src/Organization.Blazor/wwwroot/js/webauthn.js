@@ -105,4 +105,25 @@
             return JSON.stringify(serializeAssertionCredential(assertion));
         }
     };
+
+    window.organizationApp = {
+        async hardRefresh(targetUrl) {
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(registrations.map(registration => registration.unregister()));
+                }
+
+                if ('caches' in window) {
+                    const cacheKeys = await caches.keys();
+                    await Promise.all(cacheKeys.map(cacheKey => caches.delete(cacheKey)));
+                }
+
+                window.localStorage.clear();
+                window.sessionStorage.clear();
+            } finally {
+                window.location.replace(targetUrl || window.location.href);
+            }
+        }
+    };
 })();

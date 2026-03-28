@@ -96,5 +96,5 @@ public static class GlobalShared
     /// <summary>
     /// Blazor version number. This is used to verify that the frontend Blazor is up to date.
     /// </summary>
-    public const string BlazorVersion = "0.16.0";  //Guid.NewGuid().ToString();
+    public const string BlazorVersion = "0.17.0";  //Guid.NewGuid().ToString();
 }
