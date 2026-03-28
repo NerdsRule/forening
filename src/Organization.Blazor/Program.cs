@@ -8,6 +8,14 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 //builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
+var configuredApiBaseUrl = builder.Configuration["services:apiservice:https:0"]
+    ?? builder.Configuration["services:apiservice:http:0"]
+    ?? builder.Configuration["ApiSettings:BaseUrl"];
+
+var authApiBaseAddress = Uri.TryCreate(configuredApiBaseUrl, UriKind.Absolute, out var parsedApiUri)
+    ? parsedApiUri
+    : new Uri(builder.HostEnvironment.BaseAddress);
+
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddScoped<IPrivateLocalStorageService, PrivateLocalStorageService>();
 builder.Services.AddScoped<IUiStateService, UiStateService>();
@@ -32,8 +40,7 @@ builder.Services.AddCascadingAuthenticationState();
 // configure client for auth interactions
 builder.Services.AddHttpClient("Auth", client =>
 {
-    client.BaseAddress = new Uri("https://api.frivilio.dk");
-    //client.BaseAddress = new Uri("https://localhost:7375");
+    client.BaseAddress = authApiBaseAddress;
     client.Timeout = TimeSpan.FromMinutes(1);
 }).AddHttpMessageHandler<CookieHandler>();
 

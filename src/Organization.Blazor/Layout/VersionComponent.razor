@@ -26,9 +26,9 @@
             }
 
             
-            @if (!BlazorMatch)
+            @if (!BlazorMatch || !ApiMatch)
             {
-                <div class="text-danger ms-3">Blazor version mismatch detected. Please reload the application and make sure you are using the latest version.</div>
+                <div class="text-danger ms-3">Version mismatch detected. Please reload the application and make sure you are using the latest version.</div>
                 <button class="btn btn-sm btn-outline-danger mt-3 ms-2" @onclick="FullRefresh" disabled="@IsLoading">Reload application</button>
             }
             <button class="btn btn-sm btn-outline-primary mt-3" @onclick="RefreshVersionInfoAsync" disabled="@IsLoading">Refresh status</button>
