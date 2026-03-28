@@ -69,7 +69,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.Cookie.Name = "OrgAuth";
     options.Cookie.HttpOnly = true;
     options.Cookie.SameSite = SameSiteMode.None;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
     options.SlidingExpiration = true;
     options.Events.OnRedirectToLogin = context =>

@@ -678,7 +678,7 @@ public static class UserRolesEndpoints
                 return Results.BadRequest(new { Error = "Email and password are required." });
             }
 
-            var appUser = await userManager.FindByEmailAsync(model.Email);
+            var appUser = await userManager.FindByEmailAsync(model.Email.Trim());
             if (appUser is null)
             {
                 return Results.Unauthorized();
@@ -806,6 +806,7 @@ public static class UserRolesEndpoints
             {
                 var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
                 var (hasAccess, _user) = await IsUserInSameOrganizationAndInRoleAsync(user, userId, rolesToCheck, userManager, db, cancellationToken);
+                if (hasAccess)
                 {
                     var appUser = await userManager.FindByIdAsync(userId);
                     if (appUser is not null && appUser.NormalizedUserName != "LASSE.TARP@SPACE4IT.DK")
@@ -870,6 +871,7 @@ public static class UserRolesEndpoints
 
                 var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
                 var (hasAccess, _user) = await IsUserInSameOrganizationAndInRoleAsync(user, model.Id, rolesToCheck, userManager, db, cancellationToken);
+                if (hasAccess)
                 {
                     var appUser = await userManager.FindByIdAsync(model.Id);
                     if (appUser is not null)
