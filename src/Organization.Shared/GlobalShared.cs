@@ -89,12 +89,8 @@ public enum PrizeStatusEnum
 public static class GlobalShared
 {
     /// <summary>
-    /// Api version number. This is used by the frontend to verify that the backend API is compatible with the expected version. It can be incremented when breaking changes are made to the API.
+    /// Api version number. Increment when making breaking API changes.
+    /// Must match the &lt;Version&gt; in Organization.ApiService.csproj.
     /// </summary>
     public const string ApiVersion = "0.5.0";
-
-    /// <summary>
-    /// Blazor version number. This is used to verify that the frontend Blazor is up to date.
-    /// </summary>
-    public const string BlazorVersion = "0.17.0";  //Guid.NewGuid().ToString();
 }
