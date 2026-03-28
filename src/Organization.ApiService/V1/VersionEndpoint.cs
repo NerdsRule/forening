@@ -17,7 +17,12 @@ public static class VersionEndpoint
         /// Returns the current API and Blazor versions.
         /// </summary>
         /// <returns>The current version information.</returns>
-        v1.MapGet("/api/version", () => Results.Ok(new VersionHelper()))
+        v1.MapGet("/api/version", (HttpContext ctx) =>
+        {
+            var apiVersion = VersionHelper.GetAssemblyVersion(
+                System.Reflection.Assembly.GetExecutingAssembly());
+            return Results.Ok(new VersionHelper { ApiVersion = apiVersion });
+        })
             .Produces<VersionHelper>(StatusCodes.Status200OK)
             .AllowAnonymous();
     }

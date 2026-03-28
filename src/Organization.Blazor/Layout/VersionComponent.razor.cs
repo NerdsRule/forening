@@ -9,11 +9,14 @@ partial class VersionComponent
     private VersionHelper? ServiceVersion { get; set; }
     private bool IsLoading { get; set; }
 
+    private static readonly string _currentBlazorVersion =
+        VersionHelper.GetAssemblyVersion(typeof(VersionComponent).Assembly);
+
     private string ApiVersionDisplay => ServiceVersion?.ApiVersion ?? "n/a";
     private string BlazorVersionDisplay => ServiceVersion?.BlazorVersion ?? "n/a";
 
     private bool ApiMatch => ServiceVersion?.IsApiVersionCompatible() ?? false;
-    private bool BlazorMatch => ServiceVersion?.IsBlazorVersionCompatible() ?? false;
+    private bool BlazorMatch => ServiceVersion?.IsBlazorVersionCompatible(_currentBlazorVersion) ?? false;
 
     private string ApiStatusText => ApiMatch ? "match" : "mismatch";
     private string BlazorStatusText => BlazorMatch ? "match" : "mismatch";
@@ -58,6 +61,10 @@ partial class VersionComponent
         var (data, formResult) = await VersionService.GetVersionAsync(cts.Token);
 
         ServiceVersion = data;
+        if (ServiceVersion is not null)
+        {
+            ServiceVersion.BlazorVersion = _currentBlazorVersion;
+        }
         if (formResult != null)
         {
             StatusResult.SetFormResult(formResult);
