@@ -7,20 +7,15 @@ namespace Organization.Shared.Helpers;
 public class VersionHelper
 {
     /// <summary>
-    /// The API version, sourced from the API assembly. Populated by the /v1/api/version endpoint.
+    /// The API version, sourced from the API assembly at runtime.
     /// </summary>
-    public string ApiVersion { get; init; } = GlobalShared.ApiVersion;
+    public string ApiVersion { get; init; } = string.Empty;
 
     /// <summary>
     /// The Blazor frontend version. Empty when returned by the API — the Blazor client populates
     /// this from its own assembly's AssemblyInformationalVersion after deserialization.
     /// </summary>
     public string BlazorVersion { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Returns true when the API version reported by the server matches what this client was compiled against.
-    /// </summary>
-    public bool IsApiVersionCompatible() => ApiVersion == GlobalShared.ApiVersion;
 
     /// <summary>
     /// Returns true when the Blazor version matches the running assembly's version.

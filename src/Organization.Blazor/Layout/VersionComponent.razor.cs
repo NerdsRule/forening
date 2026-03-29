@@ -15,11 +15,13 @@ partial class VersionComponent
     private string ApiVersionDisplay => ServiceVersion?.ApiVersion ?? "n/a";
     private string BlazorVersionDisplay => ServiceVersion?.BlazorVersion ?? "n/a";
 
-    private bool ApiMatch => ServiceVersion?.IsApiVersionCompatible() ?? false;
-    private bool BlazorMatch => ServiceVersion?.IsBlazorVersionCompatible(_currentBlazorVersion) ?? false;
+    private string _deployedBlazorVersion = string.Empty;
+    private bool _isBlazorUpdateAvailable => !string.IsNullOrEmpty(_deployedBlazorVersion)
+        && _deployedBlazorVersion != _currentBlazorVersion;
 
-    private string ApiStatusText => ApiMatch ? "match" : "mismatch";
-    private string BlazorStatusText => BlazorMatch ? "match" : "mismatch";
+    private bool BlazorMatch => !_isBlazorUpdateAvailable;
+
+    private string BlazorStatusText => BlazorMatch ? "match" : "update available";
 
     /// <summary>
     /// Set this true to display the full version information.
@@ -65,6 +67,16 @@ partial class VersionComponent
         {
             ServiceVersion.BlazorVersion = _currentBlazorVersion;
         }
+
+        try
+        {
+            _deployedBlazorVersion = await JSRuntime.InvokeAsync<string>("organizationApp.fetchDeployedVersion", cts.Token);
+        }
+        catch (JSException)
+        {
+            _deployedBlazorVersion = _currentBlazorVersion;
+        }
+
         if (formResult != null)
         {
             StatusResult.SetFormResult(formResult);
