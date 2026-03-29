@@ -2,7 +2,7 @@
 
 namespace Organization.Blazor.Pages;
 
-partial class MyProfile 
+partial class MyProfile : IDisposable
 {
 
     /// <summary>
@@ -15,6 +15,18 @@ partial class MyProfile
     [Inject] ILocalStorageService LocalStorageService { get; set; } = null!;
     [Inject] private IAccountService AccountService { get; set; } = null!;
     [Inject] IUiStateService UiStateService { get; set; } = null!;
+
+    /// <summary>
+    /// Refresh UI when shared user state changes elsewhere in the app.
+    /// </summary>
+    private void OnUserUpdated()
+    {
+        _ = InvokeAsync(async () =>
+        {
+            _ = await AccountService.CheckAuthenticatedAsync();
+            StateHasChanged();
+        });
+    }
 
     /// <summary>
     /// Handle valid form submission
@@ -74,6 +86,8 @@ partial class MyProfile
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
+        UiStateService.UserUpdatedEvent += OnUserUpdated;
+
         // Load user info
         _ = await AccountService.CheckAuthenticatedAsync();
         if (StaticUserInfoBlazor.User is null)
@@ -88,6 +102,11 @@ partial class MyProfile
         _organizationDepartmentForm.Organizations = [.. StaticUserInfoBlazor.User.AppUserOrganizations.Select(c => c.Organization!)];
         _organizationDepartmentForm.Departments = [.. StaticUserInfoBlazor.User.AppUserDepartments.Where(d => d.AppUserId == StaticUserInfoBlazor.User.Id).Select(c => c.Department!)];
         await base.OnInitializedAsync();
+    }
+
+    public void Dispose()
+    {
+        UiStateService.UserUpdatedEvent -= OnUserUpdated;
     }
     
 }
