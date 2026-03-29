@@ -188,21 +188,17 @@ partial class DepartmentTaskComponent
     }
 
     /// <summary>
-    /// Update Awarded Points for the user in StaticUserInfoBlazor.
-    /// </summary> <returns>A task representing the asynchronous operation.</returns>
+    /// Refresh user points from the canonical user-info endpoint.
+    /// </summary>
     private async Task UpdateAwardedPointsForUserAsync()
     {
-        if (StaticUserInfoBlazor.User == null)        {
+        if (StaticUserInfoBlazor.User is null)
+        {
             Debug.WriteLine("No user is currently logged in.");
             return;
         }
-        CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
-        var result = await DepartmentTaskService.GetTasksWithPointsAwardedByUserIdAsync(StaticUserInfoBlazor.User!.Id, cts.Token);
-        if (result.formResult != null && !result.formResult.Succeeded)        {
-            Debug.WriteLine($"Error fetching awarded points for user: {string.Join(", ", result.formResult.ErrorList)}");
-            return;
-        }
-        StaticUserInfoBlazor.User.TotalPointsAwarded = result.data?.Sum(t => t.TaskPointsAwarded) ?? 0;
+
+        _ = await AccountService.CheckAuthenticatedAsync();
         UiStateService.NotifyUserUpdated();
     }
 
