@@ -107,6 +107,13 @@
     };
 
     window.organizationApp = {
+        async fetchDeployedVersion() {
+            const response = await fetch('/version.json', { cache: 'no-store' });
+            if (!response.ok) return '';
+            const data = await response.json();
+            return data.version ?? '';
+        },
+
         async hardRefresh(targetUrl) {
             try {
                 if ('serviceWorker' in navigator) {

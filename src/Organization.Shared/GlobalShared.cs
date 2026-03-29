@@ -86,11 +86,3 @@ public enum PrizeStatusEnum
     Redeemed = 2
 }
 
-public static class GlobalShared
-{
-    /// <summary>
-    /// Api version number. Increment when making breaking API changes.
-    /// Must match the &lt;Version&gt; in Organization.ApiService.csproj.
-    /// </summary>
-    public const string ApiVersion = "0.5.0";
-}
