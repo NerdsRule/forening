@@ -108,7 +108,8 @@
 
     window.organizationApp = {
         async fetchDeployedVersion() {
-            const response = await fetch('/version.json', { cache: 'no-store' });
+            const versionUrl = new URL('version.json', document.baseURI).toString();
+            const response = await fetch(versionUrl, { cache: 'no-store' });
             if (!response.ok) return '';
             const data = await response.json();
             return data.version ?? '';

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Version>0.21.0</Version>
+    <Version>0.22.0</Version>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
@@ -24,10 +24,11 @@
 
   <ItemGroup>
     <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
+    <Content Update="wwwroot/version.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <Target Name="WriteVersionJson" BeforeTargets="Build;Publish">
-    <WriteLinesToFile File="$(MSBuildProjectDirectory)\wwwroot\version.json"
+    <WriteLinesToFile File="$(MSBuildProjectDirectory)/wwwroot/version.json"
                       Lines='{"version":"$(Version)"}'
                       Overwrite="true" />
   </Target>
