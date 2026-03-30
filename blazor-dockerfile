@@ -26,6 +26,11 @@ server {
 	root /usr/share/nginx/html;
 	index index.html;
 
+	location = /version.json {
+		try_files /version.json =404;
+		add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0" always;
+	}
+
 	location / {
 		try_files $uri $uri/ /index.html;
 	}
