@@ -576,35 +576,6 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
             ErrorList = ["An unknown error prevented the password change from succeeding."]
         };
     }
-
-    /// <summary>
-    /// Reset password for user
-    /// </summary>
-    /// <param name="model">ResetPasswordModel</param>
-    /// <returns>FormResult</returns>
-    public async Task<FormResult> ResetPasswordAsync(ResetPasswordModel model)
-    {
-        try
-        {
-            // make the request
-            var result = await httpClient.PostAsJsonAsync("/v1/api/users/password/reset", model);
-            // body should contain details about why it failed
-            var details = await result.Content.ReadAsStringAsync();
-            var problemDetails = JsonHelpers.JsonDeSerialize<FormResult>(details);
-            return problemDetails ?? new FormResult { Succeeded = false, ErrorList = ["An unknown error prevented the password reset from succeeding."] };
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "App error");
-        }
-
-        // unknown error
-        return new FormResult
-        {
-            Succeeded = false,
-            ErrorList = ["An unknown error prevented the password reset from succeeding."]
-        };
-    }
     #endregion
 
     #region TAppUserOrganization

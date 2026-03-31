@@ -66,6 +66,11 @@ public interface IRootDbReadWrite
     /// <param name="departmentId">Department Id</param>
     /// <returns>List of users in department</returns>
     public Task<List<AppUser>> GetUsersInDepartmentAsync(int departmentId, CancellationToken ct);
+    /// <summary>
+    /// Get TResetPassword by user id
+    /// </summary> <param name="userId">User Id</param>
+    /// <returns>List of TResetPassword</returns>
+    public Task<TResetPassword?> GetResetPasswordsByUserIdAsync(string userId, CancellationToken ct);
     #endregion
 
     #region Organizations and Departments

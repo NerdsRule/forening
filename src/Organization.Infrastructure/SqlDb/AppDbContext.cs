@@ -28,6 +28,13 @@ public class AppDbContext : IdentityDbContext<AppUser>
             entity.HasIndex(c => c.CredentialId).IsUnique();
             entity.HasIndex(c => c.AppUserId);
         });
+        builder.Entity<TResetPassword>(entity =>
+        {
+            entity.HasIndex(r => r.AppUserId).IsUnique();
+            entity.Property(r => r.ResetRequestCount).IsRequired().HasDefaultValue(0);
+            entity.Property(r => r.IsResetMailBlocked).IsRequired().HasDefaultValue(false);
+            entity.Property(r => r.ResetToken).HasMaxLength(4000);
+        });
         builder.Entity<TAppUserOrganization>().HasIndex(u => new { u.AppUserId, u.OrganizationId }).IsUnique();
         builder.Entity<TAppUserDepartment>().HasIndex(u => new { u.AppUserId, u.DepartmentId }).IsUnique();
         builder.Entity<TTaskDepartment>().HasIndex(u => new { u.TaskId, u.DepartmentId }).IsUnique();
@@ -58,5 +65,6 @@ public class AppDbContext : IdentityDbContext<AppUser>
     public DbSet<TTaskDepartment> TaskDepartments { get; set; } = null!;
     public DbSet<TPrize> Prizes { get; set; } = null!;
     public DbSet<TFidoCredential> FidoCredentials { get; set; } = null!;
+    public DbSet<TResetPassword> ResetPasswords { get; set; } = null!;
     #endregion
 }
