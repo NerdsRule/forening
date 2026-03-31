@@ -120,13 +120,6 @@ public interface IAccountService
     /// <param name="model">The change password model containing current and new password.</param>
     /// <returns>The result of the password change request serialized to a <see cref="FormResult"/>.</returns>
     public Task<FormResult> ChangePasswordAsync(ChangePasswordModel model);
-
-    /// <summary>
-    /// Reset password for user
-    /// </summary>
-    /// <param name="model">ResetPasswordModel</param>
-    /// <returns>FormResult</returns>
-    public Task<FormResult> ResetPasswordAsync(ResetPasswordModel model);
     #endregion
 
     #region TAppUserOrganization

@@ -72,6 +72,15 @@ public class RootDbReadWrite : IRootDbReadWrite
             return [];
         return await res.Select(c => c.AppUser!).ToListAsync(ct) ?? [];
     }
+
+    /// <summary>
+    /// Get TResetPassword by user id
+    /// </summary> <param name="userId">User Id</param>
+    /// <returns>List of TResetPassword</returns>
+    public async Task<TResetPassword?> GetResetPasswordsByUserIdAsync(string userId, CancellationToken ct)
+    {
+        return await Db.ResetPasswords.AsNoTracking().FirstOrDefaultAsync(c => c.AppUserId == userId, ct);
+    }
     #endregion
 
     #region Organizations and Departments

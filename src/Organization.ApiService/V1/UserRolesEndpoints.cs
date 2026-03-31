@@ -1005,6 +1005,124 @@ public static class UserRolesEndpoints
         }).RequireAuthorization();
 
         /// <summary>
+        /// Request password reset for a user that is not logged in.
+        /// The request is blocked when the user has reached the maximum allowed reset requests.
+        /// </summary>
+        /// <param name="httpContext">HttpContext</param>
+        /// <param name="userManager">UserManager</param>
+        /// <param name="db">IRootDbReadWrite</param>
+        /// <param name="cancellationToken">CancellationToken</param>
+        /// <param name="model">RequestPasswordResetModel</param>
+        /// <returns>Result</returns>
+        v1.MapPost("/api/users/password/requestOfResetPassword", async Task<IResult> (HttpContext httpContext, UserManager<AppUser> userManager, IRootDbReadWrite db, CancellationToken cancellationToken, [FromBody] RequestPasswordResetModel model) =>
+        {
+            if (model is null || string.IsNullOrWhiteSpace(model.Email))
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Email is required."] });
+            }
+
+            var appUser = await userManager.FindByEmailAsync(model.Email.Trim());
+            if (appUser is null)
+            {
+                return Results.Ok(new FormResult { Succeeded = true, ErrorList = ["If the account exists, a reset email will be sent."] });
+            }
+
+            var resetRows = await db.GetRowsAsync<TResetPassword>(cancellationToken);
+            var resetRow = resetRows.FirstOrDefault(r => r.AppUserId == appUser.Id);
+
+            if (resetRow is not null && (resetRow.IsResetMailBlocked || !resetRow.CanSendResetMail))
+            {
+                return Results.BadRequest(new FormResult
+                {
+                    Succeeded = false,
+                    ErrorList = ["Reset is blocked. Please contact an administrator."]
+                });
+            }
+
+            var resetToken = await userManager.GeneratePasswordResetTokenAsync(appUser);
+            var requestedAtUtc = DateTimeOffset.UtcNow;
+
+            if (resetRow is null)
+            {
+                resetRow = new TResetPassword
+                {
+                    AppUserId = appUser.Id
+                };
+                resetRow.RegisterResetRequest(requestedAtUtc, resetToken);
+                await db.AddRowAsync(resetRow, cancellationToken);
+            }
+            else
+            {
+                resetRow.RegisterResetRequest(requestedAtUtc, resetToken);
+                await db.UpdateRowAsync(resetRow, cancellationToken);
+            }
+
+            var originHeader = httpContext.Request.Headers.Origin.ToString();
+            var linkBase = Uri.TryCreate(originHeader, UriKind.Absolute, out var originUri)
+                ? $"{originUri.Scheme}://{originUri.Authority}"
+                : $"{httpContext.Request.Scheme}://{httpContext.Request.Host}";
+            var resetLink = $"{linkBase}/reset-my-password?userId={Uri.EscapeDataString(appUser.Id)}&token={Uri.EscapeDataString(resetToken)}";
+            var hostEnvironment = httpContext.RequestServices.GetRequiredService<IWebHostEnvironment>();
+            // TODO: Send resetLink by mail to appUser.Email.
+            _ = resetLink;
+
+            var messages = new List<string> { "If the account exists, a reset email will be sent." };
+            if (hostEnvironment.IsDevelopment())
+            {
+                messages.Add(resetLink);
+            }
+
+            return Results.Ok(new FormResult { Succeeded = true, ErrorList = [.. messages] });
+        }).AllowAnonymous();
+
+        /// <summary>
+        /// Reset password for a non-authenticated user by validating user id and reset token.
+        /// </summary>
+        /// <param name="userManager">UserManager</param>
+        /// <param name="db">IRootDbReadWrite</param>
+        /// <param name="cancellationToken">CancellationToken</param>
+        /// <param name="model">SelfResetPasswordModel</param>
+        /// <returns>Result</returns>
+        v1.MapPost("/api/users/password/reset/self", async Task<IResult> (UserManager<AppUser> userManager, IRootDbReadWrite db, CancellationToken cancellationToken, [FromBody] SelfResetPasswordModel model) =>
+        {
+            if (model is null || string.IsNullOrWhiteSpace(model.UserId) || string.IsNullOrWhiteSpace(model.ResetToken))
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["User ID and reset token are required."] });
+            }
+
+            if (!string.Equals(model.Password, model.ConfirmPassword, StringComparison.Ordinal))
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["The password and confirmation password do not match."] });
+            }
+
+            var appUser = await userManager.FindByIdAsync(model.UserId);
+            if (appUser is null)
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Invalid password reset request."] });
+            }
+
+            var resetRow = await db.GetResetPasswordsByUserIdAsync(appUser.Id, cancellationToken);
+            if (resetRow is null || !resetRow.IsMatchingResetToken(model.ResetToken))
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Invalid reset token."] });
+            }
+
+            IdentityResult result = await userManager.ResetPasswordAsync(appUser, model.ResetToken, model.Password!);
+            if (!result.Succeeded)
+            {
+                FormResult formResult = new()
+                {
+                    Succeeded = false,
+                    ErrorList = [.. result.Errors.Select(e => e.Description)]
+                };
+                return Results.BadRequest(formResult);
+            }
+
+            await db.DeleteRowAsync(resetRow, cancellationToken);
+            return Results.Ok(new FormResult { Succeeded = true, ErrorList = ["Password has been reset successfully."] });
+        }).AllowAnonymous();
+
+        /// <summary>
         /// Reset password for a user
         /// </summary>
         /// <param name="user">ClaimsPrincipal</param>
@@ -1040,6 +1158,58 @@ public static class UserRolesEndpoints
                 }
             }
             return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }).RequireAuthorization();
+
+        /// <summary>
+        /// Get all TResetPassword rows for users in the caller's organization(s).
+        /// Restricted to EnterpriseAdmin or OrganizationAdmin.
+        /// </summary>
+        v1.MapGet("/api/users/password/reset-requests", async Task<IResult> (ClaimsPrincipal user, IRootDbReadWrite db, CancellationToken cancellationToken) =>
+        {
+            var userId = GetAuthenticatedUserId(user);
+            if (userId is null)
+                return Results.Unauthorized();
+
+            var userOrgs = await db.GetUserOrganizationsAsync(userId, cancellationToken);
+            var adminOrgIds = userOrgs
+                .Where(o => o.Role == RolesEnum.EnterpriseAdmin || o.Role == RolesEnum.OrganizationAdmin)
+                .Select(o => o.OrganizationId)
+                .ToList();
+
+            if (adminOrgIds.Count == 0)
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+
+            var orgUserIds = new HashSet<string>();
+            foreach (var orgId in adminOrgIds)
+            {
+                var orgUsers = await db.GetUsersInOrganizationAsync(orgId, cancellationToken);
+                foreach (var u in orgUsers)
+                    orgUserIds.Add(u.Id);
+            }
+
+            var allResetRows = await db.GetRowsAsync<TResetPassword>(cancellationToken);
+            var result = allResetRows.Where(r => orgUserIds.Contains(r.AppUserId)).ToList();
+
+            return Results.Ok(result);
+        }).RequireAuthorization();
+
+        /// <summary>
+        /// Delete a TResetPassword row by its Id. Restricted to EnterpriseAdmin or OrganizationAdmin.
+        /// </summary>
+        v1.MapDelete("/api/users/password/reset-request/{id:int}", async Task<IResult> (ClaimsPrincipal user, IRootDbReadWrite db, int id, CancellationToken cancellationToken) =>
+        {
+            var userId = GetAuthenticatedUserId(user);
+            if (userId is null)
+                return Results.Unauthorized();
+
+            var userOrgs = await db.GetUserOrganizationsAsync(userId, cancellationToken);
+            var isAdminInAnyOrg = userOrgs.Any(o => o.Role == RolesEnum.EnterpriseAdmin || o.Role == RolesEnum.OrganizationAdmin);
+            if (!isAdminInAnyOrg)
+                return Results.StatusCode(StatusCodes.Status403Forbidden);
+
+            await db.DeleteRowAsync<TResetPassword>(new TResetPassword { Id = id }, cancellationToken);
+
+            return Results.Ok(new FormResult { Succeeded = true, ErrorList = ["Reset request deleted."] });
         }).RequireAuthorization();
         #endregion
 

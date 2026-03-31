@@ -60,5 +60,6 @@ builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IPrizeService, PrizeService>();
 builder.Services.AddScoped<IVersionService, VersionService>();
+builder.Services.AddScoped<IResetPasswordService, ResetPasswordService>();
 await builder.Build().RunAsync();
 

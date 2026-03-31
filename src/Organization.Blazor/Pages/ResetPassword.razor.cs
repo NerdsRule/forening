@@ -26,7 +26,7 @@ partial class ResetPassword
     private async Task HandleValidSubmit()
     {
         FormResult.ClearFormResult();
-        var res = await AccountService.ResetPasswordAsync(_resetPasswordModel);
+        var res = await ResetPasswordService.ResetPasswordAsync(_resetPasswordModel);
         FormResult.SetFormResult(res);
     }
 
@@ -42,5 +42,6 @@ partial class ResetPassword
     }
 
     [Inject] private IAccountService AccountService { get; set; } = default!;
+    [Inject] private IResetPasswordService ResetPasswordService { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
 }
