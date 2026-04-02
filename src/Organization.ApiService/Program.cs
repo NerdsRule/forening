@@ -1,5 +1,6 @@
 
 using Organization.Shared.Helpers;
+using Resend;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +10,16 @@ builder.AddServiceDefaults();
 // Add services to the container.
 builder.Services.AddProblemDetails();
 builder.Services.AddMemoryCache();
+builder.Services.AddOptions();
+builder.Services.AddHttpClient<ResendClient>();
+builder.Services.Configure<ResendClientOptions>(options =>
+{
+    options.ApiToken = Environment.GetEnvironmentVariable("RESEND_KEY")
+        ?? builder.Configuration["Resend:ApiKey"]
+        ?? string.Empty;
+});
+builder.Services.AddTransient<IResend, ResendClient>();
+builder.Services.AddTransient<IEmailSender, ResendEmailSender>();
 
 // Enable authorization services - policies can be added here as needed
 builder.Services.AddAuthorization();
