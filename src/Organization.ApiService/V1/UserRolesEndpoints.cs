@@ -704,7 +704,7 @@ public static class UserRolesEndpoints
         v1.MapPost("/api/users/register", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, IRootDbReadWrite db, CancellationToken cancellationToken, [FromBody] RegisterModel model) =>
         {
             // TODO: Check if the authenticated user has permission to add users to the organization
-            if (!await IsUserAuthorizedForOrganizationAsync(user, model.OrganizationId, 0, [RolesEnum.DepartmentAdmin, RolesEnum.EnterpriseAdmin], db, cancellationToken))
+            if (!await IsUserAuthorizedForOrganizationAsync(user, model.OrganizationId, 0, [RolesEnum.DepartmentAdmin, RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin], db, cancellationToken))
             {
                 return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["You are not authorized to add users to this organization."] });
             }
@@ -1014,7 +1014,7 @@ public static class UserRolesEndpoints
         /// <param name="cancellationToken">CancellationToken</param>
         /// <param name="model">RequestPasswordResetModel</param>
         /// <returns>Result</returns>
-        v1.MapPost("/api/users/password/requestOfResetPassword", async Task<IResult> (HttpContext httpContext, UserManager<AppUser> userManager, IRootDbReadWrite db, CancellationToken cancellationToken, [FromBody] RequestPasswordResetModel model) =>
+        v1.MapPost("/api/users/password/requestOfResetPassword", async Task<IResult> (HttpContext httpContext, UserManager<AppUser> userManager, IRootDbReadWrite db, IEmailSender emailSender, CancellationToken cancellationToken, [FromBody] RequestPasswordResetModel model) =>
         {
             if (model is null || string.IsNullOrWhiteSpace(model.Email))
             {
@@ -1063,8 +1063,11 @@ public static class UserRolesEndpoints
                 : $"{httpContext.Request.Scheme}://{httpContext.Request.Host}";
             var resetLink = $"{linkBase}/reset-my-password?userId={Uri.EscapeDataString(appUser.Id)}&token={Uri.EscapeDataString(resetToken)}";
             var hostEnvironment = httpContext.RequestServices.GetRequiredService<IWebHostEnvironment>();
-            // TODO: Send resetLink by mail to appUser.Email.
-            _ = resetLink;
+            if (!string.IsNullOrWhiteSpace(appUser.Email))
+            {
+                var htmlBody = $"<p>You requested to reset your password. Please click the link below to reset it:</p><p><a href=\"{WebUtility.HtmlEncode(resetLink)}\">Reset password</a></p>";
+                await emailSender.SendAsync(appUser.Email, "Reset your password", htmlBody, cancellationToken);
+            }
 
             var messages = new List<string> { "If the account exists, a reset email will be sent." };
             if (hostEnvironment.IsDevelopment())
@@ -1158,58 +1161,6 @@ public static class UserRolesEndpoints
                 }
             }
             return Results.StatusCode(StatusCodes.Status403Forbidden);
-        }).RequireAuthorization();
-
-        /// <summary>
-        /// Get all TResetPassword rows for users in the caller's organization(s).
-        /// Restricted to EnterpriseAdmin or OrganizationAdmin.
-        /// </summary>
-        v1.MapGet("/api/users/password/reset-requests", async Task<IResult> (ClaimsPrincipal user, IRootDbReadWrite db, CancellationToken cancellationToken) =>
-        {
-            var userId = GetAuthenticatedUserId(user);
-            if (userId is null)
-                return Results.Unauthorized();
-
-            var userOrgs = await db.GetUserOrganizationsAsync(userId, cancellationToken);
-            var adminOrgIds = userOrgs
-                .Where(o => o.Role == RolesEnum.EnterpriseAdmin || o.Role == RolesEnum.OrganizationAdmin)
-                .Select(o => o.OrganizationId)
-                .ToList();
-
-            if (adminOrgIds.Count == 0)
-                return Results.StatusCode(StatusCodes.Status403Forbidden);
-
-            var orgUserIds = new HashSet<string>();
-            foreach (var orgId in adminOrgIds)
-            {
-                var orgUsers = await db.GetUsersInOrganizationAsync(orgId, cancellationToken);
-                foreach (var u in orgUsers)
-                    orgUserIds.Add(u.Id);
-            }
-
-            var allResetRows = await db.GetRowsAsync<TResetPassword>(cancellationToken);
-            var result = allResetRows.Where(r => orgUserIds.Contains(r.AppUserId)).ToList();
-
-            return Results.Ok(result);
-        }).RequireAuthorization();
-
-        /// <summary>
-        /// Delete a TResetPassword row by its Id. Restricted to EnterpriseAdmin or OrganizationAdmin.
-        /// </summary>
-        v1.MapDelete("/api/users/password/reset-request/{id:int}", async Task<IResult> (ClaimsPrincipal user, IRootDbReadWrite db, int id, CancellationToken cancellationToken) =>
-        {
-            var userId = GetAuthenticatedUserId(user);
-            if (userId is null)
-                return Results.Unauthorized();
-
-            var userOrgs = await db.GetUserOrganizationsAsync(userId, cancellationToken);
-            var isAdminInAnyOrg = userOrgs.Any(o => o.Role == RolesEnum.EnterpriseAdmin || o.Role == RolesEnum.OrganizationAdmin);
-            if (!isAdminInAnyOrg)
-                return Results.StatusCode(StatusCodes.Status403Forbidden);
-
-            await db.DeleteRowAsync<TResetPassword>(new TResetPassword { Id = id }, cancellationToken);
-
-            return Results.Ok(new FormResult { Succeeded = true, ErrorList = ["Reset request deleted."] });
         }).RequireAuthorization();
         #endregion
 

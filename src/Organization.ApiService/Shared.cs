@@ -35,6 +35,7 @@ global using Fido2NetLib.Objects;
 
 
 global using Organization.ApiService.V1;
+global using Organization.ApiService.Services;
 
 namespace Organization.ApiService;
 
