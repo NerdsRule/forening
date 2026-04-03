@@ -1066,7 +1066,8 @@ public static class UserRolesEndpoints
             if (!string.IsNullOrWhiteSpace(appUser.Email))
             {
                 var htmlBody = $"<p>You requested to reset your password. Please click the link below to reset it:</p><p><a href=\"{WebUtility.HtmlEncode(resetLink)}\">Reset password</a></p>";
-                await emailSender.SendAsync(appUser.Email, "Reset your password", htmlBody, cancellationToken);
+                if (!hostEnvironment.IsDevelopment())
+                    await emailSender.SendAsync(appUser.Email, "Reset your password", htmlBody, cancellationToken);
             }
 
             var messages = new List<string> { "If the account exists, a reset email will be sent." };
@@ -1164,6 +1165,69 @@ public static class UserRolesEndpoints
         }).RequireAuthorization();
         #endregion
 
+        #region Endpoints for administrators to manage password reset requests
+        /// <summary>
+        /// Get all password reset requests for an organization
+        /// </summary>
+        /// <param name="user">ClaimsPrincipal</param>
+        /// <param name="db">IRootDbReadWrite</param>
+        /// <param name="organizationId">Organization Id</param>
+        /// <returns>List of password reset requests</returns>
+        v1.MapGet("/api/users/password/reset-requests/{organizationId}", async (ClaimsPrincipal user, IRootDbReadWrite db, CancellationToken cancellationToken, int organizationId) =>
+        {
+            if (user.Identity is not null && user.Identity.IsAuthenticated)
+            {
+                var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin };
+                if (await IsUserAuthorizedForOrganizationAsync(user, organizationId, 0, rolesToCheck, db, cancellationToken))
+                {
+                    var resetRequests = await db.GetResetPasswordsByOrganizationIdAsync(organizationId, cancellationToken);
+                    if (resetRequests is null || !resetRequests.Any())
+                    {
+                        return Results.NotFound(new FormResult { Succeeded = false, ErrorList = ["No password reset requests found for this organization."] });
+                    }
+                    return Results.Ok(resetRequests);
+                }
+            }
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }).RequireAuthorization();
+
+        /// <summary>
+        /// Delete a password reset request for an organization by reset request id.
+        /// </summary>
+        /// <param name="user">ClaimsPrincipal</param>
+        /// <param name="db">IRootDbReadWrite</param>
+        /// <param name="organizationId">Organization Id</param>
+        /// <param name="id">Reset request Id</param>
+        /// <returns>Result</returns>
+        v1.MapDelete("/api/users/password/reset-requests/{organizationId}/{id:int}", async (ClaimsPrincipal user, IRootDbReadWrite db, CancellationToken cancellationToken, int organizationId, int id) =>
+        {
+            if (user.Identity is not null && user.Identity.IsAuthenticated)
+            {
+                var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin };
+                if (await IsUserAuthorizedForOrganizationAsync(user, organizationId, 0, rolesToCheck, db, cancellationToken))
+                {
+                    var resetRequests = await db.GetResetPasswordsByOrganizationIdAsync(organizationId, cancellationToken);
+                    var resetRequest = resetRequests.FirstOrDefault(r => r.Id == id);
+                    if (resetRequest is null)
+                    {
+                        return Results.NotFound(new FormResult { Succeeded = false, ErrorList = ["Password reset request not found for this organization."] });
+                    }
+
+                    var row = await db.GetRowAsync<TResetPassword>(id, cancellationToken);
+                    if (row is null)
+                    {
+                        return Results.NotFound(new FormResult { Succeeded = false, ErrorList = ["Password reset request not found."] });
+                    }
+
+                    await db.DeleteRowAsync(row, cancellationToken);
+                    return Results.Ok(new FormResult { Succeeded = true, ErrorList = ["Password reset request deleted successfully."] });
+                }
+            }
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        }).RequireAuthorization();
+
+        
+        #endregion
         #region Test
         v1.MapGet("/api/users/test/{organizationId:int}", async Task<IResult> (UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager, IRootDbReadWrite db, CancellationToken cancellationToken, int organizationId) =>
         {

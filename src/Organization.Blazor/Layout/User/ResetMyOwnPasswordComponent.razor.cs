@@ -18,6 +18,10 @@ partial class ResetMyOwnPasswordComponent : ComponentBase
     private string InfoText => HasResetToken
         ? "Choose a new password for your account."
         : "Enter your email address and we will send you a password reset link if the account exists.";
+    private string? CheckSpamText => HasResetToken
+        ? null
+        : "Remember to check your spam folder if you don't see the email in your inbox."
+;
 
     [Parameter] public string? UserId { get; set; }
 

@@ -33,29 +33,30 @@ public class ResetPasswordService(IHttpClientFactory httpClientFactory, ILogger<
     }
 
     /// <inheritdoc />
-    public async Task<List<TResetPassword>?> GetResetRequestsAsync(CancellationToken cancellationToken = default)
+    public async Task<(List<TResetPassword>? data, FormResult? result)> GetResetRequestsAsync(int organizationId, CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _httpClient.GetAsync("/v1/api/users/password/reset-requests", cancellationToken);
+            var response = await _httpClient.GetAsync($"/v1/api/users/password/reset-requests/{organizationId}", cancellationToken);
             if (!response.IsSuccessStatusCode)
-                return null;
+                return (null, new FormResult { Succeeded = false, ErrorList = ["Failed to retrieve reset requests."] });
 
-            return await response.Content.ReadFromJsonAsync<List<TResetPassword>>(_jsonSerializerOptions, cancellationToken);
+            var data = await response.Content.ReadFromJsonAsync<List<TResetPassword>>(_jsonSerializerOptions, cancellationToken);
+            return (data, new FormResult { Succeeded = true });
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error while retrieving reset requests.");
-            return null;
+            return (null, new FormResult { Succeeded = false, ErrorList = ["An unknown error prevented the reset requests from being retrieved."] });
         }
     }
 
     /// <inheritdoc />
-    public async Task<FormResult> DeleteResetRequestAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<FormResult> DeleteResetRequestAsync(int organizationId, int id, CancellationToken cancellationToken = default)
     {
         try
         {
-            var response = await _httpClient.DeleteAsync($"/v1/api/users/password/reset-request/{id}", cancellationToken);
+            var response = await _httpClient.DeleteAsync($"/v1/api/users/password/reset-requests/{organizationId}/{id}", cancellationToken);
             if (response.Content.Headers.ContentLength is null or 0)
             {
                 return new FormResult { Succeeded = response.IsSuccessStatusCode };
@@ -69,7 +70,7 @@ public class ResetPasswordService(IHttpClientFactory httpClientFactory, ILogger<
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error while deleting reset request {Id}.", id);
+            logger.LogError(ex, "Error while deleting reset request {Id} for organization {OrganizationId}.", id, organizationId);
         }
 
         return new FormResult { Succeeded = false, ErrorList = ["An unknown error prevented the reset request deletion from succeeding."] };
