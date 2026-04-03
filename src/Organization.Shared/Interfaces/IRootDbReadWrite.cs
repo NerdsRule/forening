@@ -71,6 +71,12 @@ public interface IRootDbReadWrite
     /// </summary> <param name="userId">User Id</param>
     /// <returns>List of TResetPassword</returns>
     public Task<TResetPassword?> GetResetPasswordsByUserIdAsync(string userId, CancellationToken ct);
+
+    /// <summary>
+    /// Get all TResetPassword for one organization
+    /// </summary> <param name="organizationId">Organization Id</param>
+    /// <returns>List of TResetPassword</returns>
+    public Task<List<TResetPassword>> GetResetPasswordsByOrganizationIdAsync(int organizationId, CancellationToken ct);
     #endregion
 
     #region Organizations and Departments

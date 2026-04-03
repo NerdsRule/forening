@@ -18,7 +18,9 @@ public partial class ResetPasswordManagementComponent : ComponentBase
 
         try
         {
-            var rows = await ResetPasswordService.GetResetRequestsAsync();
+            var tokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            var cancellationToken = tokenSource.Token;
+            var (rows, result) = await ResetPasswordService.GetResetRequestsAsync(StaticUserInfoBlazor.SelectedOrganization!.OrganizationId, cancellationToken);
             _resetRequests.Clear();
             if (rows is not null)
             {
@@ -26,7 +28,7 @@ public partial class ResetPasswordManagementComponent : ComponentBase
             }
             else
             {
-                _formResult?.SetFormResult(new FormResult { Succeeded = false, ErrorList = ["Unable to load reset requests."] });
+                _formResult?.SetFormResult(result ?? new FormResult { Succeeded = false, ErrorList = ["Unable to load reset requests."] }, 0);
             }
         }
         finally
@@ -42,8 +44,10 @@ public partial class ResetPasswordManagementComponent : ComponentBase
 
         try
         {
-            var result = await ResetPasswordService.DeleteResetRequestAsync(id);
-            _formResult.SetFormResult(result);
+            var tokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            var cancellationToken = tokenSource.Token;
+            var result = await ResetPasswordService.DeleteResetRequestAsync(StaticUserInfoBlazor.SelectedOrganization!.OrganizationId, id, cancellationToken);
+            _formResult.SetFormResult(result, result.Succeeded ? 5 : 0);
 
             if (result.Succeeded)
             {

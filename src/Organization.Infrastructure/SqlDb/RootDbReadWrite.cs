@@ -81,6 +81,38 @@ public class RootDbReadWrite : IRootDbReadWrite
     {
         return await Db.ResetPasswords.AsNoTracking().FirstOrDefaultAsync(c => c.AppUserId == userId, ct);
     }
+
+    /// <summary>
+    /// Get all TResetPassword for one organization
+    /// </summary> <param name="organizationId">Organization Id</param>
+    /// <returns>List of TResetPassword</returns>
+    public async Task<List<TResetPassword>> GetResetPasswordsByOrganizationIdAsync(int organizationId, CancellationToken ct)
+    {
+        var res = from r in Db.ResetPasswords
+                  join uo in Db.AppUserOrganizations on r.AppUserId equals uo.AppUserId
+                  join u in Db.Users on r.AppUserId equals u.Id
+                  where uo.OrganizationId == organizationId
+                  select new TResetPassword
+                  {
+                      Id = r.Id,
+                      AppUserId = r.AppUserId,
+                      ResetRequestCount = r.ResetRequestCount,
+                      IsResetMailBlocked = r.IsResetMailBlocked,
+                      LastResetRequestAt = r.LastResetRequestAt,
+                      ResetToken = r.ResetToken,
+                      ResetTokenCreatedAt = r.ResetTokenCreatedAt,
+                      ResetMailBlockedAt = r.ResetMailBlockedAt,
+                      AppUser = new AppUser
+                      {
+                          UserName = u.UserName,
+                          DisplayName = u.DisplayName,
+                          Email = u.Email,
+                          EmailConfirmed = u.EmailConfirmed
+                      }
+                  };
+
+        return await res.ToListAsync(ct);
+    }
     #endregion
 
     #region Organizations and Departments
