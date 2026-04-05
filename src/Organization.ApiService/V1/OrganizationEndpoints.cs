@@ -56,7 +56,7 @@ public static class OrganizationEndpoints
         {
              if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
-                var hasAccess = await UserRolesEndpoints.IsUserEnterpriseAdminAsync(user, db, ct);
+                var hasAccess = await UserRolesHelpers.IsUserEnterpriseAdminAsync(user, db, ct);
                 if (!hasAccess)
                 {
                     return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
@@ -98,7 +98,7 @@ public static class OrganizationEndpoints
                 return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Invalid organization data"] });
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
-                var hasAccess = await UserRolesEndpoints.IsUserEnterpriseAdminAsync(user, db, ct);
+                var hasAccess = await UserRolesHelpers.IsUserEnterpriseAdminAsync(user, db, ct);
                 if (!hasAccess)
                 {
                     return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
@@ -133,7 +133,7 @@ public static class OrganizationEndpoints
         {
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
-                var hasAccess = await UserRolesEndpoints.IsUserEnterpriseAdminAsync(user, db, ct);
+                var hasAccess = await UserRolesHelpers.IsUserEnterpriseAdminAsync(user, db, ct);
                 if (!hasAccess)
                 {
                     return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });

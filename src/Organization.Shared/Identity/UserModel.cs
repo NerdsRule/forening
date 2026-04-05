@@ -32,6 +32,11 @@ public class UserModel
     public string Email { get; set; } = null!;
 
     /// <summary>
+    /// Indicates whether the user's email has been confirmed.
+    /// </summary>
+    public bool EmailConfirmed { get; set; }
+
+    /// <summary>
     /// Member number associated with the user.
     /// </summary>
     public string? MemberNumber { get; set; }

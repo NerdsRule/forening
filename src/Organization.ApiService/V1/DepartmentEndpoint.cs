@@ -29,7 +29,7 @@ public static class DepartmentEndpoint
                 if (user.Identity is not null && user.Identity.IsAuthenticated)
                 {
                     var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin, RolesEnum.OrganizationMember };
-                    var (hasAccess, _user) = await UserRolesEndpoints.IsUserInSameOrganizationAndInRoleAsync(user, userId, rolesToCheck, userManager, db, ct);
+                    var (hasAccess, _user) = await UserRolesHelpers.IsUserInSameOrganizationAndInRoleAsync(user, userId, rolesToCheck, userManager, db, ct);
                     if (!hasAccess)
                     {
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
@@ -77,7 +77,7 @@ public static class DepartmentEndpoint
                         departmentIdForAccess = existingDepartment.Id;
                     }
 
-                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForOrganizationAsync(user, organizationIdForAccess, departmentIdForAccess, rolesToCheck, db, ct);
+                    var hasAccess = await UserRolesHelpers.IsUserAuthorizedForOrganizationAsync(user, organizationIdForAccess, departmentIdForAccess, rolesToCheck, db, ct);
                     if (!hasAccess)
                     {
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
@@ -121,7 +121,7 @@ public static class DepartmentEndpoint
                     }
 
                     var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
-                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForOrganizationAsync(user, department.OrganizationId, department.Id, rolesToCheck, db, ct);
+                    var hasAccess = await UserRolesHelpers.IsUserAuthorizedForOrganizationAsync(user, department.OrganizationId, department.Id, rolesToCheck, db, ct);
                     if (!hasAccess)
                     {
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });

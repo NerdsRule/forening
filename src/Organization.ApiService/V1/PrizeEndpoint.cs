@@ -28,7 +28,7 @@ public static class PrizeEndpoint
                 try
                 {
                 var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
-                var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, payload.DepartmentId, rolesToCheck, db, ct);
+                var hasAccess = await UserRolesHelpers.IsUserAuthorizedForDepartmentAsync(user, payload.DepartmentId, rolesToCheck, db, ct);
                 if (!hasAccess)
                 {
                     return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
@@ -67,7 +67,7 @@ public static class PrizeEndpoint
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Price not found"] });
                     }
                     var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
-                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, _price.DepartmentId, rolesToCheck, db, ct);
+                    var hasAccess = await UserRolesHelpers.IsUserAuthorizedForDepartmentAsync(user, _price.DepartmentId, rolesToCheck, db, ct);
                     if (!hasAccess)
                     {
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
@@ -101,7 +101,7 @@ public static class PrizeEndpoint
                 try
                 {
                     var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin, RolesEnum.DepartmentMember };
-                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, departmentId, rolesToCheck, db, ct);
+                    var hasAccess = await UserRolesHelpers.IsUserAuthorizedForDepartmentAsync(user, departmentId, rolesToCheck, db, ct);
                     if (!hasAccess)
                     {
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
@@ -143,7 +143,7 @@ public static class PrizeEndpoint
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Price not found"] });
                     }
                     var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin, RolesEnum.DepartmentMember };
-                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, _prize.DepartmentId, rolesToCheck, db, ct);
+                    var hasAccess = await UserRolesHelpers.IsUserAuthorizedForDepartmentAsync(user, _prize.DepartmentId, rolesToCheck, db, ct);
                     if (!hasAccess)
                     {
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
@@ -186,7 +186,7 @@ public static class PrizeEndpoint
                 if (!isSelf)
                 {
                     var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.OrganizationMember };
-                    var (hasAccess, _) = await UserRolesEndpoints.IsUserInSameOrganizationAndInRoleAsync(user, userId, rolesToCheck, userManager, db, ct);
+                    var (hasAccess, _) = await UserRolesHelpers.IsUserInSameOrganizationAndInRoleAsync(user, userId, rolesToCheck, userManager, db, ct);
                     if (!hasAccess)
                     {
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
@@ -197,7 +197,7 @@ public static class PrizeEndpoint
                 var totalPointsRedeemed = await db.GetPrizesByAssignedUserIdAsync(userId, ct);
                 var awarded = totalPointsAwarded.Sum(t => t.TaskPointsAwarded);
                 var redeemed = totalPointsRedeemed.Where(p => p.Status == Shared.PrizeStatusEnum.Redeemed).Sum(p => p.PointsCost);
-                var userInfo = await UserRolesEndpoints.GetUserInfoAsync(userId, userManager, db, ct);
+                var userInfo = await UserRolesHelpers.GetUserInfoAsync(userId, userManager, db, ct);
                 if (userInfo is null)
                 {
                     return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["User not found"] });

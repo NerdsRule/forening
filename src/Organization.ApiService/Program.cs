@@ -137,6 +137,8 @@ AppUserDepartmentEndpoints.MapAppUserDepartmentEndpoints(app);
 DepartmentEndpoint.MapDepartmentEndpoints(app);
 PrizeEndpoint.MapPrizeEndpoints(app);
 TaskEndpoint.MapTaskEndpoints(app);
+PasswordEndpoint.MapPasswordEndpoints(app);
+WebAuthPasskeyEndpoint.MapWebAuthPasskeyEndpoints(app);
 
 app.MapDefaultEndpoints();
 
