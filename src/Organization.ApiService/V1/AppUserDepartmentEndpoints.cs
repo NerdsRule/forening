@@ -44,7 +44,7 @@ public static class AppUserDepartmentEndpoints
                 try
                 {
                 var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
-                var (hasAccess, _user) = await UserRolesEndpoints.IsUserInSameOrganizationAndInRoleAsync(user, payload.AppUserId, rolesToCheck, userManager, db, ct);
+                var (hasAccess, _user) = await UserRolesHelpers.IsUserInSameOrganizationAndInRoleAsync(user, payload.AppUserId, rolesToCheck, userManager, db, ct);
                 if (!hasAccess)
                 {
                     return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
@@ -78,7 +78,7 @@ public static class AppUserDepartmentEndpoints
                 try
                 {
                 var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
-                var (hasAccess, _user) = await UserRolesEndpoints.IsUserInSameOrganizationAndInRoleAsync(user, userId, rolesToCheck, userManager, db, ct);
+                var (hasAccess, _user) = await UserRolesHelpers.IsUserInSameOrganizationAndInRoleAsync(user, userId, rolesToCheck, userManager, db, ct);
                 if (!hasAccess)
                 {
                     return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });

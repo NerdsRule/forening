@@ -9,6 +9,7 @@
             <p class="card-text">
                 This section allows you to view and edit the details of the selected user. 
                 You can update the user's username, email address, display name, and member number. 
+                You can also view whether the email address is confirmed. 
                 After making any changes, click the "Update" button to save the changes to the user's profile. 
                 If you wish to remove the user from the system, you can click the "Delete User" button, which will permanently delete the user's account and all associated data. 
                 Please proceed with caution when deleting a user, as this action cannot be undone.
@@ -27,6 +28,10 @@
                 <label class="form-label">Email</label>
                 <InputText @bind-Value="User.Email" class="form-control" />
                 <ValidationMessage For="@(() => User.Email)" />
+            </div>
+            <div class="mb-3 form-check">
+                <InputCheckbox @bind-Value="User.EmailConfirmed" class="form-check-input" disabled="@(!CanEditEmailConfirmed)" />
+                <label class="form-check-label">Email confirmed</label>
             </div>
             <div class="mb-3">
                 <label class="form-label">Display Name</label>

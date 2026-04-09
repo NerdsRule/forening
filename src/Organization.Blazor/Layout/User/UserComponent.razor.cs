@@ -6,6 +6,10 @@ partial class UserComponent
 {
     private FormResultComponent _formResult { get; set; } = null!;
     private Dictionary<int, OrganizationComponent> _userOrganizationsDict = new();
+    private bool CanEditEmailConfirmed =>
+        StaticUserInfoBlazor.DepartmentRole == Shared.RolesEnum.DepartmentAdmin ||
+        StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.OrganizationAdmin ||
+        StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.EnterpriseAdmin;
     
 
     /// <summary>

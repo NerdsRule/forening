@@ -19,6 +19,10 @@
                     <label class="form-label">Email:</label>
                     <InputText class="form-control" @bind-Value="StaticUserInfoBlazor.User.Email" disabled />
                 </div>
+                <div class="mb-3 form-check">
+                    <InputCheckbox class="form-check-input" @bind-Value="StaticUserInfoBlazor.User.EmailConfirmed" disabled />
+                    <label class="form-check-label">Email confirmed</label>
+                </div>
                 <div class="mb-3">
                     <label class="form-label">Member number:</label>
                     <InputText class="form-control" @bind-Value="StaticUserInfoBlazor.User.MemberNumber" disabled />

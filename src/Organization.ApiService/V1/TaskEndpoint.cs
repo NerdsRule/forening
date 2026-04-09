@@ -33,7 +33,7 @@ public static class TaskEndpoint
                     // Department member can only add/update tasks for their own department, while Department and only change AssingedUserId to themselves
                     var originalTask = payload.Id != 0 ? await db.GetRowAsync<TTask>(payload.Id, ct) : null;
                     var rolesToCheck = new[] { RolesEnum.DepartmentMember };
-                    var isDepartmentMember = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, payload.DepartmentId, rolesToCheck, db, ct);
+                    var isDepartmentMember = await UserRolesHelpers.IsUserAuthorizedForDepartmentAsync(user, payload.DepartmentId, rolesToCheck, db, ct);
                     if (isDepartmentMember)
                     {
                         if (originalTask != null)
@@ -63,7 +63,7 @@ public static class TaskEndpoint
                     }
                     // Admin, Enterprise Admin, and Department Admin can add/update tasks for any department, while Department Members can only add/update tasks for their own department.
                     rolesToCheck = [RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin];
-                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, payload.DepartmentId, rolesToCheck, db, ct);
+                    var hasAccess = await UserRolesHelpers.IsUserAuthorizedForDepartmentAsync(user, payload.DepartmentId, rolesToCheck, db, ct);
                     if (!hasAccess)
                     {
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
@@ -101,7 +101,7 @@ public static class TaskEndpoint
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Task not found"] });
                     }
                     var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
-                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, _task.DepartmentId, rolesToCheck, db, ct);
+                    var hasAccess = await UserRolesHelpers.IsUserAuthorizedForDepartmentAsync(user, _task.DepartmentId, rolesToCheck, db, ct);
                     if (!hasAccess)
                     {
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
@@ -135,7 +135,7 @@ public static class TaskEndpoint
                 try
                 {
                     var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin, RolesEnum.DepartmentMember };
-                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, departmentId, rolesToCheck, db, ct);
+                    var hasAccess = await UserRolesHelpers.IsUserAuthorizedForDepartmentAsync(user, departmentId, rolesToCheck, db, ct);
                     if (!hasAccess)
                     {
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
@@ -179,7 +179,7 @@ public static class TaskEndpoint
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Task not found"] });
                     }
                     var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
-                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, _task.DepartmentId, rolesToCheck, db, ct);
+                    var hasAccess = await UserRolesHelpers.IsUserAuthorizedForDepartmentAsync(user, _task.DepartmentId, rolesToCheck, db, ct);
                     if (!hasAccess)
                     {
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
@@ -215,7 +215,7 @@ public static class TaskEndpoint
                 try
                 {
                     var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
-                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, departmentTask.DepartmentId, rolesToCheck, db, ct);
+                    var hasAccess = await UserRolesHelpers.IsUserAuthorizedForDepartmentAsync(user, departmentTask.DepartmentId, rolesToCheck, db, ct);
                     if (!hasAccess)
                     {
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
@@ -254,7 +254,7 @@ public static class TaskEndpoint
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["TaskDepartment association not found"] });
                     }
                     var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin };
-                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, taskDepartment.DepartmentId, rolesToCheck, db, ct);
+                    var hasAccess = await UserRolesHelpers.IsUserAuthorizedForDepartmentAsync(user, taskDepartment.DepartmentId, rolesToCheck, db, ct);
                     if (!hasAccess)
                     {
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
@@ -288,7 +288,7 @@ public static class TaskEndpoint
                 try
                 {
                     var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin, RolesEnum.DepartmentMember };
-                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, departmentId, rolesToCheck, db, ct);
+                    var hasAccess = await UserRolesHelpers.IsUserAuthorizedForDepartmentAsync(user, departmentId, rolesToCheck, db, ct);
                     if (!hasAccess)
                     {
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
@@ -325,7 +325,7 @@ public static class TaskEndpoint
                 try
                 {
                     var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin, RolesEnum.DepartmentMember };
-                    var (hasAccess, _) = await UserRolesEndpoints.IsUserInSameOrganizationAndInRoleAsync(user, userId, rolesToCheck, userManager, db, ct);
+                    var (hasAccess, _) = await UserRolesHelpers.IsUserInSameOrganizationAndInRoleAsync(user, userId, rolesToCheck, userManager, db, ct);
                     if (!hasAccess)
                     {
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
@@ -364,7 +364,7 @@ public static class TaskEndpoint
                 try
                 {
                     var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin, RolesEnum.DepartmentMember };
-                    var hasAccess = await UserRolesEndpoints.IsUserAuthorizedForDepartmentAsync(user, departmentId, rolesToCheck, db, ct);
+                    var hasAccess = await UserRolesHelpers.IsUserAuthorizedForDepartmentAsync(user, departmentId, rolesToCheck, db, ct);
                     if (!hasAccess)
                     {
                         return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
