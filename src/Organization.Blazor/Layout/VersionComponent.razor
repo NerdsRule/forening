@@ -23,7 +23,7 @@
             }
 
             
-            @if (!BlazorMatch || !AlwaysShowRefreshButton)
+            @if (!BlazorMatch || AlwaysShowRefreshButton)
             {
                 <div class="text-danger ms-3">Version mismatch detected. Please reload the application and make sure you are using the latest version.</div>
                 <button class="btn btn-sm btn-outline-danger mt-3 ms-2" @onclick="FullRefresh" disabled="@IsLoading">Reload application</button>
