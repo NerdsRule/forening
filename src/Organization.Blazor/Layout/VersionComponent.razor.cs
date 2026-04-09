@@ -27,6 +27,11 @@ partial class VersionComponent
     /// Set this true to display the full version information.
     /// </summary>
     [Parameter] public bool ShowFullVersionInfo { get; set; } = true;
+
+    /// <summary>
+    /// Always show the Refresh button, even if the version information is not currently being displayed. This allows users to refresh the version information without needing to toggle the display of the version details, providing a convenient way to ensure they have the most up-to-date information about the backend and frontend versions.
+    /// </summary>
+    [Parameter] public bool AlwaysShowRefreshButton { get; set; } = false;
     [Inject] private IVersionService VersionService { get; set; } = default!;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
     [Inject] private NavigationManager NavigationManager { get; set; } = default!;
