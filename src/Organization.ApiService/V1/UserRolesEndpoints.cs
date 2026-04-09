@@ -369,6 +369,107 @@ public static class UserRolesEndpoints
             return Results.StatusCode(StatusCodes.Status403Forbidden);
         }).RequireAuthorization();
         #endregion
+
+        #region EmailConfirmed token endpoints
+        /// <summary>
+        /// Requests a JWT token used for email confirmation.
+        /// </summary>
+        v1.MapPost("/api/users/email-confirmation/request-token", async Task<IResult> (HttpContext httpContext, ClaimsPrincipal user, UserManager<AppUser> userManager, IConfiguration configuration, IWebHostEnvironment hostEnvironment, IEmailSender emailSender, CancellationToken cancellationToken) =>
+        {
+            var userId = UserRolesHelpers.GetAuthenticatedUserId(user);
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return Results.Unauthorized();
+            }
+
+            var appUser = await userManager.FindByIdAsync(userId);
+            if (appUser is null)
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["User not found."] });
+            }
+
+            if (appUser.EmailConfirmed)
+            {
+                return Results.Ok(new FormResult { Succeeded = true, ErrorList = ["Email is already confirmed."] });
+            }
+
+            if (string.IsNullOrWhiteSpace(appUser.Email))
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["User does not have an email address."] });
+            }
+
+            var token = UserRolesHelpers.CreateEmailConfirmationToken(appUser.Id, configuration);
+            var originHeader = httpContext.Request.Headers.Origin.ToString();
+            var linkBase = Uri.TryCreate(originHeader, UriKind.Absolute, out var originUri)
+                ? $"{originUri.Scheme}://{originUri.Authority}"
+                : $"{httpContext.Request.Scheme}://{httpContext.Request.Host}";
+            var confirmationUrl = $"{linkBase}/email-confirmed/{Uri.EscapeDataString(token)}";
+            var htmlBody = $"<p>You requested to confirm your email.</p><p>Click the link below to confirm it:</p><p><a href=\"{WebUtility.HtmlEncode(confirmationUrl)}\">Confirm email</a></p>";
+
+            if (!hostEnvironment.IsDevelopment())
+            {
+                await emailSender.SendAsync(appUser.Email, "Confirm your email", htmlBody, cancellationToken);
+            }
+
+            var messages = new List<string> { "If the account exists, an email confirmation token has been sent." };
+            if (!hostEnvironment.IsDevelopment())
+            {
+                messages.Add(confirmationUrl);
+            }
+
+            return Results.Ok(new FormResult
+            {
+                Succeeded = true,
+                ErrorList = [.. messages]
+            });
+        }).RequireAuthorization();
+
+        /// <summary>
+        /// Confirms the user's email using a JWT token.
+        /// </summary>
+        v1.MapPost("/api/users/email-confirmation/confirm", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, IConfiguration configuration, [FromBody] EmailConfirmationConfirmModel model) =>
+        {
+            var userId = UserRolesHelpers.GetAuthenticatedUserId(user);
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return Results.Unauthorized();
+            }
+
+            if (model is null || string.IsNullOrWhiteSpace(model.Token))
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Token is required."] });
+            }
+
+            var appUser = await userManager.FindByIdAsync(userId);
+            if (appUser is null)
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["User not found."] });
+            }
+
+            if (!UserRolesHelpers.IsEmailConfirmationTokenValid(model.Token, userId, configuration, out var validationError))
+            {
+                return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [validationError ?? "Invalid token."] });
+            }
+
+            if (appUser.EmailConfirmed)
+            {
+                return Results.Ok(new FormResult { Succeeded = true, ErrorList = ["Email is already confirmed."] });
+            }
+
+            appUser.EmailConfirmed = true;
+            var updateResult = await userManager.UpdateAsync(appUser);
+            if (!updateResult.Succeeded)
+            {
+                return Results.BadRequest(new FormResult
+                {
+                    Succeeded = false,
+                    ErrorList = [.. updateResult.Errors.Select(e => e.Description)]
+                });
+            }
+
+            return Results.Ok(new FormResult { Succeeded = true, ErrorList = ["Email confirmed successfully."] });
+        }).RequireAuthorization();
+        #endregion
        
        #region Test
         v1.MapGet("/api/users/test/{organizationId:int}", async Task<IResult> (UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager, IRootDbReadWrite db, CancellationToken cancellationToken, int organizationId) =>
@@ -437,5 +538,10 @@ public static class UserRolesEndpoints
             return Results.Ok(new UserModel { Id = testUser.Id, UserName = testUser.UserName ?? string.Empty, Email = testUser.Email ?? string.Empty, EmailConfirmed = testUser.EmailConfirmed });
         }).AllowAnonymous();
         #endregion
+    }
+
+    private sealed class EmailConfirmationConfirmModel
+    {
+        public string Token { get; set; } = string.Empty;
     }
 }

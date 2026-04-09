@@ -1,14 +1,23 @@
     
     <div class="card mt-4">
-        <div class="card-header">
+        <div class="card-header d-flex align-items-center gap-2 flex-wrap">
             <span class="card-title fs-6 d-block d-md-none fw-bold">Top Score Users</span>
             <span class="card-title fs-4 d-none d-md-block fw-bold">Top Score Users</span>
             <SpinnerComponent ShowSpinner="@IsLoading" />
+                <span class="ms-auto d-flex align-items-center">
+                    <label for="showUsersSelect" class="form-label me-2 mb-0">Show:</label>
+                    <select id="showUsersSelect" class="form-select form-select-sm d-inline-block w-auto" @bind="SelectedShowUsersWithPointsAwarded">
+                        @foreach (var option in ShowUsersWithPointsAwarded)
+                        {
+                            <option value="@option">@option</option>
+                        }
+                    </select>
+                </span>
         </div>
         <div class="card-body">
             @if (TopUsersWithPointsAwarded != null && TopUsersWithPointsAwarded.Count > 0)
             {
-                @foreach (var user in TopUsersWithPointsAwarded)
+                @foreach (var user in TopUsersWithPointsAwardedWithFilter)
                 {
                     <div class="row border border-secondary rounded rounded-1 my-2 p-2 @(user.UserId == StaticUserInfoBlazor.User?.Id ? "alert alert-info" : "")">
                         <div class="col-12 col-md-2">

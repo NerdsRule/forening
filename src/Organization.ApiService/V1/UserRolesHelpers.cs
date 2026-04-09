@@ -2,6 +2,9 @@ namespace Organization.ApiService.V1;
 
 public static class UserRolesHelpers
 {
+    private const int EmailConfirmationTokenTimeoutMinutes = 60;
+    private const string EmailConfirmationPurpose = "email_confirmation";
+
     /// <summary>
     /// Check if user is authorized and is RolesEnum.EnterpriseAdmin in any organization.
     /// </summary>
@@ -150,6 +153,170 @@ public static class UserRolesHelpers
             ServerName = serverName,
             Origins = allowedOrigins
         });
+    }
+
+    /// <summary>
+    /// Creates a signed JWT email confirmation token containing the user id and a 60-minute expiration.
+    /// </summary>
+    public static string CreateEmailConfirmationToken(string userId, IConfiguration configuration, DateTime? utcNow = null)
+    {
+        var now = utcNow ?? DateTime.UtcNow;
+        var keyBytes = Encoding.UTF8.GetBytes(GetEmailConfirmationSigningKey(configuration));
+        var signingKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(keyBytes);
+        var credentials = new Microsoft.IdentityModel.Tokens.SigningCredentials(signingKey, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256);
+
+        var issuer = GetEmailConfirmationIssuer(configuration);
+        var audience = GetEmailConfirmationAudience(configuration);
+
+        var claims = new[]
+        {
+            new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub, userId),
+            new Claim(ClaimTypes.NameIdentifier, userId),
+            new Claim("purpose", EmailConfirmationPurpose),
+            new Claim(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N"))
+        };
+
+        var token = new System.IdentityModel.Tokens.Jwt.JwtSecurityToken(
+            issuer: issuer,
+            audience: audience,
+            claims: claims,
+            notBefore: now,
+            expires: now.AddMinutes(EmailConfirmationTokenTimeoutMinutes),
+            signingCredentials: credentials);
+
+        return new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    /// <summary>
+    /// Validates a JWT email confirmation token and confirms it belongs to the provided user id.
+    /// </summary>
+    public static bool IsEmailConfirmationTokenValid(string token, string userId, IConfiguration configuration, out string? validationError)
+    {
+        validationError = null;
+
+        if (string.IsNullOrWhiteSpace(token))
+        {
+            validationError = "Token is required.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            validationError = "User id is required.";
+            return false;
+        }
+
+        var keyBytes = Encoding.UTF8.GetBytes(GetEmailConfirmationSigningKey(configuration));
+        var issuer = GetEmailConfirmationIssuer(configuration);
+        var audience = GetEmailConfirmationAudience(configuration);
+
+        var validationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = issuer,
+            ValidateAudience = true,
+            ValidAudience = audience,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(keyBytes),
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+
+        try
+        {
+            var tokenHandler = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler();
+            var principal = tokenHandler.ValidateToken(token, validationParameters, out _);
+
+            var tokenPurpose = principal.FindFirst("purpose")?.Value;
+            var tokenUserId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value ??
+                              principal.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+
+            if (!string.Equals(tokenPurpose, EmailConfirmationPurpose, StringComparison.Ordinal))
+            {
+                validationError = "Token purpose is invalid.";
+                return false;
+            }
+
+            if (!string.Equals(tokenUserId, userId, StringComparison.Ordinal))
+            {
+                validationError = "Token user id does not match.";
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            validationError = ex.Message;
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Get the signing key for email confirmation tokens from configuration or environment variable, with a fallback for development environments. This ensures that tokens are signed with a consistent key across different environments, while allowing for secure configuration in production and ease of use in development. The environment variable takes precedence over configuration settings, allowing for dynamic overrides without code changes.
+    /// </summary>
+    /// <param name="configuration">The application configuration.</param>
+    /// <returns>The signing key for email confirmation tokens.</returns>
+    private static string GetEmailConfirmationSigningKey(IConfiguration configuration)
+    {
+        var envValue = Environment.GetEnvironmentVariable("JWT_EMAIL_CONFIRM_KEY");
+        if (!string.IsNullOrWhiteSpace(envValue))
+        {
+            return envValue;
+        }
+
+        var configured = configuration["Jwt:Key"];
+        if (!string.IsNullOrWhiteSpace(configured))
+        {
+            return configured;
+        }
+
+        // Fallback key to avoid runtime failures in local/dev setups without JWT configuration.
+        return "Organization-EmailConfirmation-DevKey-ChangeThis-InProduction-2026";
+    }
+
+    /// <summary>
+    /// Get the issuer for email confirmation tokens from configuration or environment variable, with a fallback for development environments.
+    /// </summary>
+    /// <param name="configuration">The application configuration.</param>
+    /// <returns>The issuer for email confirmation tokens.</returns>
+    private static string GetEmailConfirmationIssuer(IConfiguration configuration)
+    {
+        var envValue = Environment.GetEnvironmentVariable("JWT_ISSUER");
+        if (!string.IsNullOrWhiteSpace(envValue))
+        {
+            return envValue;
+        }
+
+        var configured = configuration["Jwt:Issuer"];
+        if (!string.IsNullOrWhiteSpace(configured))
+        {
+            return configured;
+        }
+
+        return "Organization.ApiService";
+    }
+
+    /// <summary>
+    /// Get the audience for email confirmation tokens from configuration or environment variable, with a fallback for development environments.
+    /// </summary>
+    /// <param name="configuration">The application configuration.</param>
+    /// <returns>The audience for email confirmation tokens.</returns>
+    private static string GetEmailConfirmationAudience(IConfiguration configuration)
+    {
+        var envValue = Environment.GetEnvironmentVariable("JWT_EMAIL_CONFIRMATION_AUDIENCE");
+        if (!string.IsNullOrWhiteSpace(envValue))
+        {
+            return envValue;
+        }
+
+        var configured = configuration["Jwt:EmailConfirmationAudience"];
+        if (!string.IsNullOrWhiteSpace(configured))
+        {
+            return configured;
+        }
+
+        return "Organization.ApiService.EmailConfirmation";
     }
 
     /// <summary>
