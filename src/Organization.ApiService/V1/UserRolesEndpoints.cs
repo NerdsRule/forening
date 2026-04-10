@@ -274,9 +274,13 @@ public static class UserRolesEndpoints
                     var appUser = await userManager.FindByIdAsync(model.Id);
                     if (appUser is not null)
                     {
+                        var currentEmail = appUser.Email?.Trim();
+                        var updatedEmail = model.Email?.Trim();
+                        var emailChanged = !string.Equals(currentEmail, updatedEmail, StringComparison.OrdinalIgnoreCase);
+
                         appUser.UserName = model.UserName;
                         appUser.Email = model.Email;
-                        appUser.EmailConfirmed = model.EmailConfirmed;
+                        appUser.EmailConfirmed = emailChanged ? false : model.EmailConfirmed;
                         appUser.MemberNumber = model.MemberNumber;
                         appUser.DisplayName = model.DisplayName;
                         var result = await userManager.UpdateAsync(appUser);
@@ -403,8 +407,8 @@ public static class UserRolesEndpoints
             var linkBase = Uri.TryCreate(originHeader, UriKind.Absolute, out var originUri)
                 ? $"{originUri.Scheme}://{originUri.Authority}"
                 : $"{httpContext.Request.Scheme}://{httpContext.Request.Host}";
-            var confirmationUrl = $"{linkBase}/email-confirmed/{Uri.EscapeDataString(token)}";
-            var htmlBody = $"<p>You requested to confirm your email.</p><p>Click the link below to confirm it:</p><p><a href=\"{WebUtility.HtmlEncode(confirmationUrl)}\">Confirm email</a></p>";
+            var confirmationUrl = $"{linkBase}/email-confirmed?token={Uri.EscapeDataString(token)}";
+            var htmlBody = $"<p>You requested to confirm your email. If you did not request this, please ignore this email.</p><p>Click the link below to confirm it:</p><p><a href=\"{WebUtility.HtmlEncode(confirmationUrl)}\">Confirm email</a></p>";
 
             if (!hostEnvironment.IsDevelopment())
             {
@@ -412,7 +416,7 @@ public static class UserRolesEndpoints
             }
 
             var messages = new List<string> { "If the account exists, an email confirmation token has been sent." };
-            if (!hostEnvironment.IsDevelopment())
+            if (hostEnvironment.IsDevelopment())
             {
                 messages.Add(confirmationUrl);
             }

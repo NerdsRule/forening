@@ -61,5 +61,6 @@ builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IPrizeService, PrizeService>();
 builder.Services.AddScoped<IVersionService, VersionService>();
 builder.Services.AddScoped<IResetPasswordService, ResetPasswordService>();
+builder.Services.AddScoped<IEmailConfirmationService, EmailConfirmationService>();
 await builder.Build().RunAsync();
 
