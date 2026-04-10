@@ -1,0 +1,40 @@
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card mt-2">
+            <div class="card-header">
+                <span class="fs-6 d-block d-md-none fw-bold">Email Confirmation</span>
+                <span class="fs-4 d-none d-md-block fw-bold">Email Confirmation</span>
+            </div>
+            <div class="card-body">
+                @if (!HasToken)
+                {
+                    <div class="alert alert-danger" role="alert">
+                        The confirmation link is invalid because the token is missing.
+                    </div>
+                }
+                else
+                {
+                    <p class="card-text">
+                        We attempted to confirm your email automatically. You can review the token below and retry manually if needed.
+                    </p>
+
+                    @if (ShowInvalidOrExpiredTokenMessage)
+                    {
+                        <div class="alert alert-warning" role="alert">
+                            The confirmation token is invalid or too old. Request a new confirmation email and try again.
+                        </div>
+                    }
+
+                    @if (IsAdminUser)
+                    {
+                        <button type="button" class="btn btn-primary" @onclick="HandleConfirmEmailAsync" disabled="@isBusy">
+                            Confirm Email
+                        </button>
+                    }
+                }
+
+                <FormResultComponent @ref="FormResult" />
+            </div>
+        </div>
+    </div>
+</div>
