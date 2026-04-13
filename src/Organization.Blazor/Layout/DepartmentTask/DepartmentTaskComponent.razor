@@ -1,7 +1,7 @@
 
 <div class="row border border-secondary @(IsThisTaskAssignedToMe && ChildContent.Status == Shared.TaskStatusEnum.VerifiedCompleted ? "alert alert-success" 
     : IsThisTaskAssignedToMe ? "alert alert-secondary" 
-    : ChildContent.AssignedUserId == null ? "alert alert-warning" 
+    : ChildContent.AssignedUserId == null ? "alert alert-danger" 
     : "") rounded rounded-1 my-2 p-2">
     <div class="col-12 col-md-1">
         <strong class="d-md-none">Date:</strong> @ChildContent.DueDateUtc.ToLocalTime().ToString("yyyy-MM-dd")
