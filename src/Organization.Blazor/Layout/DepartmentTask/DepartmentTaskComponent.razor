@@ -119,13 +119,21 @@
                 {
                     <div class="mb-3">
                         <label for="assignedUser" class="form-label">Assigned User</label>
-                        <InputSelect id="assignedUser" class="form-select" Value="ChildContent.AssignedUserId" ValueChanged="((string value) => SetAssignedUser(value))" ValueExpression="() => ChildContent.AssignedUserId">
-                            <option value="">-- Select user --</option>
-                            @foreach (var user in UsersWithAccess)
-                            {
-                                <option value="@user.Id">@user.DisplayName (@user.UserName)</option>
-                            }
-                        </InputSelect>
+                        <div class="d-flex gap-2 align-items-start">
+                            <div class="flex-grow-1">
+                                <InlineAutocompleteDropdown TItem="UserModel"
+                                                            Id="assignedUser"
+                                                            Items="UsersWithAccess"
+                                                            ItemTextSelector="GetUserDisplayText"
+                                                            Value="@AssignedUserSearchText"
+                                                            ValueChanged="OnAssignedUserSearchChanged"
+                                                            OnItemSelected="OnAssignedUserSelected"
+                                                            Placeholder="Type to find user..."
+                                                            Disabled="@DisableAssignedUser" 
+                                                            MaxSuggestions="100"/>
+                            </div>
+                            <button type="button" class="btn btn-outline-secondary" @onclick="ClearAssignedUserAsync" disabled="@DisableAssignedUser">Clear</button>
+                        </div>
                         <ValidationMessage For="() => ChildContent.AssignedUserId" />
                     </div>
                 } else
