@@ -15,9 +15,13 @@ partial class DepartmentTaskComponent
     private bool DisableEstimatedTimeMinutes { get; set; } = false;
     private bool DisableDueDateUtc { get; set; } = false;
     private bool DisablePointsAwarded { get; set; } = false;
+    private bool DisableTags { get; set; } = false;
     private bool DisableIsAssignedToMe { get; set; } = false;
     private bool DisableStatus { get; set; } = false;
     private bool ShowSpinner { get; set; } = false;
+    private bool TagsLoaded { get; set; } = false;
+    private string TagInput { get; set; } = string.Empty;
+    private List<string> ExistingDepartmentTags { get; set; } = [];
     private bool IsDepartmentAdmin { get; set; } = StaticUserInfoBlazor.DepartmentRole == Shared.RolesEnum.DepartmentAdmin;
     private bool IsOrganizationAdmin { get; set; } = StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.OrganizationAdmin;
     private bool IsEnterpriseAdmin { get; set; } = StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.EnterpriseAdmin;
@@ -48,6 +52,7 @@ partial class DepartmentTaskComponent
             DisableEstimatedTimeMinutes = true;
             DisableDueDateUtc = true;
             DisablePointsAwarded = true;
+            DisableTags = true;
             DisableIsAssignedToMe = true;
             DisableSubmit = true;
             DisableDelete = true;
@@ -61,6 +66,7 @@ partial class DepartmentTaskComponent
         DisableEstimatedTimeMinutes = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
         DisableDueDateUtc = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
         DisablePointsAwarded = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
+        DisableTags = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
         if (isNewTask || ChildContent.Status == Shared.TaskStatusEnum.VerifiedCompleted || ChildContent.Status == Shared.TaskStatusEnum.Rejected)
         {
             DisableIsAssignedToMe = true;
@@ -116,6 +122,7 @@ partial class DepartmentTaskComponent
         DisableSubmit = true;
         ShowSpinner = true;
         FormResultComponent.ClearFormResult();
+        task.Tags = NormalizeTags(task.Tags);
         CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(60));
         var _updateResult = await DepartmentTaskService.AddUpdateTaskAsync(task, cts.Token);
         ShowSpinner = false;
@@ -132,6 +139,80 @@ partial class DepartmentTaskComponent
             FormResultComponent.SetFormResult(new FormResult { Succeeded = true, ErrorList = ["Task added/updated successfully!"] }, 2);
         }
         await OnTaskAddedOrUpdatedEvent.InvokeAsync(task);
+    }
+
+    private static List<string> NormalizeTags(List<string>? tags)
+    {
+        if (tags is null || tags.Count == 0)
+            return [];
+
+        return tags
+            .Select(tag => tag?.Trim().ToLowerInvariant())
+            .Where(tag => !string.IsNullOrWhiteSpace(tag))
+            .Distinct()
+            .Cast<string>()
+            .ToList();
+    }
+
+    private Task OnTagInputChanged(string value)
+    {
+        TagInput = value;
+        return Task.CompletedTask;
+    }
+
+    private async Task OnTagSelected(string selectedTag)
+    {
+        TagInput = selectedTag;
+        await AddTagFromInputAsync();
+    }
+
+    private async Task AddTagFromInputAsync()
+    {
+        if (DisableTags)
+            return;
+
+        var normalizedTag = TagInput.Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(normalizedTag))
+            return;
+
+        ChildContent.Tags ??= [];
+        if (!ChildContent.Tags.Any(tag => string.Equals(tag, normalizedTag, StringComparison.OrdinalIgnoreCase)))
+        {
+            ChildContent.Tags.Add(normalizedTag);
+            ChildContent.Tags = NormalizeTags(ChildContent.Tags);
+        }
+
+        TagInput = string.Empty;
+        await EnsureTagsLoadedAsync();
+        StateHasChanged();
+    }
+
+    private void RemoveTag(string tag)
+    {
+        if (DisableTags || ChildContent.Tags is null)
+            return;
+
+        ChildContent.Tags = ChildContent.Tags
+            .Where(current => !string.Equals(current, tag, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    private async Task EnsureTagsLoadedAsync()
+    {
+        if (TagsLoaded || ChildContent.DepartmentId <= 0)
+            return;
+
+        CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        var result = await DepartmentTaskService.GetDistinctTaskTagsByDepartmentIdAsync(ChildContent.DepartmentId, cts.Token);
+        ExistingDepartmentTags = result.data ?? [];
+        TagsLoaded = true;
+    }
+
+    private async Task ToggleDetailsAsync()
+    {
+        DisplayDetails = !DisplayDetails;
+        if (DisplayDetails && !DisableTags)
+            await EnsureTagsLoadedAsync();
     }
 
     /// <summary>
@@ -208,8 +289,14 @@ partial class DepartmentTaskComponent
     /// <returns></returns>
     protected override async Task OnInitializedAsync()
     {
+        ChildContent.Tags ??= [];
+        ChildContent.Tags = NormalizeTags(ChildContent.Tags);
         DisplayDetails = InitDisplayDetails;
         SetDisableProperties();
+
+        if (DisplayDetails && !DisableTags)
+            await EnsureTagsLoadedAsync();
+
         await base.OnInitializedAsync();
     }
 }

@@ -22,7 +22,7 @@
         <strong class="d-md-none">Assigned:</strong> @(ChildContent.AssignedUser?.DisplayName ?? ChildContent.AssignedUser?.UserName)
     </div>
     <div class="col-12 col-md-1">
-        <button class="btn btn-secondary" @onclick="() => DisplayDetails = !DisplayDetails">@(DisplayDetails ? "Hide" : "Details")</button>
+        <button class="btn btn-secondary" @onclick="ToggleDetailsAsync">@(DisplayDetails ? "Hide" : "Details")</button>
         </div>
     </div>
 
@@ -74,6 +74,45 @@
                     <label for="points" class="form-label">Points you earn solving this task</label>
                     <InputNumber id="points" class="form-control" @bind-Value="ChildContent.PointsAwarded" disabled="@DisablePointsAwarded" />
                     <ValidationMessage For="() => ChildContent.PointsAwarded" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="taskTagInput" class="form-label">Tags</label>
+                    <div class="d-flex gap-2 align-items-start">
+                        <div class="flex-grow-1">
+                            <InlineAutocompleteDropdown TItem="string"
+                                                        Id="taskTagInput"
+                                                        Items="ExistingDepartmentTags"
+                                                        ItemTextSelector="(item => item)"
+                                                        Value="@TagInput"
+                                                        ValueChanged="OnTagInputChanged"
+                                                        OnItemSelected="OnTagSelected"
+                                                        Placeholder="Type to find existing tags..."
+                                                        Disabled="@DisableTags" />
+                        </div>
+                        <button type="button" class="btn btn-outline-primary" @onclick="AddTagFromInputAsync" disabled="@DisableTags">Add</button>
+                    </div>
+                    <div class="form-text">Only administrators can add or remove tags.</div>
+
+                    @if (ChildContent.Tags != null && ChildContent.Tags.Count > 0)
+                    {
+                        <div class="d-flex flex-wrap gap-2 mt-2">
+                            @foreach (var tag in ChildContent.Tags)
+                            {
+                                <span class="badge text-bg-secondary d-inline-flex align-items-center gap-1">
+                                    @tag
+                                    @if (!DisableTags)
+                                    {
+                                        <button type="button" class="btn-close btn-close-white" aria-label="Remove tag" @onclick="() => RemoveTag(tag)"></button>
+                                    }
+                                </span>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="form-text mt-1">No tags added yet.</div>
+                    }
                 </div>
 
                 @if (UsersWithAccess != null && UsersWithAccess.Any())

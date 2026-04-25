@@ -201,6 +201,36 @@ public static class TaskEndpoint
         .RequireAuthorization();
 
         /// <summary>
+        /// Returns all distinct tags used by tasks in a department, for autocomplete suggestions.
+        /// Any authenticated department member or admin may call this endpoint.
+        /// Only admins (DepartmentAdmin, OrganizationAdmin, EnterpriseAdmin) can write tags via POST /api/Task.
+        /// </summary>
+        v1.MapGet("/api/Task/Tags/ByDepartment/{departmentId}", async Task<IResult> (ClaimsPrincipal user, int departmentId, IRootDbReadWrite db, CancellationToken ct) =>
+        {
+            if (user.Identity is not null && user.Identity.IsAuthenticated)
+            {
+                try
+                {
+                    var rolesToCheck = new[] { RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.DepartmentAdmin, RolesEnum.DepartmentMember };
+                    var hasAccess = await UserRolesHelpers.IsUserAuthorizedForDepartmentAsync(user, departmentId, rolesToCheck, db, ct);
+                    if (!hasAccess)
+                        return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
+
+                    var tags = await db.GetDistinctTaskTagsByDepartmentAsync(departmentId, ct);
+                    return Results.Ok(tags);
+                }
+                catch (Exception e)
+                {
+                    return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = [e.Message] });
+                }
+            }
+            return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["User not authenticated"] });
+        })
+        .Produces<List<string>>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status400BadRequest)
+        .RequireAuthorization();
+
+        /// <summary>
         /// Add or update a TTaskDepartment association.
         /// </summary>
         /// <param name="departmentTask">The TTaskDepartment association to add or update.</param>

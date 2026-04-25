@@ -12,6 +12,7 @@ global using Organization.Shared;
 
 global using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 global using Microsoft.EntityFrameworkCore;
+global using Microsoft.EntityFrameworkCore.ChangeTracking;
 global using Organization.Shared.Identity;
 global using Organization.Shared.Interfaces;
 global using Organization.Shared.DatabaseObjects;

@@ -33,6 +33,34 @@
                        Rejected
                    </label>
                </span>
+
+               <div class="mt-2 d-flex gap-2 align-items-start flex-wrap">
+                    <div style="min-width: 280px;" class="flex-grow-1">
+                        <InlineAutocompleteDropdown TItem="string"
+                                                    Id="taskListTagFilter"
+                                                    Items="_existingDepartmentTags"
+                                                    ItemTextSelector="(item => item)"
+                                                    Value="@_tagFilterInput"
+                                                    ValueChanged="OnTagFilterInputChanged"
+                                                    OnItemSelected="OnTagFilterSelected"
+                                                    Placeholder="Filter by tag..." />
+                    </div>
+                    <button class="btn btn-sm btn-outline-primary" @onclick="AddTagFilterFromInputAsync" title="Add tag filter">Add Tag</button>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="ClearTagFilters" title="Clear all tag filters">Clear Tags</button>
+               </div>
+
+               @if (_selectedTagFilters.Count > 0)
+               {
+                    <div class="mt-2 d-flex flex-wrap gap-2">
+                        @foreach (var tag in _selectedTagFilters)
+                        {
+                            <span class="badge text-bg-primary d-inline-flex align-items-center gap-1">
+                                @tag
+                                <button type="button" class="btn-close btn-close-white" aria-label="Remove tag filter" @onclick="() => RemoveTagFilter(tag)"></button>
+                            </span>
+                        }
+                    </div>
+               }
            }
     </div>
     <div class="card-body">

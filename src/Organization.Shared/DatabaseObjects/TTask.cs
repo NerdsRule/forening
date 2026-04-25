@@ -75,4 +75,10 @@ public class TTask : TBaseTable
     /// </summary> <summary>
     [Required(ErrorMessage = "Task status is required.")]
     public Shared.TaskStatusEnum Status { get; set; } = Shared.TaskStatusEnum.NotStarted;
+
+    /// <summary>
+    /// Tags for categorising the task. Stored as JSON in the database.
+    /// Only administrators (DepartmentAdmin, OrganizationAdmin, EnterpriseAdmin) may modify tags.
+    /// </summary>
+    public List<string> Tags { get; set; } = [];
 }

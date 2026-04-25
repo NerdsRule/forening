@@ -150,6 +150,29 @@ public class DepartmentTaskService(IHttpClientFactory httpClientFactory, ILogger
         }
     }
 
+    public async Task<(List<string>? data, FormResult? formResult)> GetDistinctTaskTagsByDepartmentIdAsync(int departmentId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            logger.LogInformation("Retrieving distinct tags for department {DepartmentId}", departmentId);
+            var response = await httpClient.GetAsync($"/v1/api/Task/Tags/ByDepartment/{departmentId}", cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var tags = await response.Content.ReadFromJsonAsync<List<string>>(jsonSerializerOptions, cancellationToken);
+                return (tags, null);
+            }
+
+            var formResult = await response.Content.ReadFromJsonAsync<FormResult>(jsonSerializerOptions, cancellationToken);
+            return (null, formResult ?? new FormResult { Succeeded = false, ErrorList = ["Failed to retrieve tags"] });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving tags for department {DepartmentId}", departmentId);
+            return (null, new FormResult { Succeeded = false, ErrorList = [ex.Message] });
+        }
+    }
+
     #endregion
 
     #region Department Task Management
