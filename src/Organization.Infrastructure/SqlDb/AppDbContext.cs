@@ -47,6 +47,16 @@ public class AppDbContext : IdentityDbContext<AppUser>
         {
             entity.Property(e => e.PointsAwarded).IsRequired().HasDefaultValue(0);
             entity.Property(e => e.Status).IsRequired().HasDefaultValue(TaskStatusEnum.NotStarted);
+            entity.Property(e => e.Tags)
+                .HasColumnType("nvarchar(max)")
+                .HasDefaultValueSql("'[]'")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>(),
+                    new ValueComparer<List<string>>(
+                        (a, b) => a != null && b != null && a.SequenceEqual(b),
+                        v => v.Aggregate(0, (acc, s) => HashCode.Combine(acc, s.GetHashCode())),
+                        v => v.ToList()));
         });
          builder.Entity<TPrize>(entity =>
         {

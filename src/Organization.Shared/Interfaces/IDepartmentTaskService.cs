@@ -37,6 +37,15 @@ public interface IDepartmentTaskService
     /// <param name="cancellationToken">Cancellation token for the operation</param>
     /// <returns>A result indicating whether the deletion was successful or if there was an error</returns>
     Task<FormResult> DeleteTaskAsync(int taskId, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Get all distinct tags used on tasks in a department, for autocomplete suggestions.
+    /// Any department member or admin may call this.
+    /// </summary>
+    /// <param name="departmentId">The ID of the department</param>
+    /// <param name="cancellationToken">Cancellation token for the operation</param>
+    /// <returns>Sorted distinct list of tag strings, or an error result</returns>
+    Task<(List<string>? data, FormResult? formResult)> GetDistinctTaskTagsByDepartmentIdAsync(int departmentId, CancellationToken cancellationToken);
     #endregion
 
     #region Department Task Management

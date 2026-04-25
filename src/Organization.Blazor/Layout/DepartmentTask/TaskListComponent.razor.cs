@@ -5,6 +5,9 @@ partial class TaskListComponent
 {
     private Dictionary<int, DepartmentTaskComponent> _taskComponents = [];
     private List<TTask> _tasks { get; set; } = [];
+    private List<string> _existingDepartmentTags { get; set; } = [];
+    private List<string> _selectedTagFilters { get; set; } = [];
+    private string _tagFilterInput { get; set; } = string.Empty;
     private bool _showFilter { get; set; } = false;
     private DateTime? _filterUtcDate { get; set; } = DateTime.UtcNow;
     private bool _showVerifiedCompleted { get; set; } = false;
@@ -12,23 +15,29 @@ partial class TaskListComponent
     private bool _showCompleted { get; set; } = false;
     private bool _showInProgress { get; set; } = true;
     private bool _showNotStarted { get; set; } = true;
+
+    private IEnumerable<TTask> FilterByStatusAndDate()
+    {
+        var query = _tasks.Where(t => (t.Status == Shared.TaskStatusEnum.VerifiedCompleted && _showVerifiedCompleted) ||
+                                      (t.Status == Shared.TaskStatusEnum.Rejected && _showRejected) ||
+                                      (t.Status == Shared.TaskStatusEnum.Completed && _showCompleted) ||
+                                      (t.Status == Shared.TaskStatusEnum.InProgress && _showInProgress) ||
+                                      (t.Status == Shared.TaskStatusEnum.NotStarted && _showNotStarted));
+
+        if (_filterUtcDate.HasValue)
+            query = query.Where(t => t.DueDateUtc.Date >= _filterUtcDate.Value.Date);
+
+        if (_selectedTagFilters.Count > 0)
+        {
+            query = query.Where(t => t.Tags != null && t.Tags.Any(tag =>
+                _selectedTagFilters.Any(filter => string.Equals(filter, tag, StringComparison.OrdinalIgnoreCase))));
+        }
+
+        return query.OrderByDescending(t => t.DueDateUtc);
+    }
+
     private List<TTask> _sortedAndFilteredTasks => 
-        _filterUtcDate.HasValue 
-            ? [.. _tasks
-                .Where(t => t.DueDateUtc.Date >= _filterUtcDate.Value.Date)
-                .Where(t => (t.Status == Shared.TaskStatusEnum.VerifiedCompleted && _showVerifiedCompleted) ||
-                            (t.Status == Shared.TaskStatusEnum.Rejected && _showRejected) ||
-                            (t.Status == Shared.TaskStatusEnum.Completed && _showCompleted) ||
-                            (t.Status == Shared.TaskStatusEnum.InProgress && _showInProgress) ||
-                            (t.Status == Shared.TaskStatusEnum.NotStarted && _showNotStarted))
-                .OrderByDescending(t => t.DueDateUtc)]
-            : [.. _tasks
-                .Where(t => (t.Status == Shared.TaskStatusEnum.VerifiedCompleted && _showVerifiedCompleted) ||
-                            (t.Status == Shared.TaskStatusEnum.Rejected && _showRejected) ||
-                            (t.Status == Shared.TaskStatusEnum.Completed && _showCompleted) ||
-                            (t.Status == Shared.TaskStatusEnum.InProgress && _showInProgress) ||
-                            (t.Status == Shared.TaskStatusEnum.NotStarted && _showNotStarted))
-                .OrderByDescending(t => t.DueDateUtc)];
+        [.. FilterByStatusAndDate()];
     private List<TDepartment> _departments { get; set; } = [];
     private FormResultComponent _taskResult {get;set;} = null!;
     [Parameter] public List<UserModel> UsersWithAccess { get; set; } = [];
@@ -48,7 +57,61 @@ partial class TaskListComponent
         {
             _taskResult.SetFormResult(taskResponse.formResult,2);
         }
+
+        await LoadDepartmentTagsAsync(ct);
         StateHasChanged();
+    }
+
+    private static string NormalizeTag(string value) => value.Trim().ToLowerInvariant();
+
+    private Task OnTagFilterInputChanged(string value)
+    {
+        _tagFilterInput = value;
+        return Task.CompletedTask;
+    }
+
+    private async Task OnTagFilterSelected(string selectedTag)
+    {
+        _tagFilterInput = selectedTag;
+        await AddTagFilterFromInputAsync();
+    }
+
+    private Task AddTagFilterFromInputAsync()
+    {
+        var normalized = NormalizeTag(_tagFilterInput);
+        if (!string.IsNullOrWhiteSpace(normalized) &&
+            !_selectedTagFilters.Any(tag => string.Equals(tag, normalized, StringComparison.OrdinalIgnoreCase)))
+        {
+            _selectedTagFilters.Add(normalized);
+        }
+
+        _tagFilterInput = string.Empty;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private void RemoveTagFilter(string tag)
+    {
+        _selectedTagFilters = _selectedTagFilters
+            .Where(existing => !string.Equals(existing, tag, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        StateHasChanged();
+    }
+
+    private void ClearTagFilters()
+    {
+        _selectedTagFilters = [];
+        _tagFilterInput = string.Empty;
+        StateHasChanged();
+    }
+
+    private async Task LoadDepartmentTagsAsync(CancellationToken ct)
+    {
+        var tagsResponse = await DepartmentTaskService.GetDistinctTaskTagsByDepartmentIdAsync(StaticUserInfoBlazor.SelectedDepartment!.DepartmentId, ct);
+        if (tagsResponse.data != null)
+        {
+            _existingDepartmentTags = tagsResponse.data;
+        }
     }
 
     /// <summary>
@@ -107,6 +170,8 @@ partial class TaskListComponent
         {
             _taskResult.SetFormResult(taskResponse.formResult,2);
         }
+
+        await LoadDepartmentTagsAsync(ct);
         await base.OnInitializedAsync();
     }
 

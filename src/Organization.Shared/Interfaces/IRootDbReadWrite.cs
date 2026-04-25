@@ -96,6 +96,14 @@ public interface IRootDbReadWrite
     /// <param name="departmentId">Department Id</param>
     /// <returns>List of tasks</returns>
     public Task<List<TTask>> GetTasksByDepartmentAsync(int departmentId, CancellationToken ct);
+
+    /// <summary>
+    /// Get all distinct tags used on tasks within a department (for autocomplete suggestions).
+    /// </summary>
+    /// <param name="departmentId">Department Id</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Sorted distinct list of tag strings.</returns>
+    public Task<List<string>> GetDistinctTaskTagsByDepartmentAsync(int departmentId, CancellationToken ct);
     #endregion
 
     #region Prizes and Departments

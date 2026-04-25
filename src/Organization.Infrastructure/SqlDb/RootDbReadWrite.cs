@@ -161,6 +161,23 @@ public class RootDbReadWrite : IRootDbReadWrite
         return res;
     }
 
+    public async Task<List<string>> GetDistinctTaskTagsByDepartmentAsync(int departmentId, CancellationToken ct)
+    {
+        var tagLists = await Db.Tasks
+            .Where(t => t.DepartmentId == departmentId)
+            .Select(t => t.Tags)
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        return tagLists
+            .SelectMany(tags => tags)
+            .Select(tag => tag.Trim().ToLowerInvariant())
+            .Where(tag => tag.Length > 0)
+            .Distinct()
+            .OrderBy(tag => tag)
+            .ToList();
+    }
+
     #endregion
 
     #region Prizes and Departments
