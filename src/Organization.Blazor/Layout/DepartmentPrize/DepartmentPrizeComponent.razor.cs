@@ -15,6 +15,7 @@ partial class DepartmentPrizeComponent
 	private bool DisableAssignedUser { get; set; } = false;
 	private bool DisableStatus { get; set; } = false;
 	private bool ShowSpinner { get; set; } = false;
+	private string AssignedUserSearchText { get; set; } = string.Empty;
 	private bool IsDepartmentAdmin { get; set; } = StaticUserInfoBlazor.DepartmentRole == Shared.RolesEnum.DepartmentAdmin;
 	private bool IsOrganizationAdmin { get; set; } = StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.OrganizationAdmin;
 	private bool IsEnterpriseAdmin { get; set; } = StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.EnterpriseAdmin;
@@ -108,6 +109,7 @@ partial class DepartmentPrizeComponent
 		{
 			ChildContent.AssignedUserId = null;
 			ChildContent.AssignedUser = null;
+			AssignedUserSearchText = string.Empty;
 		}
 		else
 		{
@@ -137,9 +139,42 @@ partial class DepartmentPrizeComponent
 			ChildContent.AssignedUser = selectedUser != null
 				? new AppUser { Id = selectedUser.Id, UserName = selectedUser.UserName, DisplayName = selectedUser.DisplayName }
 				: null;
+
+			if (selectedUser != null)
+			{
+				AssignedUserSearchText = GetUserDisplayText(selectedUser);
+			}
 		}
 
 		StateHasChanged();
+	}
+
+	private static string GetUserDisplayText(UserModel user)
+		=> $"{user.DisplayName} ({user.UserName})";
+
+	private Task OnAssignedUserSearchChanged(string value)
+	{
+		AssignedUserSearchText = value;
+		return Task.CompletedTask;
+	}
+
+	private async Task OnAssignedUserSelected(string selectedText)
+	{
+		var selected = UsersWithAccess.FirstOrDefault(user =>
+			string.Equals(GetUserDisplayText(user), selectedText, StringComparison.OrdinalIgnoreCase));
+
+		if (selected is null)
+			return;
+
+		await SetAssignedUser(selected.Id);
+	}
+
+	private async Task ClearAssignedUserAsync()
+	{
+		if (DisableAssignedUser)
+			return;
+
+		await SetAssignedUser(string.Empty);
 	}
 
 	private async Task DeletePrizeAsync()
@@ -168,6 +203,15 @@ partial class DepartmentPrizeComponent
 
 	protected override async Task OnInitializedAsync()
 	{
+		if (!string.IsNullOrEmpty(ChildContent.AssignedUserId))
+		{
+			var selectedUser = UsersWithAccess.FirstOrDefault(user => user.Id == ChildContent.AssignedUserId);
+			if (selectedUser != null)
+			{
+				AssignedUserSearchText = GetUserDisplayText(selectedUser);
+			}
+		}
+
 		DisplayDetails = InitDisplayDetails;
 		SetDisableProperties();
 		await base.OnInitializedAsync();

@@ -18,16 +18,15 @@
             </p>
             <label for="userDropdown" class="form-label fs-6 d-block d-md-none fw-bold">Select User</label>
             <label for="userDropdown" class="form-label fs-4 d-none d-md-block fw-bold">Select User</label>
-            <InputSelect Value="selectedUserId" ValueChanged="((string value) => SelectedUserChangedAsync(value))" ValueExpression="() => selectedUserId" class="form-select form-select-sm" >
-                    <option selected value="">Select  a user</option>
-                    @if (_users != null)
-                    {
-                        @foreach (var user in _users)
-                        {
-                            <option value="@user.Id">@user.DisplayName (@user.Email)</option>
-                        }
-                    }
-            </InputSelect>
+            <InlineAutocompleteDropdown TItem="UserModel"
+                                        Id="userDropdown"
+                                        Items="_users"
+                                        ItemTextSelector="GetUserDisplayText"
+                                        Value="@_userSearchText"
+                                        ValueChanged="OnUserSearchChanged"
+                                        OnItemSelected="OnUserSelectedFromTypeAhead"
+                                        Placeholder="Type user name or email..." 
+                                        MaxSuggestions="100"/>
         </div>
     </div>
     <UserComponent User="selectedUser" />

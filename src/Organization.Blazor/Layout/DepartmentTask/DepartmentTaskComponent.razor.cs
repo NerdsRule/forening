@@ -15,12 +15,14 @@ partial class DepartmentTaskComponent
     private bool DisableEstimatedTimeMinutes { get; set; } = false;
     private bool DisableDueDateUtc { get; set; } = false;
     private bool DisablePointsAwarded { get; set; } = false;
+    private bool DisableAssignedUser { get; set; } = false;
     private bool DisableTags { get; set; } = false;
     private bool DisableIsAssignedToMe { get; set; } = false;
     private bool DisableStatus { get; set; } = false;
     private bool ShowSpinner { get; set; } = false;
     private bool TagsLoaded { get; set; } = false;
     private string TagInput { get; set; } = string.Empty;
+    private string AssignedUserSearchText { get; set; } = string.Empty;
     private List<string> ExistingDepartmentTags { get; set; } = [];
     private bool IsDepartmentAdmin { get; set; } = StaticUserInfoBlazor.DepartmentRole == Shared.RolesEnum.DepartmentAdmin;
     private bool IsOrganizationAdmin { get; set; } = StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.OrganizationAdmin;
@@ -52,6 +54,7 @@ partial class DepartmentTaskComponent
             DisableEstimatedTimeMinutes = true;
             DisableDueDateUtc = true;
             DisablePointsAwarded = true;
+            DisableAssignedUser = true;
             DisableTags = true;
             DisableIsAssignedToMe = true;
             DisableSubmit = true;
@@ -66,6 +69,7 @@ partial class DepartmentTaskComponent
         DisableEstimatedTimeMinutes = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
         DisableDueDateUtc = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
         DisablePointsAwarded = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
+        DisableAssignedUser = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
         DisableTags = !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin;
         if (isNewTask || ChildContent.Status == Shared.TaskStatusEnum.VerifiedCompleted || ChildContent.Status == Shared.TaskStatusEnum.Rejected)
         {
@@ -215,6 +219,34 @@ partial class DepartmentTaskComponent
             await EnsureTagsLoadedAsync();
     }
 
+    private static string GetUserDisplayText(UserModel user)
+        => $"{user.DisplayName} ({user.UserName})";
+
+    private Task OnAssignedUserSearchChanged(string value)
+    {
+        AssignedUserSearchText = value;
+        return Task.CompletedTask;
+    }
+
+    private async Task OnAssignedUserSelected(string selectedText)
+    {
+        var selected = UsersWithAccess.FirstOrDefault(user =>
+            string.Equals(GetUserDisplayText(user), selectedText, StringComparison.OrdinalIgnoreCase));
+
+        if (selected is null)
+            return;
+
+        await SetAssignedUser(selected.Id);
+    }
+
+    private async Task ClearAssignedUserAsync()
+    {
+        if (DisableAssignedUser)
+            return;
+
+        await SetAssignedUser(string.Empty);
+    }
+
     /// <summary>
     /// Set user assigned to the task if user is from list and "" could come from selected component in the form. This method will be called when the user selects a user from the dropdown, and it will update the AssignedUserId and AssignedUser properties of the task accordingly.
     /// </summary>
@@ -227,6 +259,7 @@ partial class DepartmentTaskComponent
         {
             ChildContent.AssignedUserId = null;
             ChildContent.AssignedUser = null;
+            AssignedUserSearchText = string.Empty;
         }
         else
         {
@@ -235,6 +268,7 @@ partial class DepartmentTaskComponent
             if (selectedUser != null)            
             {
                 ChildContent.AssignedUser = new AppUser { Id = selectedUser.Id, UserName = selectedUser.UserName };
+                AssignedUserSearchText = GetUserDisplayText(selectedUser);
                 await UpdateAwardedPointsForUserAsync();
             }
         }
@@ -291,6 +325,14 @@ partial class DepartmentTaskComponent
     {
         ChildContent.Tags ??= [];
         ChildContent.Tags = NormalizeTags(ChildContent.Tags);
+        if (!string.IsNullOrEmpty(ChildContent.AssignedUserId))
+        {
+            var selectedUser = UsersWithAccess.FirstOrDefault(user => user.Id == ChildContent.AssignedUserId);
+            if (selectedUser != null)
+                AssignedUserSearchText = GetUserDisplayText(selectedUser);
+            else
+                AssignedUserSearchText = string.Empty;
+        }
         DisplayDetails = InitDisplayDetails;
         SetDisableProperties();
 
