@@ -2,7 +2,12 @@
 <div class="row border border-secondary @(IsThisTaskAssignedToMe && ChildContent.Status == Shared.TaskStatusEnum.VerifiedCompleted ? "alert alert-success" 
     : IsThisTaskAssignedToMe ? "alert alert-secondary" 
     : ChildContent.AssignedUserId == null ? "alert alert-danger" 
-    : "") rounded rounded-1 my-2 p-2">
+    : "") rounded rounded-1 my-2 p-2"
+    role="button"
+    tabindex="0"
+    @onclick="ToggleDetailsAsync"
+    @onkeydown="HandleToggleDetailsKeyDownAsync"
+    title="Show/hide details">
     <div class="col-12 col-md-1">
         <strong class="d-md-none">Date:</strong> @ChildContent.DueDateUtc.ToLocalTime().ToString("yyyy-MM-dd")
     </div>
@@ -22,8 +27,8 @@
         <strong class="d-md-none">Assigned:</strong> @(ChildContent.AssignedUser?.DisplayName ?? ChildContent.AssignedUser?.UserName)
     </div>
     <div class="col-12 col-md-1">
-        <button class="btn btn-secondary" @onclick="ToggleDetailsAsync">@(DisplayDetails ? "Hide" : "Details")</button>
-        </div>
+        <button class="btn btn-secondary" @onclick="ToggleDetailsAsync" @onclick:stopPropagation="true">@(DisplayDetails ? "Hide" : "Details")</button>
+    </div>
     </div>
 
     @if (DisplayDetails)
