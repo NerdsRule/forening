@@ -219,6 +219,12 @@ partial class DepartmentTaskComponent
             await EnsureTagsLoadedAsync();
     }
 
+    private async Task HandleToggleDetailsKeyDownAsync(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter" || args.Key == " ")
+            await ToggleDetailsAsync();
+    }
+
     private static string GetUserDisplayText(UserModel user)
         => $"{user.DisplayName} ({user.UserName})";
 
