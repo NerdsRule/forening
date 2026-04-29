@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Version>0.34.0</Version>
+    <Version>0.35.0</Version>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
@@ -10,10 +10,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Identity" Version="1.19.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.5" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.5" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="10.0.5" />
+    <PackageReference Include="Azure.Identity" Version="1.21.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.7" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.7" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="10.0.7" />
   </ItemGroup>
 
   <ItemGroup>
@@ -28,9 +28,7 @@
   </ItemGroup>
 
   <Target Name="WriteVersionJson" BeforeTargets="Build;Publish">
-    <WriteLinesToFile File="$(MSBuildProjectDirectory)/wwwroot/version.json"
-                      Lines='{"version":"$(Version)"}'
-                      Overwrite="true" />
+    <WriteLinesToFile File="$(MSBuildProjectDirectory)/wwwroot/version.json" Lines="{&quot;version&quot;:&quot;$(Version)&quot;}" Overwrite="true" />
   </Target>
 
 </Project>
