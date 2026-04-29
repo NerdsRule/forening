@@ -7,22 +7,19 @@
     @onclick="ToggleDetailsAsync"
     title="Details">
     <span class="position-absolute top-50 start-50 translate-middle text-secondary opacity-50 fw-semibold pe-none">Details</span>
-    <div class="col-12 col-md-1">
+    <div class="col-12 col-md-1 text-start">
         <strong class="d-md-none">Date:</strong> @ChildContent.DueDateUtc.ToLocalTime().ToString("yyyy-MM-dd")
     </div>
-    <div class="col-12 col-md-2">
-        <strong class="d-md-none">Department:</strong> @ChildContent.Department?.Name
-    </div>
-    <div class="col-12 col-md-3">
+    <div class="col-12 col-md-6 text-start">
         <strong class="d-md-none">Name:</strong> @ChildContent.Name
     </div>
-    <div class="col-12 col-md-1">
+    <div class="col-12 col-md-1 text-start">
         <strong class="d-md-none">Points:</strong> @ChildContent.PointsAwarded
     </div>
-    <div class="col-12 col-md-1">
+    <div class="col-12 col-md-1 text-start">
         <strong class="d-md-none">Status:</strong> @(TaskWorkflows.StatusTextMapping[ChildContent.Status])
     </div>
-    <div class="col-12 col-md-3">
+    <div class="col-12 col-md-3 text-start">
         <strong class="d-md-none">Assigned:</strong> @(ChildContent.AssignedUser?.DisplayName ?? ChildContent.AssignedUser?.UserName)
     </div>
     </button>
