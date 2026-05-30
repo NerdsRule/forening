@@ -1,18 +1,24 @@
 
-
-
 namespace Organization.Test;
 
+[Collection("Integration")]
 public class OrganizationTesting
 {
 
-    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(120);
+    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan StepTimeout = TimeSpan.FromSeconds(45);
+    private static readonly TimeSpan StartupStepTimeout = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan DisposeStepTimeout = TimeSpan.FromSeconds(90);
 
-    [Fact]
+    [IntegrationFact]
     public async Task GetApiService_GetOrganization()
     {
         // Arrange
-        var cancellationToken = new CancellationTokenSource(DefaultTimeout).Token;
+        using var cancellationTokenSource =
+            CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cancellationTokenSource.CancelAfter(DefaultTimeout);
+        var cancellationToken = cancellationTokenSource.Token;
+
         var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Organization_AppHost>(cancellationToken);
         appHost.Services.AddLogging(logging =>
         {
@@ -25,67 +31,92 @@ public class OrganizationTesting
             clientBuilder.SetHandlerLifetime(TimeSpan.FromMinutes(5));
         });
 
-        await using var app = await appHost.BuildAsync(cancellationToken).WaitAsync(DefaultTimeout, cancellationToken);
-        await app.StartAsync(cancellationToken).WaitAsync(DefaultTimeout, cancellationToken);
-
-        // Act
-        using var httpClient = app.CreateHttpClient("apiservice");
-        httpClient.Timeout = TimeSpan.FromMinutes(5);
-        await app.ResourceNotifications.WaitForResourceHealthyAsync("apiservice", cancellationToken).WaitAsync(DefaultTimeout, cancellationToken);
-        
-        #region Create Test Organization and add User
-        var testOrgResponse = await httpClient.GetFromJsonAsync<TOrganization>("/v1/api/organization/test", cancellationToken);
-        testOrgResponse.Should().NotBeNull("Test organization creation response was null.");
-        testOrgResponse!.Id.Should().BeGreaterThan(0, "Test organization ID was not greater than 0.");
-        // add user to the organization
-        var registerResponse = await httpClient.GetFromJsonAsync<UserModel>($"/v1/api/users/test/{testOrgResponse.Id}", cancellationToken);
-        registerResponse.Should().NotBeNull("Register response was null.");
-        registerResponse!.UserName.Should().Be("testuser@example.com", "Registered user email was not correct.");
-
-        // Login user
-        var loginModel = new LoginModel
+        var app = await appHost.BuildAsync(cancellationToken).WaitAsync(DefaultTimeout, cancellationToken);
+        try
         {
-            Email = registerResponse!.UserName,
-            Password = "TestPassword123!"
-        };
-        var loginResponse = await httpClient.PostAsJsonAsync("/v1/api/users/login", loginModel, cancellationToken);
-        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Login response status code was not OK.");
-        #endregion
+            await StepAsync("Start app", () => app.StartAsync(cancellationToken).WaitAsync(DefaultTimeout, cancellationToken), StartupStepTimeout);
 
-        var organizationsBeforeAdd = await httpClient.GetFromJsonAsync<List<TOrganization>>("/v1/api/organization/all", cancellationToken);
-        organizationsBeforeAdd.Should().NotBeNull("Organizations before add response content was null.");
-        var organizationCountBeforeAdd = organizationsBeforeAdd!.Count;
+            // Act
+            using var httpClient = app.CreateHttpClient("apiservice");
+            httpClient.Timeout = TimeSpan.FromMinutes(5);
+            await StepAsync("Wait apiservice healthy", () => app.ResourceNotifications.WaitForResourceHealthyAsync("apiservice", cancellationToken).WaitAsync(DefaultTimeout, cancellationToken), StartupStepTimeout);
 
-        // Add an organization
-        var newOrg = new TOrganization
+            #region Create Test Organization and add User
+            var testOrgResponse = await StepAsync("Create test org", () => httpClient.GetFromJsonAsync<TOrganization>("/v1/api/organization/test", cancellationToken));
+            testOrgResponse.Should().NotBeNull("Test organization creation response was null.");
+            testOrgResponse!.Id.Should().BeGreaterThan(0, "Test organization ID was not greater than 0.");
+            // add user to the organization
+            var registerResponse = await StepAsync("Register test user", () => httpClient.GetFromJsonAsync<UserModel>($"/v1/api/users/test/{testOrgResponse.Id}", cancellationToken));
+            registerResponse.Should().NotBeNull("Register response was null.");
+            registerResponse!.UserName.Should().Be("testuser@example.com", "Registered user email was not correct.");
+
+            // Login user
+            var loginModel = new LoginModel
+            {
+                Email = registerResponse!.UserName,
+                Password = "TestPassword123!"
+            };
+            var loginResponse = await StepAsync("Login", () => httpClient.PostAsJsonAsync("/v1/api/users/login", loginModel, cancellationToken));
+            loginResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Login response status code was not OK.");
+            #endregion
+
+            var organizationsBeforeAdd = await StepAsync("Get organizations baseline", () => httpClient.GetFromJsonAsync<List<TOrganization>>("/v1/api/organization/all", cancellationToken));
+            organizationsBeforeAdd.Should().NotBeNull("Organizations before add response content was null.");
+            var organizationCountBeforeAdd = organizationsBeforeAdd!.Count;
+
+            // Add an organization
+            var newOrg = new TOrganization
+            {
+                Name = "Test Organization",
+            };
+            var putResponse = await StepAsync("Create organization", () => httpClient.PutAsJsonAsync("/v1/api/organization", newOrg, cancellationToken));
+            putResponse.StatusCode.Should().Be(HttpStatusCode.OK, "PUT response status code was not OK.");
+            var createdOrg = await StepAsync("Deserialize created organization", () => putResponse.Content.ReadFromJsonAsync<TOrganization>(cancellationToken));
+            createdOrg.Should().NotBeNull("Created organization was null.");
+            createdOrg!.Id.Should().BeGreaterThan(0, "Created organization ID was not greater than 0.");
+            createdOrg.Name.Should().Be(newOrg.Name, "Created organization name did not match.");
+            createdOrg.IsActive.Should().BeTrue("Created organization IsActive was not true by default.");
+            // Get all organizations again
+            var getAllResponse = await StepAsync("Get organizations after add", () => httpClient.GetFromJsonAsync<List<TOrganization>>("/v1/api/organization/all", cancellationToken));
+            getAllResponse.Should().NotBeNull("Get all response content was null.");
+            getAllResponse.Should().HaveCount(organizationCountBeforeAdd + 1, "There should be exactly one additional organization after adding one.");
+            getAllResponse.Should().Contain(o => o.Id == createdOrg.Id, "The created organization should be present in the retrieved list.");
+            // Get the organization by ID
+            var getByIdResponse = await StepAsync("Get organization by id", () => httpClient.GetFromJsonAsync<TOrganization>($"/v1/api/organization/{createdOrg.Id}", cancellationToken));
+            getByIdResponse.Should().NotBeNull("Get by ID response content was null.");
+            getByIdResponse!.Id.Should().Be(createdOrg.Id, "The ID of the retrieved organization did not match the created one.");
+            getByIdResponse.Name.Should().Be(createdOrg.Name, "The name of the retrieved organization did not match the created one.");
+            // Clean up - delete the organization
+            var deleteResponse = await StepAsync("Delete organization", () => httpClient.DeleteAsync($"/v1/api/organization/{createdOrg.Id}", cancellationToken));
+            deleteResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Delete response status code was not OK.");
+            // Verify deletion
+            var verifyDeleteResponse = await StepAsync("Get organizations after delete", () => httpClient.GetFromJsonAsync<List<TOrganization>>("/v1/api/organization/all", cancellationToken));
+            verifyDeleteResponse.Should().NotBeNull("Verify delete response content was null.");
+            verifyDeleteResponse.Should().HaveCount(organizationCountBeforeAdd, "Organization count should return to the baseline after deletion.");
+            verifyDeleteResponse.Should().NotContain(o => o.Id == createdOrg.Id, "Deleted organization should not be present in the retrieved list.");
+        }
+        finally
         {
-            Name = "Test Organization",
-        };
-        var putResponse = await httpClient.PutAsJsonAsync("/v1/api/organization", newOrg, cancellationToken);
-        putResponse.StatusCode.Should().Be(HttpStatusCode.OK, "PUT response status code was not OK.");
-        var createdOrg = await putResponse.Content.ReadFromJsonAsync<TOrganization>(cancellationToken);
-        createdOrg.Should().NotBeNull("Created organization was null.");
-        createdOrg!.Id.Should().BeGreaterThan(0, "Created organization ID was not greater than 0.");
-        createdOrg.Name.Should().Be(newOrg.Name, "Created organization name did not match.");
-        createdOrg.IsActive.Should().BeTrue("Created organization IsActive was not true by default.");
-        // Get all organizations again
-        var getAllResponse = await httpClient.GetFromJsonAsync<List<TOrganization>>("/v1/api/organization/all", cancellationToken);
-        getAllResponse.Should().NotBeNull("Get all response content was null.");
-        getAllResponse.Should().HaveCount(organizationCountBeforeAdd + 1, "There should be exactly one additional organization after adding one.");
-        getAllResponse.Should().Contain(o => o.Id == createdOrg.Id, "The created organization should be present in the retrieved list.");
-        // Get the organization by ID
-        var getByIdResponse = await httpClient.GetFromJsonAsync<TOrganization>($"/v1/api/organization/{createdOrg.Id}", cancellationToken);
-        getByIdResponse.Should().NotBeNull("Get by ID response content was null.");
-        getByIdResponse!.Id.Should().Be(createdOrg.Id, "The ID of the retrieved organization did not match the created one.");
-        getByIdResponse.Name.Should().Be(createdOrg.Name, "The name of the retrieved organization did not match the created one.");
-        // Clean up - delete the organization
-        var deleteResponse = await httpClient.DeleteAsync($"/v1/api/organization/{createdOrg.Id}", cancellationToken);
-        deleteResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Delete response status code was not OK.");
-        // Verify deletion
-        var verifyDeleteResponse = await httpClient.GetFromJsonAsync<List<TOrganization>>("/v1/api/organization/all", cancellationToken);
-        verifyDeleteResponse.Should().NotBeNull("Verify delete response content was null.");
-        verifyDeleteResponse.Should().HaveCount(organizationCountBeforeAdd, "Organization count should return to the baseline after deletion.");
-        verifyDeleteResponse.Should().NotContain(o => o.Id == createdOrg.Id, "Deleted organization should not be present in the retrieved list.");
+            await StepAsync("Dispose app", () => app.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken), DisposeStepTimeout);
+        }
+    }
 
+    private async Task<T> StepAsync<T>(string name, Func<Task<T>> action, TimeSpan? timeout = null)
+    {
+        var started = DateTimeOffset.UtcNow;
+        Console.WriteLine($"[{started:O}] START {name}");
+        var result = await action().WaitAsync(timeout ?? StepTimeout, TestContext.Current.CancellationToken);
+        var finished = DateTimeOffset.UtcNow;
+        Console.WriteLine($"[{finished:O}] END {name} (+{(finished - started).TotalMilliseconds:0} ms)");
+        return result;
+    }
+
+    private async Task StepAsync(string name, Func<Task> action, TimeSpan? timeout = null)
+    {
+        var started = DateTimeOffset.UtcNow;
+        Console.WriteLine($"[{started:O}] START {name}");
+        await action().WaitAsync(timeout ?? StepTimeout, TestContext.Current.CancellationToken);
+        var finished = DateTimeOffset.UtcNow;
+        Console.WriteLine($"[{finished:O}] END {name} (+{(finished - started).TotalMilliseconds:0} ms)");
     }
 }

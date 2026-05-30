@@ -5,17 +5,23 @@ using Organization.Shared.Identity;
 
 namespace Organization.Test;
 
+[Collection("Integration")]
 public class IdentityTesting
 {
-private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
-[Fact]
+    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan StepTimeout = TimeSpan.FromSeconds(45);
+    private static readonly TimeSpan StartupStepTimeout = TimeSpan.FromMinutes(3);
+    private static readonly TimeSpan DisposeStepTimeout = TimeSpan.FromSeconds(90);
+
+    [IntegrationFact]
     public async Task IdentityTest()
     {
         // Arrange
-        var cancellationToken = CancellationToken.None;
-        var timeout = TimeSpan.FromMinutes(5);
-        var cancellationTokenSource = new CancellationTokenSource(timeout);
-        cancellationToken = cancellationTokenSource.Token;
+        using var cancellationTokenSource =
+            CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        cancellationTokenSource.CancelAfter(DefaultTimeout);
+        var cancellationToken = cancellationTokenSource.Token;
+
         var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Organization_AppHost>(cancellationToken);
         appHost.Services.AddLogging(logging =>
         {
@@ -27,57 +33,83 @@ private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
             clientBuilder.AddStandardResilienceHandler();
         });
 
-        await using var app = await appHost.BuildAsync(cancellationToken).WaitAsync(DefaultTimeout, cancellationToken);
-        await app.StartAsync(cancellationToken).WaitAsync(DefaultTimeout, cancellationToken);
-
-        // Act
-        using var httpClient = app.CreateHttpClient("apiservice");
-        await app.ResourceNotifications.WaitForResourceHealthyAsync("apiservice", cancellationToken).WaitAsync(DefaultTimeout, cancellationToken);
-
-        // Add an organization
-        var testOrgResponse = await httpClient.GetFromJsonAsync<TOrganization>("/v1/api/organization/test", cancellationToken);
-        testOrgResponse.Should().NotBeNull("Test organization creation response was null.");
-        testOrgResponse!.Id.Should().BeGreaterThan(0, "Test organization ID was not greater than 0.");
-
-        // Test GetInfo before user registration where unauthenticated access is expected
-        var getInfoHttpResponse = await httpClient.GetAsync("/v1/api/users/info", cancellationToken);
-        getInfoHttpResponse.IsSuccessStatusCode.Should().BeFalse("GetInfo before registration should not succeed for an unauthenticated user.");
-        
-        var registerResponse = await httpClient.GetFromJsonAsync<UserModel>($"/v1/api/users/test/{testOrgResponse.Id}", cancellationToken);
-        registerResponse.Should().NotBeNull("Register response was null.");
-        registerResponse!.UserName.Should().Be("testuser@example.com", "Registered user email was not correct.");
-
-        // Login user
-        var loginModel = new LoginModel
+        var app = await appHost.BuildAsync(cancellationToken).WaitAsync(DefaultTimeout, cancellationToken);
+        try
         {
-            Email = registerResponse!.UserName,
-            Password = "TestPassword123!"
-        };
-        var loginResponse = await httpClient.PostAsJsonAsync("/v1/api/users/login", loginModel, cancellationToken);
-        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Login response status code was not OK.");
+            await StepAsync("Start app", () => app.StartAsync(cancellationToken).WaitAsync(DefaultTimeout, cancellationToken), StartupStepTimeout);
 
-        // Logout user
-        const string Empty = "{}";
-        var emptyContent = new StringContent(Empty, Encoding.UTF8, "application/json");
-        var logoutResponse = await httpClient.PostAsync("/v1/api/users/logout", emptyContent);
-        logoutResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Logout response status code was not OK.");
+            // Act
+            using var httpClient = app.CreateHttpClient("apiservice");
+            httpClient.Timeout = TimeSpan.FromMinutes(2);
+            await StepAsync("Wait apiservice healthy", () => app.ResourceNotifications.WaitForResourceHealthyAsync("apiservice", cancellationToken).WaitAsync(DefaultTimeout, cancellationToken), StartupStepTimeout);
 
-        // Login again to test role assignment
-        loginResponse = await httpClient.PostAsJsonAsync("/v1/api/users/login", loginModel, cancellationToken);
-        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Second login response status code was not OK.");
-        
-        // Logout user
-        logoutResponse = await httpClient.PostAsync("/v1/api/users/logout", emptyContent);
-        logoutResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Logout response status code was not OK.");
+            // Add an organization
+            var testOrgResponse = await StepAsync("Create test org", () => httpClient.GetFromJsonAsync<TOrganization>("/v1/api/organization/test", cancellationToken));
+            testOrgResponse.Should().NotBeNull("Test organization creation response was null.");
+            testOrgResponse!.Id.Should().BeGreaterThan(0, "Test organization ID was not greater than 0.");
 
-        // Login again to test role assignment
-        loginResponse = await httpClient.PostAsJsonAsync("/v1/api/users/login", loginModel, cancellationToken);
-        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Second login response status code was not OK.");
+            // Test GetInfo before user registration where unauthenticated access is expected
+            var getInfoHttpResponse = await StepAsync("Get anonymous user info", () => httpClient.GetAsync("/v1/api/users/info", cancellationToken));
+            getInfoHttpResponse.IsSuccessStatusCode.Should().BeFalse("GetInfo before registration should not succeed for an unauthenticated user.");
 
-        // Verify authenticated user info with current API contract
-        var authenticatedUserInfo = await httpClient.GetFromJsonAsync<UserModel>("/v1/api/users/info", cancellationToken);
-        authenticatedUserInfo.Should().NotBeNull("Authenticated user info response was null.");
-        authenticatedUserInfo!.UserName.Should().Be(registerResponse.UserName, "Authenticated user username did not match the registered test user.");
+            var registerResponse = await StepAsync("Register test user", () => httpClient.GetFromJsonAsync<UserModel>($"/v1/api/users/test/{testOrgResponse.Id}", cancellationToken));
+            registerResponse.Should().NotBeNull("Register response was null.");
+            registerResponse!.UserName.Should().Be("testuser@example.com", "Registered user email was not correct.");
 
+            // Login user
+            var loginModel = new LoginModel
+            {
+                Email = registerResponse!.UserName,
+                Password = "TestPassword123!"
+            };
+            var loginResponse = await StepAsync("Login #1", () => httpClient.PostAsJsonAsync("/v1/api/users/login", loginModel, cancellationToken));
+            loginResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Login response status code was not OK.");
+
+            // Logout user
+            const string Empty = "{}";
+            var emptyContent = new StringContent(Empty, Encoding.UTF8, "application/json");
+            var logoutResponse = await StepAsync("Logout #1", () => httpClient.PostAsync("/v1/api/users/logout", emptyContent, cancellationToken));
+            logoutResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Logout response status code was not OK.");
+
+            // Login again to test role assignment
+            loginResponse = await StepAsync("Login #2", () => httpClient.PostAsJsonAsync("/v1/api/users/login", loginModel, cancellationToken));
+            loginResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Second login response status code was not OK.");
+
+            // Logout user
+            logoutResponse = await StepAsync("Logout #2", () => httpClient.PostAsync("/v1/api/users/logout", emptyContent, cancellationToken));
+            logoutResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Logout response status code was not OK.");
+
+            // Login again to test role assignment
+            loginResponse = await StepAsync("Login #3", () => httpClient.PostAsJsonAsync("/v1/api/users/login", loginModel, cancellationToken));
+            loginResponse.StatusCode.Should().Be(HttpStatusCode.OK, "Second login response status code was not OK.");
+
+            // Verify authenticated user info with current API contract
+            var authenticatedUserInfo = await StepAsync("Get authenticated user info", () => httpClient.GetFromJsonAsync<UserModel>("/v1/api/users/info", cancellationToken));
+            authenticatedUserInfo.Should().NotBeNull("Authenticated user info response was null.");
+            authenticatedUserInfo!.UserName.Should().Be(registerResponse.UserName, "Authenticated user username did not match the registered test user.");
+        }
+        finally
+        {
+            await StepAsync("Dispose app", () => app.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken), DisposeStepTimeout);
+        }
+    }
+
+    private async Task<T> StepAsync<T>(string name, Func<Task<T>> action, TimeSpan? timeout = null)
+    {
+        var started = DateTimeOffset.UtcNow;
+        Console.WriteLine($"[{started:O}] START {name}");
+        var result = await action().WaitAsync(timeout ?? StepTimeout, TestContext.Current.CancellationToken);
+        var finished = DateTimeOffset.UtcNow;
+        Console.WriteLine($"[{finished:O}] END {name} (+{(finished - started).TotalMilliseconds:0} ms)");
+        return result;
+    }
+
+    private async Task StepAsync(string name, Func<Task> action, TimeSpan? timeout = null)
+    {
+        var started = DateTimeOffset.UtcNow;
+        Console.WriteLine($"[{started:O}] START {name}");
+        await action().WaitAsync(timeout ?? StepTimeout, TestContext.Current.CancellationToken);
+        var finished = DateTimeOffset.UtcNow;
+        Console.WriteLine($"[{finished:O}] END {name} (+{(finished - started).TotalMilliseconds:0} ms)");
     }
 }
