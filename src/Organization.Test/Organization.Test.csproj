@@ -25,8 +25,11 @@
 
   <ItemGroup>
     <ProjectReference Include="../Organization.ApiService/Organization.ApiService.csproj" />
+    <ProjectReference Include="../Organization.Blazor/Organization.Blazor.csproj" />
+    <ProjectReference Include="../Organization.Core/Organization.Core.csproj" />
     <ProjectReference Include="../Organization.Shared/Organization.Shared.csproj" />
     <ProjectReference Include="../Organization.Infrastructure/Organization.Infrastructure.csproj" />
+    <ProjectReference Include="../Organization.ServiceDefaults/Organization.ServiceDefaults.csproj" />
     <ProjectReference Include="..\Organization.AppHost\Organization.AppHost.csproj" />
   </ItemGroup>
 
