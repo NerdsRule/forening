@@ -1,0 +1,5 @@
+<Project>
+  <PropertyGroup>
+    <ValidateOnBuild>true</ValidateOnBuild>
+  </PropertyGroup>
+</Project>
