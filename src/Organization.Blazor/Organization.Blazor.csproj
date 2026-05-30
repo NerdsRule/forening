@@ -31,4 +31,13 @@
     <WriteLinesToFile File="$(MSBuildProjectDirectory)/wwwroot/version.json" Lines="{&quot;version&quot;:&quot;$(Version)&quot;}" Overwrite="true" />
   </Target>
 
+  <Target
+    Name="RemoveNativeReferencesWhenWasmWorkloadMissing"
+    BeforeTargets="_CheckBrowserWorkloadNeededButNotAvailable"
+    Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmNativeWorkloadAvailable)' != 'true'">
+    <ItemGroup>
+      <NativeFileReference Remove="@(NativeFileReference)" />
+    </ItemGroup>
+  </Target>
+
 </Project>
