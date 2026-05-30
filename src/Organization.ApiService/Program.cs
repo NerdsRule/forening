@@ -128,7 +128,6 @@ app.UseCors("AllowLocalhost");
 app.UseAuthentication();
 app.UseAuthorization();
 
-WeatherEndpointsV2.MapWeatherEndpointsV2(app);
 VersionEndpoint.MapVersionEndpoints(app);
 OrganizationEndpoints.MapOrganizationEndpoints(app);
 UserRolesEndpoints.MapUserRolesEndpoints(app);
@@ -143,8 +142,3 @@ WebAuthPasskeyEndpoint.MapWebAuthPasskeyEndpoints(app);
 app.MapDefaultEndpoints();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
