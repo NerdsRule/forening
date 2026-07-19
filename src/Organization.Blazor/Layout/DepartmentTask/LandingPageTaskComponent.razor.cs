@@ -10,6 +10,7 @@ partial class LandingPageTaskComponent
     private FormResultComponent FormResult { get; set; } = null!;
     private bool ShowSpinner { get; set; } = false;
     private List<UserModel> UsersWithAccess => [];
+    private DateTime? FilterUtcDate { get; set; } = null;
     [Inject] IDepartmentTaskService DepartmentTaskService { get; set; } = null!;
 
     /// <summary>
@@ -17,6 +18,7 @@ partial class LandingPageTaskComponent
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
+        FilterUtcDate = DateTime.UtcNow;
         // Load user info
         await base.OnInitializedAsync();
     }

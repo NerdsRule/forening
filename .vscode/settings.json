@@ -1,0 +1,9 @@
+{
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "*.razor": "${capture}.razor.cs, ${capture}.razor.css, ${capture}.razor.scss",
+    "*.cshtml": "${capture}.cshtml.cs, ${capture}.cshtml.css",
+    "*.xaml": "${capture}.xaml.cs"
+  }
+}

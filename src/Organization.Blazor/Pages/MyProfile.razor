@@ -90,4 +90,10 @@
         </div>
     </div>
     <VersionComponent ShowFullVersionInfo="true" AlwaysShowRefreshButton="true" />
+    <TaskListComponent AssignedUserIdFilter="@StaticUserInfoBlazor.User?.Id"
+                       ShowNotStarted="true"
+                       ShowInProgress="true"
+                       ShowCompleted="true"
+                       ShowVerifiedCompleted="true"
+                       ShowRejected="true" />
 </div>
