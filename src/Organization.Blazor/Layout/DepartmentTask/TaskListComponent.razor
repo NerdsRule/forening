@@ -2,34 +2,34 @@
 <div class="card mt-4">
     <div class="card-header">
 
-        <span class="card-title fs-6 d-block d-md-none fw-bold">Task List for @StaticUserInfoBlazor.SelectedDepartment?.Department?.Name <button class="btn btn-sm btn-primary ms-4 oi oi-reload" @onclick="RefreshTasks" title="Refresh the list"></button><button class="btn btn-sm btn-outline-secondary ms-2 oi oi-magnifying-glass" @onclick="@(() => _showFilter = !_showFilter)" title="Toggle filters"></button></span>
-        <span class="card-title fs-4 d-none d-md-block fw-bold">Task List for @StaticUserInfoBlazor.SelectedDepartment?.Department?.Name <button class="btn btn-sm btn-primary ms-4 oi oi-reload" @onclick="RefreshTasks" title="Refresh the list"></button><button class="btn btn-sm btn-outline-secondary ms-2 oi oi-magnifying-glass" @onclick="@(() => _showFilter = !_showFilter)" title="Toggle filters"></button></span>
-           @if (_showFilter)
+        <span class="card-title fs-6 d-block d-md-none fw-bold">Task List for @StaticUserInfoBlazor.SelectedDepartment?.Department?.Name <button class="btn btn-sm btn-primary ms-4 oi oi-reload" @onclick="RefreshTasks" title="Refresh the list"></button><button class="btn btn-sm btn-outline-secondary ms-2 oi oi-magnifying-glass" @onclick="@(() => ShowFilter = !ShowFilter)" title="Toggle filters"></button></span>
+        <span class="card-title fs-4 d-none d-md-block fw-bold">Task List for @StaticUserInfoBlazor.SelectedDepartment?.Department?.Name <button class="btn btn-sm btn-primary ms-4 oi oi-reload" @onclick="RefreshTasks" title="Refresh the list"></button><button class="btn btn-sm btn-outline-secondary ms-2 oi oi-magnifying-glass" @onclick="@(() => ShowFilter = !ShowFilter)" title="Toggle filters"></button></span>
+           @if (ShowFilter)
            {
                <span class="d-block mt-2">
                     <label class="me-3">
                         Date
-                        <input type="date" class="form-control form-control-sm d-inline-block ms-2" style="width: auto;" @bind="_filterUtcDate" />
+                        <input type="date" class="form-control form-control-sm d-inline-block ms-2" style="width: auto;" @bind="FilterUtcDate" />
                     </label>
-                    <button class="btn btn-sm btn-outline-secondary me-3" @onclick="@(() => _filterUtcDate = null)" title="Clear date filter">Clear Date</button>
+                    <button class="btn btn-sm btn-outline-secondary me-3" @onclick="@(() => FilterUtcDate = null)" title="Clear date filter">Clear Date</button>
                    <label class="form-check-label me-3">
-                       <input type="checkbox" class="form-check-input" @bind="_showNotStarted" />
+                       <input type="checkbox" class="form-check-input" @bind="ShowNotStarted" />
                        Not Started
                    </label>
                    <label class="form-check-label me-3">
-                       <input type="checkbox" class="form-check-input" @bind="_showInProgress" />
+                       <input type="checkbox" class="form-check-input" @bind="ShowInProgress" />
                        In Progress
                    </label>
                    <label class="form-check-label me-3">
-                       <input type="checkbox" class="form-check-input" @bind="_showCompleted" />
+                       <input type="checkbox" class="form-check-input" @bind="ShowCompleted" />
                        Completed
                    </label>
                    <label class="form-check-label me-3">
-                       <input type="checkbox" class="form-check-input" @bind="_showVerifiedCompleted" />
+                       <input type="checkbox" class="form-check-input" @bind="ShowVerifiedCompleted" />
                        Verified Completed
                    </label>
                    <label class="form-check-label">
-                       <input type="checkbox" class="form-check-input" @bind="_showRejected" />
+                       <input type="checkbox" class="form-check-input" @bind="ShowRejected" />
                        Rejected
                    </label>
                </span>
@@ -49,16 +49,34 @@
                     <button class="btn btn-sm btn-outline-secondary" @onclick="ClearTagFilters" title="Clear all tag filters">Clear Tags</button>
                </div>
 
-               @if (_selectedTagFilters.Count > 0)
+               @if (SelectedTagFilters.Count > 0)
                {
                     <div class="mt-2 d-flex flex-wrap gap-2">
-                        @foreach (var tag in _selectedTagFilters)
+                        @foreach (var tag in SelectedTagFilters)
                         {
                             <span class="badge text-bg-primary d-inline-flex align-items-center gap-1">
                                 @tag
                                 <button type="button" class="btn-close btn-close-white" aria-label="Remove tag filter" @onclick="() => RemoveTagFilter(tag)"></button>
                             </span>
                         }
+                    </div>
+               }
+
+               @if (_assignedUsersInTasks.Any())
+               {
+                    <div class="mt-2 d-flex gap-2 align-items-start flex-wrap">
+                        <div style="min-width: 280px;" class="flex-grow-1">
+                            <InlineAutocompleteDropdown TItem="AppUser"
+                                                        Id="taskListAssignedUserFilter"
+                                                        Items="_assignedUsersInTasks"
+                                                        ItemTextSelector="GetUserDisplayText"
+                                                        Value="@_assignedUserFilterSearchText"
+                                                        ValueChanged="OnAssignedUserFilterSearchChanged"
+                                                        OnItemSelected="OnAssignedUserFilterSelected"
+                                                        Placeholder="Filter by assigned user..."
+                                                        MaxSuggestions="100" />
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="ClearAssignedUserFilterAsync" title="Clear assigned user filter">Clear Assigned</button>
                     </div>
                }
            }

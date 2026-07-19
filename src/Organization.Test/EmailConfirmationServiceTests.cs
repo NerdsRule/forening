@@ -25,7 +25,7 @@ public class EmailConfirmationServiceTests
             };
         });
 
-        var result = await service.RequestEmailConfirmationTokenAsync(CancellationToken.None);
+        var result = await service.RequestEmailConfirmationTokenAsync(TestContext.Current.CancellationToken);
 
         result.Succeeded.Should().BeTrue();
         capturedRequest.Should().NotBeNull();
@@ -51,14 +51,14 @@ public class EmailConfirmationServiceTests
             };
         });
 
-        var result = await service.ConfirmEmailAsync(new EmailConfirmationConfirmModel { Token = "abc123" }, CancellationToken.None);
+        var result = await service.ConfirmEmailAsync(new EmailConfirmationConfirmModel { Token = "abc123" }, TestContext.Current.CancellationToken);
 
         result.Succeeded.Should().BeTrue();
         capturedRequest.Should().NotBeNull();
         capturedRequest!.Method.Should().Be(HttpMethod.Post);
         capturedRequest.RequestUri!.PathAndQuery.Should().Be("/v1/api/users/email-confirmation/confirm");
 
-        var payload = await capturedRequest.Content!.ReadFromJsonAsync<EmailConfirmationConfirmModel>();
+        var payload = await capturedRequest.Content!.ReadFromJsonAsync<EmailConfirmationConfirmModel>(cancellationToken: TestContext.Current.CancellationToken);
         payload.Should().NotBeNull();
         payload!.Token.Should().Be("abc123");
     }

@@ -30,4 +30,14 @@
         </div>
     </div>
     <UserComponent User="selectedUser" />
+    @if (!string.IsNullOrWhiteSpace(selectedUserId))
+    {
+        <TaskListComponent UsersWithAccess="_users"
+                           AssignedUserIdFilter="@selectedUserId"
+                           ShowNotStarted="true"
+                           ShowInProgress="true"
+                           ShowCompleted="true"
+                           ShowVerifiedCompleted="true"
+                           ShowRejected="true" />
+    }
 </div>

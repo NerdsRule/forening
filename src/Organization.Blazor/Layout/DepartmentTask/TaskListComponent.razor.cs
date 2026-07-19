@@ -6,31 +6,34 @@ partial class TaskListComponent
     private Dictionary<int, DepartmentTaskComponent> _taskComponents = [];
     private List<TTask> _tasks { get; set; } = [];
     private List<string> _existingDepartmentTags { get; set; } = [];
-    private List<string> _selectedTagFilters { get; set; } = [];
     private string _tagFilterInput { get; set; } = string.Empty;
-    private bool _showFilter { get; set; } = false;
-    private DateTime? _filterUtcDate { get; set; } = DateTime.UtcNow;
-    private bool _showVerifiedCompleted { get; set; } = false;
-    private bool _showRejected { get; set; } = false;
-    private bool _showCompleted { get; set; } = false;
-    private bool _showInProgress { get; set; } = true;
-    private bool _showNotStarted { get; set; } = true;
+    private string _assignedUserFilterSearchText { get; set; } = string.Empty;
+    private string? _lastAssignedUserIdFilter { get; set; }
 
     private IEnumerable<TTask> FilterByStatusAndDate()
     {
-        var query = _tasks.Where(t => (t.Status == Shared.TaskStatusEnum.VerifiedCompleted && _showVerifiedCompleted) ||
-                                      (t.Status == Shared.TaskStatusEnum.Rejected && _showRejected) ||
-                                      (t.Status == Shared.TaskStatusEnum.Completed && _showCompleted) ||
-                                      (t.Status == Shared.TaskStatusEnum.InProgress && _showInProgress) ||
-                                      (t.Status == Shared.TaskStatusEnum.NotStarted && _showNotStarted));
+        var query = _tasks.Where(t => (t.Status == Shared.TaskStatusEnum.VerifiedCompleted && ShowVerifiedCompleted) ||
+                                      (t.Status == Shared.TaskStatusEnum.Rejected && ShowRejected) ||
+                                      (t.Status == Shared.TaskStatusEnum.Completed && ShowCompleted) ||
+                                      (t.Status == Shared.TaskStatusEnum.InProgress && ShowInProgress) ||
+                                      (t.Status == Shared.TaskStatusEnum.NotStarted && ShowNotStarted));
 
-        if (_filterUtcDate.HasValue)
-            query = query.Where(t => t.DueDateUtc.Date >= _filterUtcDate.Value.Date);
+        if (FilterUtcDate.HasValue)
+            query = query.Where(t => t.DueDateUtc.Date >= FilterUtcDate.Value.Date);
 
-        if (_selectedTagFilters.Count > 0)
+        if (SelectedTagFilters.Count > 0)
         {
             query = query.Where(t => t.Tags != null && t.Tags.Any(tag =>
-                _selectedTagFilters.Any(filter => string.Equals(filter, tag, StringComparison.OrdinalIgnoreCase))));
+                SelectedTagFilters.Any(filter => string.Equals(filter, tag, StringComparison.OrdinalIgnoreCase))));
+        }
+
+        if (!string.IsNullOrWhiteSpace(AssignedUserIdFilter))
+        {
+            query = query.Where(t => t.AssignedUserId == AssignedUserIdFilter);
+        }
+        else if (!string.IsNullOrWhiteSpace(_assignedUserFilterSearchText))
+        {
+            query = query.Where(TaskMatchesAssignedUserFilter);
         }
 
         return query.OrderByDescending(t => t.DueDateUtc);
@@ -38,27 +41,80 @@ partial class TaskListComponent
 
     private List<TTask> _sortedAndFilteredTasks => 
         [.. FilterByStatusAndDate()];
-    private List<TDepartment> _departments { get; set; } = [];
+    private List<AppUser> _assignedUsersInTasks =>
+        [.. _tasks
+            .Select(task => task.AssignedUser)
+            .Where(user => user != null && !string.IsNullOrWhiteSpace(user.Id))
+            .Cast<AppUser>()
+            .DistinctBy(user => user.Id)
+            .OrderBy(GetUserDisplayText)];
+            private int? _loadedDepartmentId { get; set; }
     private FormResultComponent _taskResult {get;set;} = null!;
     [Parameter] public List<UserModel> UsersWithAccess { get; set; } = [];
-     [Inject] private IAccountService AccountService { get; set; } = default!;
+    [Parameter] public bool ShowFilter { get; set; } = false;
+    [Parameter] public DateTime? FilterUtcDate { get; set; }
+    [Parameter] public List<string> SelectedTagFilters { get; set; } = [];
+    [Parameter] public bool ShowVerifiedCompleted { get; set; } = false;
+    [Parameter] public bool ShowRejected { get; set; } = false;
+    [Parameter] public bool ShowCompleted { get; set; } = false;
+    [Parameter] public bool ShowInProgress { get; set; } = true;
+    [Parameter] public bool ShowNotStarted { get; set; } = true;
+    [Parameter] public string? AssignedUserIdFilter { get; set; }
+    [Parameter] public EventCallback<string?> AssignedUserIdFilterChanged { get; set; }
     [Inject] private IDepartmentTaskService DepartmentTaskService { get; set; } = default!;
+
+    private static string GetUserDisplayText(AppUser user)
+    {
+        if (string.IsNullOrWhiteSpace(user.DisplayName))
+            return user.UserName ?? string.Empty;
+
+        return string.IsNullOrWhiteSpace(user.UserName)
+            ? user.DisplayName
+            : $"{user.DisplayName} ({user.UserName})";
+    }
+
+    private static string GetUserDisplayText(UserModel user)
+        => $"{user.DisplayName} ({user.UserName})";
+
+    protected override void OnParametersSet()
+    {
+        if (AssignedUserIdFilter == _lastAssignedUserIdFilter)
+            return;
+
+        _lastAssignedUserIdFilter = AssignedUserIdFilter;
+        var selectedUser = _assignedUsersInTasks.FirstOrDefault(user => user.Id == AssignedUserIdFilter);
+        _assignedUserFilterSearchText = selectedUser is null ? string.Empty : GetUserDisplayText(selectedUser);
+    }
 
     /// <summary>
     /// Refresh the list of tasks by reloading them from the API. This method can be called after a task is added, updated, or deleted to ensure that the list of tasks displayed in the component is up to date with the latest data from the server.
     /// </summary> <returns>A task that represents the asynchronous operation.</returns>
     private async Task RefreshTasks()
-    {        var ct = new CancellationTokenSource(TimeSpan.FromSeconds(60)).Token;
-        var taskResponse = await DepartmentTaskService.GetOwnedTasksByDepartmentIdAsync(StaticUserInfoBlazor.SelectedDepartment!.DepartmentId, ct);
+    {
+        await LoadTasksForSelectedDepartmentAsync(forceReload: true);
+    }
+
+    private async Task LoadTasksForSelectedDepartmentAsync(bool forceReload = false)
+    {
+        var departmentId = StaticUserInfoBlazor.SelectedDepartment?.DepartmentId;
+        if (!departmentId.HasValue)
+            return;
+
+        if (!forceReload && _loadedDepartmentId == departmentId.Value)
+            return;
+
+        var ct = new CancellationTokenSource(TimeSpan.FromSeconds(60)).Token;
+        var taskResponse = await DepartmentTaskService.GetOwnedTasksByDepartmentIdAsync(departmentId.Value, ct);
         if (taskResponse.data != null)        {
             _tasks = taskResponse.data;
+            _loadedDepartmentId = departmentId.Value;
         }
         else if (taskResponse.formResult != null)
         {
             _taskResult.SetFormResult(taskResponse.formResult,2);
         }
 
-        await LoadDepartmentTagsAsync(ct);
+        await LoadDepartmentTagsAsync(departmentId.Value, ct);
         StateHasChanged();
     }
 
@@ -80,9 +136,9 @@ partial class TaskListComponent
     {
         var normalized = NormalizeTag(_tagFilterInput);
         if (!string.IsNullOrWhiteSpace(normalized) &&
-            !_selectedTagFilters.Any(tag => string.Equals(tag, normalized, StringComparison.OrdinalIgnoreCase)))
+            !SelectedTagFilters.Any(tag => string.Equals(tag, normalized, StringComparison.OrdinalIgnoreCase)))
         {
-            _selectedTagFilters.Add(normalized);
+            SelectedTagFilters.Add(normalized);
         }
 
         _tagFilterInput = string.Empty;
@@ -92,7 +148,7 @@ partial class TaskListComponent
 
     private void RemoveTagFilter(string tag)
     {
-        _selectedTagFilters = _selectedTagFilters
+        SelectedTagFilters = SelectedTagFilters
             .Where(existing => !string.Equals(existing, tag, StringComparison.OrdinalIgnoreCase))
             .ToList();
         StateHasChanged();
@@ -100,14 +156,60 @@ partial class TaskListComponent
 
     private void ClearTagFilters()
     {
-        _selectedTagFilters = [];
+        SelectedTagFilters = [];
         _tagFilterInput = string.Empty;
         StateHasChanged();
     }
 
-    private async Task LoadDepartmentTagsAsync(CancellationToken ct)
+    private Task OnAssignedUserFilterSearchChanged(string value)
     {
-        var tagsResponse = await DepartmentTaskService.GetDistinctTaskTagsByDepartmentIdAsync(StaticUserInfoBlazor.SelectedDepartment!.DepartmentId, ct);
+        _assignedUserFilterSearchText = value;
+        AssignedUserIdFilter = null;
+        return Task.CompletedTask;
+    }
+
+    private bool TaskMatchesAssignedUserFilter(TTask task)
+    {
+        var filterText = _assignedUserFilterSearchText.Trim();
+        if (filterText.Length == 0)
+            return true;
+
+        if (task.AssignedUser != null &&
+            (GetUserDisplayText(task.AssignedUser).Contains(filterText, StringComparison.OrdinalIgnoreCase) ||
+             (task.AssignedUser.DisplayName?.Contains(filterText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+             (task.AssignedUser.UserName?.Contains(filterText, StringComparison.OrdinalIgnoreCase) ?? false)))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private async Task OnAssignedUserFilterSelected(string selectedText)
+    {
+        var selected = _assignedUsersInTasks.FirstOrDefault(user =>
+            string.Equals(GetUserDisplayText(user), selectedText, StringComparison.OrdinalIgnoreCase));
+
+        if (selected is null)
+            return;
+
+        AssignedUserIdFilter = selected.Id;
+        _lastAssignedUserIdFilter = AssignedUserIdFilter;
+        _assignedUserFilterSearchText = GetUserDisplayText(selected);
+        await AssignedUserIdFilterChanged.InvokeAsync(AssignedUserIdFilter);
+    }
+
+    private async Task ClearAssignedUserFilterAsync()
+    {
+        AssignedUserIdFilter = null;
+        _lastAssignedUserIdFilter = AssignedUserIdFilter;
+        _assignedUserFilterSearchText = string.Empty;
+        await AssignedUserIdFilterChanged.InvokeAsync(AssignedUserIdFilter);
+    }
+
+    private async Task LoadDepartmentTagsAsync(int departmentId, CancellationToken ct)
+    {
+        var tagsResponse = await DepartmentTaskService.GetDistinctTaskTagsByDepartmentIdAsync(departmentId, ct);
         if (tagsResponse.data != null)
         {
             _existingDepartmentTags = tagsResponse.data;
@@ -150,29 +252,13 @@ partial class TaskListComponent
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
-        //_ = await AccountService.CheckAuthenticatedAsync();
-        var ct = new CancellationTokenSource(TimeSpan.FromSeconds(60)).Token;
-        var response = await AccountService.GetDepartmentsByOrganizationIdAsync(StaticUserInfoBlazor.SelectedOrganization!.Id, StaticUserInfoBlazor.User!.Id, ct);
-        if (response.departments != null)
-        {
-            _departments = response.departments;
-        }
-        else if (response.formResult != null)
-        {
-            _taskResult.SetFormResult(response.formResult,2);
-        }
-        var taskResponse = await DepartmentTaskService.GetOwnedTasksByDepartmentIdAsync(StaticUserInfoBlazor.SelectedDepartment!.DepartmentId, ct);
-        if (taskResponse.data != null)
-        {
-            _tasks = taskResponse.data;
-        }
-        else if (taskResponse.formResult != null)
-        {
-            _taskResult.SetFormResult(taskResponse.formResult,2);
-        }
-
-        await LoadDepartmentTagsAsync(ct);
+        await LoadTasksForSelectedDepartmentAsync();
         await base.OnInitializedAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadTasksForSelectedDepartmentAsync();
     }
 
     

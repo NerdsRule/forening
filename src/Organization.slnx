@@ -1,0 +1,15 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="Organization.ApiService/Organization.ApiService.csproj" />
+  <Project Path="Organization.AppHost/Organization.AppHost.csproj" />
+  <Project Path="Organization.Blazor/Organization.Blazor.csproj" />
+  <Project Path="Organization.Core/Organization.Core.csproj" />
+  <Project Path="Organization.Infrastructure/Organization.Infrastructure.csproj" />
+  <Project Path="Organization.ServiceDefaults/Organization.ServiceDefaults.csproj" />
+  <Project Path="Organization.Shared/Organization.Shared.csproj" />
+  <Project Path="Organization.Test/Organization.Test.csproj" />
+</Solution>
