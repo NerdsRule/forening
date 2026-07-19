@@ -10,9 +10,12 @@ public class OrganizationTesting
     private static readonly TimeSpan StartupStepTimeout = TimeSpan.FromMinutes(3);
     private static readonly TimeSpan DisposeStepTimeout = TimeSpan.FromSeconds(90);
 
-    [IntegrationFact]
+    [Fact(Timeout = IntegrationTestSettings.DefaultTimeoutMs)]
     public async Task GetApiService_GetOrganization()
     {
+        if (!IntegrationTestSettings.RunIntegrationTests)
+            return;
+
         // Arrange
         using var cancellationTokenSource =
             CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);

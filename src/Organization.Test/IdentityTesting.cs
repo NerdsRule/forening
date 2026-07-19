@@ -13,9 +13,12 @@ public class IdentityTesting
     private static readonly TimeSpan StartupStepTimeout = TimeSpan.FromMinutes(3);
     private static readonly TimeSpan DisposeStepTimeout = TimeSpan.FromSeconds(90);
 
-    [IntegrationFact]
+    [Fact(Timeout = IntegrationTestSettings.DefaultTimeoutMs)]
     public async Task IdentityTest()
     {
+        if (!IntegrationTestSettings.RunIntegrationTests)
+            return;
+
         // Arrange
         using var cancellationTokenSource =
             CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
