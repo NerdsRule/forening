@@ -1,6 +1,8 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
+COPY src/Directory.Build.props src/
+COPY src/Directory.Packages.props src/
 COPY src/Organization.Blazor/Organization.Blazor.csproj src/Organization.Blazor/
 COPY src/Organization.Core/Organization.Core.csproj src/Organization.Core/
 COPY src/Organization.Infrastructure/Organization.Infrastructure.csproj src/Organization.Infrastructure/
