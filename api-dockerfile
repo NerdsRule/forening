@@ -1,6 +1,8 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
+COPY src/Directory.Build.props src/
+COPY src/Directory.Packages.props src/
 COPY src/Organization.ApiService/Organization.ApiService.csproj src/Organization.ApiService/
 COPY src/Organization.Infrastructure/Organization.Infrastructure.csproj src/Organization.Infrastructure/
 COPY src/Organization.Shared/Organization.Shared.csproj src/Organization.Shared/
