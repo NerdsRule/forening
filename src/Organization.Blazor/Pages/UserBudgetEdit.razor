@@ -1,0 +1,8 @@
+@page "/user-budget-edit"
+@attribute [Authorize(Roles = "BudgetAdministrator,EnterpriseAdmin")]
+
+<PageTitle>User Budget</PageTitle>
+
+<div class="container-fluid mt-2">
+    <UserBudgetAdminComponent />
+</div>

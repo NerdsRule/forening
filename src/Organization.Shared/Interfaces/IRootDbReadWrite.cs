@@ -98,11 +98,11 @@ public interface IRootDbReadWrite
     public Task<List<TTask>> GetTasksByDepartmentAsync(int departmentId, CancellationToken ct);
 
     /// <summary>
-    /// Get all distinct tags used on tasks within a department (for autocomplete suggestions).
+    /// Get all distinct tags used on tasks within a department for autocomplete suggestions.
     /// </summary>
-    /// <param name="departmentId">Department Id</param>
-    /// <param name="ct">Cancellation token</param>
-    /// <returns>Sorted distinct list of tag strings.</returns>
+    /// <param name="departmentId">Department identifier.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A sorted, distinct list of normalized tag strings.</returns>
     public Task<List<string>> GetDistinctTaskTagsByDepartmentAsync(int departmentId, CancellationToken ct);
     #endregion
 
@@ -130,6 +130,31 @@ public interface IRootDbReadWrite
     /// <param name="ct">Cancellation token</param>
     /// <returns>List of prizes assigned to user.</returns>
     public Task<List<TPrize>> GetPrizesByAssignedUserIdAsync(string assignedUserId, CancellationToken ct);
+    #endregion
+
+    #region User Budgets
+    /// <summary>
+    /// Get budget entries for one user within one department.
+    /// </summary>
+    public Task<List<TUserBudget>> GetUserBudgetsAsync(string appUserId, int departmentId, CancellationToken ct);
+
+    /// <summary>
+    /// Get all budget entries for one department.
+    /// </summary>
+    public Task<List<TUserBudget>> GetDepartmentBudgetsAsync(int departmentId, CancellationToken ct);
+
+    /// <summary>
+    /// Get all distinct budget tags used within a department.
+    /// </summary>
+    /// <param name="departmentId">Department identifier.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A sorted, distinct list of normalized budget tag strings.</returns>
+    public Task<List<string>> GetDistinctBudgetTagsByDepartmentAsync(int departmentId, CancellationToken ct);
+
+    /// <summary>
+    /// Get budget description suggestions used within one department.
+    /// </summary>
+    public Task<List<string>> GetBudgetDescriptionSuggestionsAsync(int departmentId, string query, CancellationToken ct);
     #endregion
 
    #region View for tasks with points awarded

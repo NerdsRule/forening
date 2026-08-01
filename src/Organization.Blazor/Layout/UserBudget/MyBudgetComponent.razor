@@ -1,0 +1,97 @@
+<div class="card mt-2">
+    <div class="card-header p-0">
+        <div class="position-relative d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2 w-100 p-3" role="button" tabindex="0" @onclick="ToggleCollapsed" @onkeydown="OnHeaderKeyDown">
+            <span class="position-absolute top-50 start-50 translate-middle text-secondary opacity-50 fw-semibold pe-none">Details</span>
+            <div class="d-inline-flex align-items-center gap-2 d-md-none">
+                <span class="card-title fs-6 fw-bold mb-0">
+                    @(string.IsNullOrWhiteSpace(Title) ? "My Budget" : Title)
+                </span>
+            </div>
+            <div class="d-inline-flex align-items-center gap-2 d-none d-md-inline-flex">
+                <span class="card-title fs-4 fw-bold mb-0">
+                    @(string.IsNullOrWhiteSpace(Title) ? "My Budget" : Title)
+                </span>
+            </div>
+            <div class="fw-bold text-break @(VisibleSum < 0 ? "text-danger" : VisibleSum > 0 ? "text-success" : "")">@VisibleSum.ToString("N2") DKK</div>
+        </div>
+    </div>
+    <div class="card-body">
+
+        @if (!_isCollapsed)
+        {
+            @if (CanEdit && CanModifyEntries)
+            {
+                <EditForm Model="_newBudget" OnValidSubmit="AddBudgetAsync" class="border rounded p-3 mb-3">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    <div class="row g-2 align-items-end">
+                        <div class="col-12 col-md-3">
+                            <label class="form-label" for="newBudgetAmount">Amount</label>
+                            <InputNumber id="newBudgetAmount" class="form-control" @bind-Value="_newBudget.Amount" />
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label class="form-label" for="newBudgetDescription">Description</label>
+                            <InlineAutocompleteDropdown TItem="string"
+                                                        Id="newBudgetDescription"
+                                                        Items="_descriptionSuggestions"
+                                                        ItemTextSelector="(item => item)"
+                                                        Value="@_newBudget.Description"
+                                                        ValueChanged="OnNewDescriptionChanged"
+                                                        OnItemSelected="OnNewDescriptionSelected"
+                                                        Placeholder="Description" />
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <label class="form-label" for="newBudgetTag">Tag</label>
+                            <InlineAutocompleteDropdown TItem="string"
+                                                        Id="newBudgetTag"
+                                                        Items="_existingTags"
+                                                        ItemTextSelector="(item => item)"
+                                                        Value="@_newTagInput"
+                                                        ValueChanged="OnNewTagChanged"
+                                                        OnItemSelected="OnNewTagSelected"
+                                                        Placeholder="Tag" />
+                        </div>
+                        <div class="col-12 col-md-2 text-md-end">
+                            <button type="submit" class="btn btn-primary">Add</button>
+                        </div>
+                    </div>
+                </EditForm>
+            }
+
+            @if (_budgets.Count == 0)
+            {
+                <div class="text-muted">No budget entries found.</div>
+            }
+            else
+            {
+                var visibleBudgets = GetVisibleBudgets()
+                    .OrderByDescending(budget => Math.Abs(budget.Amount))
+                    .ThenByDescending(budget => budget.Amount)
+                    .ToList();
+
+                @if (visibleBudgets.Count > 0)
+                {
+                    <div class="mb-3">
+                        <div class="row align-items-center text-muted small fw-semibold d-none d-md-flex mb-2">
+                            <div class="col-md-2">Amount</div>
+                            <div class="col-md-7">Description</div>
+                            <div class="col-md-2">Tag</div>
+                            <div class="col-md-1"></div>
+                        </div>
+                        @foreach (var budget in visibleBudgets)
+                        {
+                            <UserBudgetEntryComponent Budget="budget"
+                                                      CanEdit="CanEdit && CanModifyEntries"
+                                                      ExistingTags="_existingTags"
+                                                      DescriptionSuggestions="_descriptionSuggestions"
+                                                      OnBudgetChanged="OnBudgetChangedAsync"
+                                                      OnBudgetDeleted="OnBudgetDeletedAsync" />
+                        }
+                    </div>
+                }
+            }
+        }
+
+        <FormResultComponent @ref="_formResult" />
+    </div>
+</div>
