@@ -46,7 +46,7 @@
     </div>
     
     <WebAuthnComponent AllowLogin="false" AllowRegistration="true" NavigateOnLoginSuccess="false" />
-    
+
     <div class="card mt-2">
         <div class="card-header">
             <span class="card-title fs-6 d-block d-md-none fw-bold">Your Organization & Department</span>
@@ -89,11 +89,13 @@
             <FormResultComponent @ref="FormResult" />
         </div>
     </div>
-    <VersionComponent ShowFullVersionInfo="true" AlwaysShowRefreshButton="true" />
+    
     <TaskListComponent AssignedUserIdFilter="@StaticUserInfoBlazor.User?.Id"
                        ShowNotStarted="true"
                        ShowInProgress="true"
                        ShowCompleted="true"
                        ShowVerifiedCompleted="true"
                        ShowRejected="true" />
+
+    <VersionComponent ShowFullVersionInfo="true" AlwaysShowRefreshButton="true" />
 </div>

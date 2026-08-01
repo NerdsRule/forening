@@ -1,0 +1,59 @@
+@if (!_isEditing)
+{
+    <div class="row align-items-center border-bottom py-2">
+        <div class="col-12 col-md-2 fw-bold">@Budget.Amount.ToString("N2") DKK</div>
+        <div class="col-12 col-md-7">@Budget.Description</div>
+        <div class="col-12 col-md-2">
+            @if (Budget.GetNormalizedTags() is { Count: > 0 } tags)
+            {
+                @foreach (var tag in tags)
+                {
+                    <span class="badge text-bg-secondary me-1">@tag</span>
+                }
+            }
+        </div>
+        @if (CanEdit)
+        {
+            <div class="col-12 col-md-1 text-md-end mt-2 mt-md-0">
+                <button type="button" class="btn btn-sm btn-outline-primary me-1" @onclick="StartEdit">Edit</button>
+                <button type="button" class="btn btn-sm btn-outline-danger" @onclick="DeleteAsync">Delete</button>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <EditForm Model="_editBudget" OnValidSubmit="SaveAsync" class="border-bottom py-2">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="row g-2 align-items-start">
+            <div class="col-12 col-md-2">
+                <InputNumber class="form-control" @bind-Value="_editBudget.Amount" />
+            </div>
+            <div class="col-12 col-md-5">
+                <InlineAutocompleteDropdown TItem="string"
+                                            Id="@($"budgetDescription{Budget.Id}")"
+                                            Items="DescriptionSuggestions"
+                                            ItemTextSelector="(item => item)"
+                                            Value="@_editBudget.Description"
+                                            ValueChanged="OnDescriptionChanged"
+                                            OnItemSelected="OnDescriptionSelected"
+                                            Placeholder="Description" />
+            </div>
+            <div class="col-12 col-md-3">
+                <InlineAutocompleteDropdown TItem="string"
+                                            Id="@($"budgetTag{Budget.Id}")"
+                                            Items="ExistingTags"
+                                            ItemTextSelector="(item => item)"
+                                            Value="@TagInput"
+                                            ValueChanged="OnTagChanged"
+                                            OnItemSelected="OnTagSelected"
+                                            Placeholder="Tag" />
+            </div>
+            <div class="col-12 col-md-2 text-md-end">
+                <button type="submit" class="btn btn-sm btn-primary me-1">Save</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="CancelEdit">Cancel</button>
+            </div>
+        </div>
+    </EditForm>
+}

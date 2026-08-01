@@ -58,6 +58,24 @@ public class AppDbContext : IdentityDbContext<AppUser>
                         v => v.Aggregate(0, (acc, s) => HashCode.Combine(acc, s.GetHashCode())),
                         v => v.ToList()));
         });
+        builder.Entity<TUserBudget>(entity =>
+        {
+            entity.HasIndex(e => e.DepartmentId);
+            entity.HasIndex(e => e.AppUserId);
+            entity.HasIndex(e => new { e.DepartmentId, e.AppUserId });
+            entity.Property(e => e.Amount).HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(2000).IsRequired();
+            entity.Property(e => e.Tags)
+                .HasColumnType("nvarchar(max)")
+                .HasDefaultValueSql("'[]'")
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>(),
+                    new ValueComparer<List<string>>(
+                        (a, b) => a != null && b != null && a.SequenceEqual(b),
+                        v => v.Aggregate(0, (acc, s) => HashCode.Combine(acc, s.GetHashCode())),
+                        v => v.ToList()));
+        });
          builder.Entity<TPrize>(entity =>
         {
             entity.Property(e => e.PointsCost).IsRequired().HasDefaultValue(0);  
@@ -74,6 +92,7 @@ public class AppDbContext : IdentityDbContext<AppUser>
     public DbSet<TTask> Tasks { get; set; } = null!;
     public DbSet<TTaskDepartment> TaskDepartments { get; set; } = null!;
     public DbSet<TPrize> Prizes { get; set; } = null!;
+    public DbSet<TUserBudget> UserBudgets { get; set; } = null!;
     public DbSet<TFidoCredential> FidoCredentials { get; set; } = null!;
     public DbSet<TResetPassword> ResetPasswords { get; set; } = null!;
     #endregion

@@ -24,6 +24,10 @@ public enum RolesEnum
     /// </summary>
     DepartmentAdmin = 0,
     /// <summary>
+    /// User with budget administration privileges for a department.
+    /// </summary>
+    BudgetAdministrator = 2,
+    /// <summary>
     /// Read-only or external collaborator with limited access to department resources.
     /// </summary>
     DepartmentMember = 1,

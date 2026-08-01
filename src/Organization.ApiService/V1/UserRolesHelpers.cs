@@ -60,6 +60,41 @@ public static class UserRolesHelpers
     }
 
     /// <summary>
+    /// Determines whether the current user can access the budget entries for a specific user within the specified department.
+    /// </summary>
+    public static async Task<bool> CanAccessUserBudgetAsync(ClaimsPrincipal user, string targetUserId, int departmentId, IRootDbReadWrite db, CancellationToken cancellationToken)
+    {
+        var authenticatedUserId = GetAuthenticatedUserId(user);
+        if (authenticatedUserId is null)
+            return false;
+
+        if (authenticatedUserId == targetUserId)
+            return true;
+
+        return await IsBudgetAdminOrEnterpriseAdminAsync(user, departmentId, db, cancellationToken);
+    }
+
+    /// <summary>
+    /// Determines whether the current user is allowed to manage budget entries for the specified department.
+    /// </summary>
+    public static async Task<bool> IsBudgetAdminOrEnterpriseAdminAsync(ClaimsPrincipal user, int departmentId, IRootDbReadWrite db, CancellationToken cancellationToken)
+    {
+        if (await IsUserEnterpriseAdminAsync(user, db, cancellationToken))
+            return true;
+
+        return await IsUserAuthorizedForDepartmentAsync(user, departmentId, [RolesEnum.BudgetAdministrator], db, cancellationToken);
+    }
+
+    /// <summary>
+    /// Checks whether a user belongs to the specified department.
+    /// </summary>
+    public static async Task<bool> IsUserInDepartmentAsync(string userId, int departmentId, IRootDbReadWrite db, CancellationToken cancellationToken)
+    {
+        var departments = await db.GetUserDepartmentsAsync(userId, cancellationToken);
+        return departments.Any(department => department.DepartmentId == departmentId);
+    }
+
+    /// <summary>
     /// Checks if the user is in the same organization and has one of the specified roles.
     /// </summary>
     public static async Task<(bool hasAccess, UserModel? user)> IsUserInSameOrganizationAndInRoleAsync(ClaimsPrincipal user, string userId, RolesEnum[] rolesToCheck, UserManager<AppUser> userManager, IRootDbReadWrite db, CancellationToken cancellationToken)

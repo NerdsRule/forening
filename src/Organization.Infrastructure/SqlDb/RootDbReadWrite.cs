@@ -161,6 +161,12 @@ public class RootDbReadWrite : IRootDbReadWrite
         return res;
     }
 
+    /// <summary>
+    /// Get all distinct tags used by tasks in a department.
+    /// </summary>
+    /// <param name="departmentId">Department identifier.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A sorted, distinct list of normalized tag values.</returns>
     public async Task<List<string>> GetDistinctTaskTagsByDepartmentAsync(int departmentId, CancellationToken ct)
     {
         var tagLists = await Db.Tasks
@@ -225,6 +231,74 @@ public class RootDbReadWrite : IRootDbReadWrite
             .Where(prize => prize.AssignedUserId == assignedUserId)
             .Include(prize => prize.CreatorUser)
             .Include(prize => prize.AssignedUser)
+            .AsNoTracking()
+            .ToListAsync(ct);
+    }
+    #endregion
+
+    #region User Budgets
+    public async Task<List<TUserBudget>> GetUserBudgetsAsync(string appUserId, int departmentId, CancellationToken ct)
+    {
+        return await Db.UserBudgets
+            .Where(budget => budget.AppUserId == appUserId && budget.DepartmentId == departmentId)
+            .Include(budget => budget.AppUser)
+            .Include(budget => budget.Department)
+            .AsNoTracking()
+            .OrderByDescending(budget => budget.Id)
+            .ToListAsync(ct);
+    }
+
+    public async Task<List<TUserBudget>> GetDepartmentBudgetsAsync(int departmentId, CancellationToken ct)
+    {
+        return await Db.UserBudgets
+            .Where(budget => budget.DepartmentId == departmentId)
+            .Include(budget => budget.AppUser)
+            .Include(budget => budget.Department)
+            .AsNoTracking()
+            .OrderBy(budget => budget.AppUser!.DisplayName ?? budget.AppUser!.UserName)
+            .ThenByDescending(budget => budget.Id)
+            .ToListAsync(ct);
+    }
+
+    /// <summary>
+    /// Get all distinct tags used by budget entries in a department.
+    /// </summary>
+    /// <param name="departmentId">Department identifier.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A sorted, distinct list of normalized budget tag values.</returns>
+    public async Task<List<string>> GetDistinctBudgetTagsByDepartmentAsync(int departmentId, CancellationToken ct)
+    {
+        var tagLists = await Db.UserBudgets
+            .Where(budget => budget.DepartmentId == departmentId)
+            .Select(budget => budget.Tags)
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        return tagLists
+            .SelectMany(tags => tags)
+            .Select(tag => tag.Trim().ToLowerInvariant())
+            .Where(tag => tag.Length > 0)
+            .Distinct()
+            .OrderBy(tag => tag)
+            .ToList();
+    }
+
+    public async Task<List<string>> GetBudgetDescriptionSuggestionsAsync(int departmentId, string query, CancellationToken ct)
+    {
+        query = query.Trim();
+        var descriptions = Db.UserBudgets
+            .Where(budget => budget.DepartmentId == departmentId && budget.Description != string.Empty);
+
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            descriptions = descriptions.Where(budget => budget.Description.Contains(query));
+        }
+
+        return await descriptions
+            .Select(budget => budget.Description.Trim())
+            .Distinct()
+            .OrderBy(description => description)
+            .Take(20)
             .AsNoTracking()
             .ToListAsync(ct);
     }
