@@ -12,12 +12,17 @@
                 <strong>Role:</strong>
             </div>
             <div class="col-12 col-md-3">
-                <InputSelect @bind-Value="AppUserDepartment.Role" class="form-select">
-                    @foreach (var role in RoleHelper.GetDepartmentRoles())
-                    {
-                        <option value="@role">@role.ToString()</option>
-                    }
-                </InputSelect>
+                @foreach (var role in RoleHelper.GetDepartmentRoles().Where(r => r != Shared.RolesEnum.None))
+                {
+                    <div class="form-check">
+                        <input type="checkbox"
+                               class="form-check-input"
+                               id="@($"dept-role-{AppUserDepartment.Id}-{role}")"
+                               checked="@IsRoleSelected(role)"
+                               @onchange="args => OnRoleChanged(role, args.Value)" />
+                        <label class="form-check-label" for="@($"dept-role-{AppUserDepartment.Id}-{role}")">@role</label>
+                    </div>
+                }
             </div>
             <div class="col-12 col-md-2">
                 <button type="submit" class="btn btn-primary btn-sm">Update</button>

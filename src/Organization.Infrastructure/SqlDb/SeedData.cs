@@ -89,7 +89,13 @@ public class SeedData
             {
                 AppUserId = firstUser.Id,
                 OrganizationId = org.Entity.Id,
-                Role = RolesEnum.EnterpriseAdmin
+                Roles =
+                [
+                    new TAppUserOrganizationRole
+                    {
+                        Role = RolesEnum.EnterpriseAdmin
+                    }
+                ]
             };
             await context.AppUserOrganizations.AddAsync(userOrg);
             await context.SaveChangesAsync();
@@ -97,7 +103,13 @@ public class SeedData
             {
                 AppUserId = firstUser.Id,
                 DepartmentId = dept.Entity.Id,
-                Role = RolesEnum.DepartmentAdmin
+                Roles =
+                [
+                    new TAppUserDepartmentRole
+                    {
+                        Role = RolesEnum.DepartmentAdmin
+                    }
+                ]
             };
             await context.AppUserDepartments.AddAsync(userDept);
             await context.SaveChangesAsync();
@@ -105,7 +117,13 @@ public class SeedData
             {
                 AppUserId = firstUser.Id,
                 DepartmentId = department2.Id,
-                Role = RolesEnum.DepartmentAdmin
+                Roles =
+                [
+                    new TAppUserDepartmentRole
+                    {
+                        Role = RolesEnum.DepartmentAdmin
+                    }
+                ]
             };
             await context.AppUserDepartments.AddAsync(userDept2);
             await context.SaveChangesAsync();
@@ -134,7 +152,13 @@ public class SeedData
             {
                 AppUserId = secondUser.Id,
                 OrganizationId = org.Entity.Id,
-                Role = RolesEnum.OrganizationMember
+                Roles =
+                [
+                    new TAppUserOrganizationRole
+                    {
+                        Role = RolesEnum.OrganizationMember
+                    }
+                ]
             };
             await context.AppUserOrganizations.AddAsync(userOrg);
             await context.SaveChangesAsync();
@@ -142,7 +166,13 @@ public class SeedData
             {
                 AppUserId = secondUser.Id,
                 DepartmentId = dept.Entity.Id,
-                Role = RolesEnum.DepartmentMember
+                Roles =
+                [
+                    new TAppUserDepartmentRole
+                    {
+                        Role = RolesEnum.DepartmentMember
+                    }
+                ]
             };
             await context.AppUserDepartments.AddAsync(userDept);
             await context.SaveChangesAsync();
@@ -150,7 +180,13 @@ public class SeedData
             {
                 AppUserId = secondUser.Id,
                 DepartmentId = department2.Id,
-                Role = RolesEnum.DepartmentMember
+                Roles =
+                [
+                    new TAppUserDepartmentRole
+                    {
+                        Role = RolesEnum.DepartmentMember
+                    }
+                ]
             };
             await context.AppUserDepartments.AddAsync(userDept2);
             await context.SaveChangesAsync();

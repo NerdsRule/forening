@@ -24,11 +24,31 @@ public class RootDbReadWrite : IRootDbReadWrite
     /// <returns>List of TAppUserOrganization</returns>
     public async Task<List<TAppUserOrganization>> GetUserOrganizationsAsync(string userId, CancellationToken ct)
     {
-        return await Db.AppUserOrganizations
-            .Where(c => c.AppUserId == userId)
-            .Include(c => c.Organization)
-            .AsNoTracking()
-            .ToListAsync(ct);
+        try
+        {
+            return await Db.AppUserOrganizations
+                .Where(c => c.AppUserId == userId)
+                .Include(c => c.Organization)
+                .Include(c => c.Roles)
+                .AsNoTracking()
+                .ToListAsync(ct);
+        }
+        catch
+        {
+            // Fallback for environments where the multi-role tables are not applied yet.
+            var memberships = await Db.AppUserOrganizations
+                .Where(c => c.AppUserId == userId)
+                .Include(c => c.Organization)
+                .AsNoTracking()
+                .ToListAsync(ct);
+
+            foreach (var membership in memberships)
+            {
+                membership.Roles = [new TAppUserOrganizationRole { Role = RolesEnum.OrganizationMember }];
+            }
+
+            return memberships;
+        }
     }
 
     /// <summary>
@@ -38,11 +58,131 @@ public class RootDbReadWrite : IRootDbReadWrite
     /// <returns>List of TAppUserDepartment</returns>
     public async Task<List<TAppUserDepartment>> GetUserDepartmentsAsync(string userId, CancellationToken ct)
     {
-        return await Db.AppUserDepartments
-            .Where(c => c.AppUserId == userId)
-            .Include(c => c.Department)
+        try
+        {
+            return await Db.AppUserDepartments
+                .Where(c => c.AppUserId == userId)
+                .Include(c => c.Department)
+                .Include(c => c.Roles)
+                .AsNoTracking()
+                .ToListAsync(ct);
+        }
+        catch
+        {
+            // Fallback for environments where the multi-role tables are not applied yet.
+            var memberships = await Db.AppUserDepartments
+                .Where(c => c.AppUserId == userId)
+                .Include(c => c.Department)
+                .AsNoTracking()
+                .ToListAsync(ct);
+
+            foreach (var membership in memberships)
+            {
+                membership.Roles = [new TAppUserDepartmentRole { Role = RolesEnum.DepartmentMember }];
+            }
+
+            return memberships;
+        }
+    }
+
+    public async Task<TAppUserOrganization> SaveUserOrganizationMembershipRolesAsync(string appUserId, int organizationId, IEnumerable<RolesEnum> roles, CancellationToken ct)
+    {
+        var uniqueRoles = roles
+            .Where(role => role != RolesEnum.None)
+            .Distinct()
+            .ToList();
+
+        if (uniqueRoles.Count == 0)
+        {
+            uniqueRoles.Add(RolesEnum.OrganizationMember);
+        }
+
+        var membership = await Db.AppUserOrganizations
+            .Include(c => c.Roles)
+            .FirstOrDefaultAsync(c => c.AppUserId == appUserId && c.OrganizationId == organizationId, ct);
+
+        if (membership is null)
+        {
+            membership = new TAppUserOrganization
+            {
+                AppUserId = appUserId,
+                OrganizationId = organizationId,
+                Roles = []
+            };
+            Db.AppUserOrganizations.Add(membership);
+        }
+
+        var roleSet = uniqueRoles.ToHashSet();
+        membership.Roles.RemoveAll(existing => !roleSet.Contains(existing.Role));
+        foreach (var role in roleSet)
+        {
+            if (membership.Roles.All(existing => existing.Role != role))
+            {
+                membership.Roles.Add(new TAppUserOrganizationRole
+                {
+                    Role = role
+                });
+            }
+        }
+
+        await Db.SaveChangesAsync(ct);
+
+        return await Db.AppUserOrganizations
+            .Where(c => c.Id == membership.Id)
+            .Include(c => c.Organization)
+            .Include(c => c.Roles)
             .AsNoTracking()
-            .ToListAsync(ct);
+            .FirstAsync(ct);
+    }
+
+    public async Task<TAppUserDepartment> SaveUserDepartmentMembershipRolesAsync(string appUserId, int departmentId, IEnumerable<RolesEnum> roles, CancellationToken ct)
+    {
+        var uniqueRoles = roles
+            .Where(role => role != RolesEnum.None)
+            .Distinct()
+            .ToList();
+
+        if (uniqueRoles.Count == 0)
+        {
+            uniqueRoles.Add(RolesEnum.DepartmentMember);
+        }
+
+        var membership = await Db.AppUserDepartments
+            .Include(c => c.Roles)
+            .FirstOrDefaultAsync(c => c.AppUserId == appUserId && c.DepartmentId == departmentId, ct);
+
+        if (membership is null)
+        {
+            membership = new TAppUserDepartment
+            {
+                AppUserId = appUserId,
+                DepartmentId = departmentId,
+                Roles = []
+            };
+            Db.AppUserDepartments.Add(membership);
+        }
+
+        var roleSet = uniqueRoles.ToHashSet();
+        membership.Roles.RemoveAll(existing => !roleSet.Contains(existing.Role));
+        foreach (var role in roleSet)
+        {
+            if (membership.Roles.All(existing => existing.Role != role))
+            {
+                membership.Roles.Add(new TAppUserDepartmentRole
+                {
+                    Role = role
+                });
+            }
+        }
+
+        await Db.SaveChangesAsync(ct);
+
+        return await Db.AppUserDepartments
+            .Where(c => c.Id == membership.Id)
+            .Include(c => c.Department)
+            .Include(c => c.Roles)
+            .AsNoTracking()
+            .FirstAsync(ct);
     }
 
     /// <summary>

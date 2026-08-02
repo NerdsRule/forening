@@ -270,9 +270,6 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
     /// <returns>The result of the login request serialized to a <see cref="FormResult"/>.</returns>
     public async Task<FormResult> LoginAsync(LoginModel model)
     {
-        var email = model.Email ?? string.Empty;
-        var password = model.Password ?? string.Empty;
-
         // make the request
         try
         {
@@ -289,6 +286,15 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
                 // success!
                 return new FormResult { Succeeded = true };
             }
+
+            var details = await result.Content.ReadAsStringAsync(cancellationToken);
+            var formResult = JsonHelpers.JsonDeSerialize<FormResult>(details);
+            if (formResult is not null)
+            {
+                return formResult;
+            }
+
+            logger.LogWarning("Login request failed with status code {StatusCode}. Response: {Response}", (int)result.StatusCode, details);
         }
         catch (Exception ex)
         {
@@ -359,7 +365,10 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
                             }
                             if (selectedOrganization != null)
                             {
-                                claims.Add(new Claim(ClaimTypes.Role, selectedOrganization.Role.ToString()));
+                                foreach (var role in selectedOrganization.Roles)
+                                {
+                                    claims.Add(new Claim(ClaimTypes.Role, role.Role.ToString()));
+                                }
                             }
                         }
                         if (userLocalStorage.SelectedDepartmentId != 0)
@@ -371,7 +380,10 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
                             }
                             if (selectedDepartment != null)
                             {
-                                claims.Add(new Claim(ClaimTypes.Role, selectedDepartment.Role.ToString()));
+                                foreach (var role in selectedDepartment.Roles)
+                                {
+                                    claims.Add(new Claim(ClaimTypes.Role, role.Role.ToString()));
+                                }
                             }
                         }
 
@@ -386,11 +398,17 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
 
                         if (selectedOrganization != null)
                         {
-                            claims.Add(new Claim(ClaimTypes.Role, selectedOrganization.Role.ToString()));
+                            foreach (var role in selectedOrganization.Roles)
+                            {
+                                claims.Add(new Claim(ClaimTypes.Role, role.Role.ToString()));
+                            }
                         }
                         if (selectedDepartment != null)
                         {
-                            claims.Add(new Claim(ClaimTypes.Role, selectedDepartment.Role.ToString()));
+                            foreach (var role in selectedDepartment.Roles)
+                            {
+                                claims.Add(new Claim(ClaimTypes.Role, role.Role.ToString()));
+                            }
                         }
                         uiStateService.SetSelectedOrganization(selectedOrganization);
                         uiStateService.SetSelectedDepartment(selectedDepartment);

@@ -139,7 +139,13 @@ public static class UserRolesEndpoints
             {
                 AppUserId = newUser.Id,
                 OrganizationId = model.OrganizationId,
-                Role = RolesEnum.OrganizationMember
+                Roles =
+                [
+                    new TAppUserOrganizationRole
+                    {
+                        Role = RolesEnum.OrganizationMember
+                    }
+                ]
             }, cancellationToken);
 
             return Results.Ok(new FormResult { Succeeded = true, ErrorList = ["User registered successfully."] });
@@ -350,7 +356,7 @@ public static class UserRolesEndpoints
         {
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {
-                var rolesToCheck = new[] { RolesEnum.DepartmentAdmin, RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin };
+                var rolesToCheck = new[] { RolesEnum.DepartmentAdmin, RolesEnum.OrganizationAdmin, RolesEnum.EnterpriseAdmin, RolesEnum.BudgetAdministrator };
                 if (await UserRolesHelpers.IsUserAuthorizedForDepartmentAsync(user, departmentId, rolesToCheck, db, cancellationToken))
                 {
                     var users = await db.GetUsersInDepartmentAsync(departmentId, cancellationToken);
@@ -522,22 +528,17 @@ public static class UserRolesEndpoints
                 }
             }
 
-            var appUserOrganizations = await db.GetRowsAsync<TAppUserOrganization>(cancellationToken);
-            var existingOrganizationMapping = appUserOrganizations.FirstOrDefault(o => o.AppUserId == testUser.Id && o.OrganizationId == organizationId);
-            if (existingOrganizationMapping is null)
-            {
-                await db.AddRowAsync<TAppUserOrganization>(new TAppUserOrganization
-                {
-                    AppUserId = testUser.Id,
-                    OrganizationId = organizationId,
-                    Role = RolesEnum.EnterpriseAdmin
-                }, cancellationToken);
-            }
-            else if (existingOrganizationMapping.Role != RolesEnum.EnterpriseAdmin)
-            {
-                existingOrganizationMapping.Role = RolesEnum.EnterpriseAdmin;
-                await db.UpdateRowAsync(existingOrganizationMapping, cancellationToken);
-            }
+            var existingOrganizationMapping = (await db.GetUserOrganizationsAsync(testUser.Id, cancellationToken))
+                .FirstOrDefault(o => o.OrganizationId == organizationId);
+
+            var roleSet = existingOrganizationMapping?.Roles.Select(r => r.Role).ToHashSet() ?? [];
+            roleSet.Add(RolesEnum.EnterpriseAdmin);
+
+            await db.SaveUserOrganizationMembershipRolesAsync(
+                testUser.Id,
+                organizationId,
+                roleSet,
+                cancellationToken);
 
             return Results.Ok(new UserModel { Id = testUser.Id, UserName = testUser.UserName ?? string.Empty, Email = testUser.Email ?? string.Empty, EmailConfirmed = testUser.EmailConfirmed });
         }).AllowAnonymous();

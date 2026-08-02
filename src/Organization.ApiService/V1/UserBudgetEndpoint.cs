@@ -37,7 +37,7 @@ public static class UserBudgetEndpoint
         /// </summary>
         v1.MapGet("/api/UserBudget/User/{departmentId}/{userId}", async Task<IResult> (ClaimsPrincipal user, int departmentId, string userId, IRootDbReadWrite db, CancellationToken ct) =>
         {
-            if (!await UserRolesHelpers.IsBudgetAdminOrEnterpriseAdminAsync(user, departmentId, db, ct))
+            if (!await UserRolesHelpers.IsBudgetAdministratorAsync(user, departmentId, db, ct))
                 return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
 
             if (!await UserRolesHelpers.IsUserInDepartmentAsync(userId, departmentId, db, ct))
@@ -55,7 +55,7 @@ public static class UserBudgetEndpoint
         /// </summary>
         v1.MapGet("/api/UserBudget/Department/{departmentId}", async Task<IResult> (ClaimsPrincipal user, int departmentId, IRootDbReadWrite db, CancellationToken ct) =>
         {
-            if (!await UserRolesHelpers.IsBudgetAdminOrEnterpriseAdminAsync(user, departmentId, db, ct))
+            if (!await UserRolesHelpers.IsBudgetAdministratorAsync(user, departmentId, db, ct))
                 return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
 
             var budgets = await db.GetDepartmentBudgetsAsync(departmentId, ct);
@@ -73,7 +73,7 @@ public static class UserBudgetEndpoint
             if (payload is null)
                 return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Payload is null"] });
 
-            if (!await UserRolesHelpers.IsBudgetAdminOrEnterpriseAdminAsync(user, payload.DepartmentId, db, ct))
+            if (!await UserRolesHelpers.IsBudgetAdministratorAsync(user, payload.DepartmentId, db, ct))
                 return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
 
             if (!await UserRolesHelpers.IsUserInDepartmentAsync(payload.AppUserId, payload.DepartmentId, db, ct))
@@ -102,7 +102,7 @@ public static class UserBudgetEndpoint
             if (budget is null)
                 return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Budget entry not found"] });
 
-            if (!await UserRolesHelpers.IsBudgetAdminOrEnterpriseAdminAsync(user, budget.DepartmentId, db, ct))
+            if (!await UserRolesHelpers.IsBudgetAdministratorAsync(user, budget.DepartmentId, db, ct))
                 return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
 
             await db.DeleteRowAsync(new TUserBudget { Id = id, AppUserId = budget.AppUserId, DepartmentId = budget.DepartmentId, Description = budget.Description }, ct);
@@ -117,7 +117,7 @@ public static class UserBudgetEndpoint
         /// </summary>
         v1.MapGet("/api/UserBudget/Tags/ByDepartment/{departmentId}", async Task<IResult> (ClaimsPrincipal user, int departmentId, IRootDbReadWrite db, CancellationToken ct) =>
         {
-            if (!await UserRolesHelpers.IsBudgetAdminOrEnterpriseAdminAsync(user, departmentId, db, ct))
+            if (!await UserRolesHelpers.IsBudgetAdministratorAsync(user, departmentId, db, ct))
                 return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
 
             var tags = await db.GetDistinctBudgetTagsByDepartmentAsync(departmentId, ct);
@@ -132,7 +132,7 @@ public static class UserBudgetEndpoint
         /// </summary>
         v1.MapGet("/api/UserBudget/Descriptions/ByDepartment/{departmentId}", async Task<IResult> (ClaimsPrincipal user, int departmentId, string? query, IRootDbReadWrite db, CancellationToken ct) =>
         {
-            if (!await UserRolesHelpers.IsBudgetAdminOrEnterpriseAdminAsync(user, departmentId, db, ct))
+            if (!await UserRolesHelpers.IsBudgetAdministratorAsync(user, departmentId, db, ct))
                 return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
 
             var descriptions = await db.GetBudgetDescriptionSuggestionsAsync(departmentId, query ?? string.Empty, ct);

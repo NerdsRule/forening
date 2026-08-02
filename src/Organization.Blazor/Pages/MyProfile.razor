@@ -64,7 +64,7 @@
                         <option value="">Select Organization</option>
                         @foreach (var org in _organizationDepartmentForm.Organizations)
                         {
-                            <option value="@org.Id">@org.Name (@UiStateService.SelectedOrganization?.Role)</option>
+                            <option value="@org.Id">@org.Name</option>
                         }
                     </InputSelect>
                     <ValidationMessage For="@(() => _organizationDepartmentForm.SelectedOrganizationId)" />
@@ -77,7 +77,7 @@
                         <option value="">Select Department</option>
                         @foreach (var dept in _organizationDepartmentForm.Departments)
                         {
-                            <option value="@dept.Id">@dept.Name (@UiStateService.SelectedDepartment?.Role)</option>
+                            <option value="@dept.Id">@dept.Name</option>
                         }
                     </InputSelect>
                     <ValidationMessage For="@(() => _organizationDepartmentForm.SelectedDepartmentId)" />

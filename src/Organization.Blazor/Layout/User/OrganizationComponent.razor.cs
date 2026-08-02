@@ -7,21 +7,64 @@ partial class OrganizationComponent
     private Dictionary<int, DepartmentComponent> _userDepartmentsDict = new();
     private List<TDepartment> _departments = new();
     private TAppUserDepartment _newAppUserDepartment = new();
+    private HashSet<Shared.RolesEnum> _selectedOrganizationRoles = [];
+    private HashSet<Shared.RolesEnum> _newDepartmentSelectedRoles = [];
+
     [Parameter] public TAppUserOrganization? AppUserOrganization { get; set; }
     [Parameter] public List<TAppUserDepartment> AppUserDepartments { get; set; } = new();
     [Inject] private IAccountService AccountService { get; set; } = default!;
-    [Inject] private IUiStateService UiStateService { get; set; } = default!;
+
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        _selectedOrganizationRoles = AppUserOrganization?.Roles.Select(r => r.Role).ToHashSet() ?? [];
+    }
+
+    private bool IsOrganizationRoleSelected(Shared.RolesEnum role) => _selectedOrganizationRoles.Contains(role);
+
+    private void OnOrganizationRoleChanged(Shared.RolesEnum role, object? value)
+    {
+        var isChecked = value as bool? == true;
+        if (isChecked)
+        {
+            _selectedOrganizationRoles.Add(role);
+        }
+        else
+        {
+            _selectedOrganizationRoles.Remove(role);
+        }
+    }
+
+    private bool IsNewDepartmentRoleSelected(Shared.RolesEnum role) => _newDepartmentSelectedRoles.Contains(role);
+
+    private void OnNewDepartmentRoleChanged(Shared.RolesEnum role, object? value)
+    {
+        var isChecked = value as bool? == true;
+        if (isChecked)
+        {
+            _newDepartmentSelectedRoles.Add(role);
+        }
+        else
+        {
+            _newDepartmentSelectedRoles.Remove(role);
+        }
+    }
 
     private async Task HandleUpdateRoleAsync()
     {
         _updateResult.ClearFormResult();
         if (AppUserOrganization != null)
         {
+            AppUserOrganization.Roles = _selectedOrganizationRoles
+                .Select(role => new TAppUserOrganizationRole { Role = role })
+                .ToList();
+
             CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
             var result = await AccountService.AddUpdateAppUserOrganizationAsync(AppUserOrganization, cts.Token);
             if (result.Item1 != null)
             {
                 AppUserOrganization = result.Item1;
+                _selectedOrganizationRoles = AppUserOrganization.Roles.Select(r => r.Role).ToHashSet();
                 _updateResult.SetFormResult(new FormResult { Succeeded = true, ErrorList = ["Data updated successfully"] }, 2);
             } else if (result.Item2 != null)
             {
@@ -50,13 +93,19 @@ partial class OrganizationComponent
     private async Task HandleAddDepartmentAsync()
     {
         _updateResult.ClearFormResult();
+
+        _newAppUserDepartment.Roles = _newDepartmentSelectedRoles
+            .Select(role => new TAppUserDepartmentRole { Role = role })
+            .ToList();
+
         CancellationTokenSource cts = new(TimeSpan.FromSeconds(30));
         var result = await AccountService.AddUpdateAppUserDepartmentAsync(_newAppUserDepartment, cts.Token);
         if (result.appUserDepartment != null)
         {
             result.appUserDepartment.Department = _departments.FirstOrDefault(d => d.Id == result.appUserDepartment.DepartmentId);
             AppUserDepartments.Add(result.appUserDepartment);
-            _newAppUserDepartment = new TAppUserDepartment { AppUserId = UiStateService.User!.Id };
+            _newAppUserDepartment = new TAppUserDepartment { AppUserId = AppUserOrganization?.AppUserId ?? string.Empty };
+            _newDepartmentSelectedRoles = [];
         } else if (result.formResult != null)
         {
             _updateResult.SetFormResult(result.formResult, 2);
@@ -77,6 +126,7 @@ partial class OrganizationComponent
                 _updateResult.SetFormResult(departments.formResult, 2);
             }
             _newAppUserDepartment.AppUserId = AppUserOrganization.AppUserId;
+            _newDepartmentSelectedRoles = [Shared.RolesEnum.DepartmentMember];
         }
         await base.OnInitializedAsync();
     }

@@ -49,9 +49,16 @@ public static class AppUserOrganizationEndpoints
                 {
                     return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
                 }
-        
-                var updated = await db.AddUpdateRowAsync(payload, ct);
-                return updated is null ? Results.NotFound(new FormResult { Succeeded = false, ErrorList = ["Not found"] }) : Results.Ok(updated);
+
+                var updated = await db.SaveUserOrganizationMembershipRolesAsync(
+                    payload.AppUserId,
+                    payload.OrganizationId,
+                    payload.Roles.Select(r => r.Role),
+                    ct);
+
+                return updated is null
+                    ? Results.NotFound(new FormResult { Succeeded = false, ErrorList = ["Not found"] })
+                    : Results.Ok(updated);
                 }
                 catch (Exception e)
                 {
@@ -74,7 +81,7 @@ public static class AppUserOrganizationEndpoints
         /// <param name="id">The ID of the TAppUserOrganization to delete.</param>
         /// <param name="ct">Cancellation token.</param>
         /// <returns>A 200 OK status if deletion is successful, or 404 Not Found if the entity does not exist.</returns>
-        v1.MapDelete("/api/AppUserOrganization/{id}", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, string userId, int id, IRootDbReadWrite db, CancellationToken ct) =>
+        v1.MapDelete("/api/AppUserOrganization/{userId}/{id}", async Task<IResult> (ClaimsPrincipal user, UserManager<AppUser> userManager, string userId, int id, IRootDbReadWrite db, CancellationToken ct) =>
         {
             if (user.Identity is not null && user.Identity.IsAuthenticated)
             {

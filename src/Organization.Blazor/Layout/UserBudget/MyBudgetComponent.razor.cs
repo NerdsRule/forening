@@ -18,9 +18,7 @@ partial class MyBudgetComponent
     public decimal Sum => _budgets.Sum(budget => budget.Amount);
     public decimal VisibleSum => GetVisibleBudgets().Sum(budget => budget.Amount);
     private bool CanModifyEntries =>
-        UiStateService.HasAnyRole(
-            Shared.RolesEnum.EnterpriseAdmin,
-            Shared.RolesEnum.BudgetAdministrator);
+        UiStateService.HasRole(Shared.RolesEnum.BudgetAdministrator);
 
     [Parameter] public bool Collapsed { get; set; } = true;
     [Parameter] public bool CanEdit { get; set; } = true;

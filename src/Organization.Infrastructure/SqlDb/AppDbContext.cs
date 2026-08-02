@@ -37,6 +37,8 @@ public class AppDbContext : IdentityDbContext<AppUser>
         });
         builder.Entity<TAppUserOrganization>().HasIndex(u => new { u.AppUserId, u.OrganizationId }).IsUnique();
         builder.Entity<TAppUserDepartment>().HasIndex(u => new { u.AppUserId, u.DepartmentId }).IsUnique();
+        builder.Entity<TAppUserOrganizationRole>().HasIndex(u => new { u.AppUserOrganizationId, u.Role }).IsUnique();
+        builder.Entity<TAppUserDepartmentRole>().HasIndex(u => new { u.AppUserDepartmentId, u.Role }).IsUnique();
         builder.Entity<TTaskDepartment>().HasIndex(u => new { u.TaskId, u.DepartmentId }).IsUnique();
         builder.Entity<TTaskDepartment>()
             .HasOne(td => td.Department)
@@ -89,6 +91,8 @@ public class AppDbContext : IdentityDbContext<AppUser>
     public DbSet<TDepartment> Departments { get; set; } = null!;
     public DbSet<TAppUserOrganization> AppUserOrganizations { get; set; } = null!;
     public DbSet<TAppUserDepartment> AppUserDepartments { get; set; } = null!;
+    public DbSet<TAppUserOrganizationRole> AppUserOrganizationRoles { get; set; } = null!;
+    public DbSet<TAppUserDepartmentRole> AppUserDepartmentRoles { get; set; } = null!;
     public DbSet<TTask> Tasks { get; set; } = null!;
     public DbSet<TTaskDepartment> TaskDepartments { get; set; } = null!;
     public DbSet<TPrize> Prizes { get; set; } = null!;

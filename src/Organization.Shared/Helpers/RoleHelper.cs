@@ -29,6 +29,7 @@ public static class RoleHelper
         {
             RolesEnum.DepartmentMember,
             RolesEnum.DepartmentAdmin,
+            RolesEnum.BudgetAdministrator,
             RolesEnum.None
         };
     }
