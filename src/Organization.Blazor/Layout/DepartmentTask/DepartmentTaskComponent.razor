@@ -1,8 +1,9 @@
 
 <button type="button"
     class="row position-relative w-100 border border-secondary @(IsThisTaskAssignedToMe && ChildContent.Status == Shared.TaskStatusEnum.VerifiedCompleted ? "alert alert-success" 
+    : ChildContent.Status == Shared.TaskStatusEnum.Rejected ? "alert alert-warning"
     : IsThisTaskAssignedToMe ? "alert alert-secondary" 
-    : ChildContent.AssignedUserId == null ? "alert alert-danger" 
+    : ChildContent.AssignedUserId == null ? "alert alert-info" 
     : "") rounded rounded-1 my-2 p-2"
     @onclick="ToggleDetailsAsync"
     title="Details">

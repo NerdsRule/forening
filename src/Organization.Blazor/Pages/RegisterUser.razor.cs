@@ -17,9 +17,10 @@ partial class RegisterUser
     protected override void OnInitialized()
     {
         // Initialization logic if needed
-        _registerModel.OrganizationId = StaticUserInfoBlazor.SelectedOrganization?.OrganizationId ?? 0;
+        _registerModel.OrganizationId = UiStateService.SelectedOrganization?.OrganizationId ?? 0;
     }
 
     [Inject] private NavigationManager Navigation { get; set; } = null!;
     [Inject] private IAccountService AccountService { get; set; } = null!;
+    [Inject] private IUiStateService UiStateService { get; set; } = null!;
 }

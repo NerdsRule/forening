@@ -12,6 +12,7 @@ partial class DepartmentTaskTopScoreUsersComponent
     private int[] ShowUsersWithPointsAwarded = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
     private int SelectedShowUsersWithPointsAwarded { get; set; } = 5;
     [Inject] private IDepartmentTaskService DepartmentTaskService { get; set; } = null!;
+    [Inject] private IUiStateService UiStateService { get; set; } = null!;
 
     protected override async Task OnInitializedAsync()
     {
@@ -23,7 +24,7 @@ partial class DepartmentTaskTopScoreUsersComponent
         IsLoading = true;
         if (FormResult != null)
             FormResult.ClearFormResult();
-        var (data, formResult) = await DepartmentTaskService.GetTopUsersWithPointsAwardedByDepartmentAsync(StaticUserInfoBlazor.User!.Id, StaticUserInfoBlazor.SelectedDepartment!.DepartmentId, 10, CancellationToken.None);
+        var (data, formResult) = await DepartmentTaskService.GetTopUsersWithPointsAwardedByDepartmentAsync(UiStateService.User!.Id, UiStateService.SelectedDepartment!.DepartmentId, 10, CancellationToken.None);
         if (data != null)
         {
             TopUsersWithPointsAwarded = data;

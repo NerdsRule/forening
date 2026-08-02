@@ -49,8 +49,16 @@ public static class AppUserDepartmentEndpoints
                 {
                     return Results.BadRequest(new FormResult { Succeeded = false, ErrorList = ["Forbidden"] });
                 }
-                var updated = await db.AddUpdateRowAsync(payload, ct);
-                return updated is null ? Results.NotFound(new FormResult { Succeeded = false, ErrorList = ["Not found"] }) : Results.Ok(updated);
+
+                var updated = await db.SaveUserDepartmentMembershipRolesAsync(
+                    payload.AppUserId,
+                    payload.DepartmentId,
+                    payload.Roles.Select(r => r.Role),
+                    ct);
+
+                return updated is null
+                    ? Results.NotFound(new FormResult { Succeeded = false, ErrorList = ["Not found"] })
+                    : Results.Ok(updated);
                 }
                 catch (Exception e)
                 {

@@ -40,7 +40,7 @@
 
                 <div class="mb-3">
                     <label for="organization" class="form-label">Organization</label>
-                    <input id="organization" class="form-control" value='@(StaticUserInfoBlazor.SelectedOrganization?.Organization?.Name ?? "")' readonly />
+                    <input id="organization" class="form-control" value='@(UiStateService.SelectedOrganization?.Organization?.Name ?? "")' readonly />
                 </div>
                 <button type="submit" class="btn btn-primary">Register</button>
             </EditForm>

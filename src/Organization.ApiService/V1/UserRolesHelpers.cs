@@ -17,7 +17,7 @@ public static class UserRolesHelpers
             if (userId is null) return false;
 
             var userOrgRoles = await db.GetUserOrganizationsAsync(userId, cancellationToken);
-            return userOrgRoles.Any(c => c.Role == RolesEnum.EnterpriseAdmin);
+            return userOrgRoles.Any(c => c.Roles.Any(r => r.Role == RolesEnum.EnterpriseAdmin));
         }
 
         return false;
@@ -35,8 +35,8 @@ public static class UserRolesHelpers
 
             var userOrgRoles = await db.GetUserOrganizationsAsync(userId, cancellationToken);
             var userDepRoles = await db.GetUserDepartmentsAsync(userId, cancellationToken);
-            return userOrgRoles.Any(c => c.OrganizationId == organizationId && roles.Contains(c.Role)) ||
-                   userDepRoles.Any(c => c.DepartmentId == departmentId && roles.Contains(c.Role));
+                 return userOrgRoles.Any(c => c.OrganizationId == organizationId && c.Roles.Any(r => roles.Contains(r.Role))) ||
+                     userDepRoles.Any(c => c.DepartmentId == departmentId && c.Roles.Any(r => roles.Contains(r.Role)));
         }
 
         return false;
@@ -53,7 +53,7 @@ public static class UserRolesHelpers
             if (userId is null) return false;
 
             var userDepRoles = await db.GetUserDepartmentsAsync(userId, cancellationToken);
-            return userDepRoles.Any(c => c.DepartmentId == departmentId && roles.Contains(c.Role));
+            return userDepRoles.Any(c => c.DepartmentId == departmentId && c.Roles.Any(r => roles.Contains(r.Role)));
         }
 
         return false;
@@ -71,17 +71,14 @@ public static class UserRolesHelpers
         if (authenticatedUserId == targetUserId)
             return true;
 
-        return await IsBudgetAdminOrEnterpriseAdminAsync(user, departmentId, db, cancellationToken);
+        return await IsBudgetAdministratorAsync(user, departmentId, db, cancellationToken);
     }
 
     /// <summary>
     /// Determines whether the current user is allowed to manage budget entries for the specified department.
     /// </summary>
-    public static async Task<bool> IsBudgetAdminOrEnterpriseAdminAsync(ClaimsPrincipal user, int departmentId, IRootDbReadWrite db, CancellationToken cancellationToken)
+    public static async Task<bool> IsBudgetAdministratorAsync(ClaimsPrincipal user, int departmentId, IRootDbReadWrite db, CancellationToken cancellationToken)
     {
-        if (await IsUserEnterpriseAdminAsync(user, db, cancellationToken))
-            return true;
-
         return await IsUserAuthorizedForDepartmentAsync(user, departmentId, [RolesEnum.BudgetAdministrator], db, cancellationToken);
     }
 
@@ -111,7 +108,7 @@ public static class UserRolesHelpers
         {
             var hasAccess = loggedInUser.AppUserOrganizations.Any(o =>
                 requestedUser.AppUserOrganizations.Any(uo => uo.OrganizationId == o.OrganizationId) &&
-                rolesToCheck.Contains(o.Role));
+                o.Roles.Any(role => rolesToCheck.Contains(role.Role)));
             return (hasAccess, requestedUser);
         }
 
@@ -126,10 +123,22 @@ public static class UserRolesHelpers
         var appUser = await userManager.FindByIdAsync(userId);
         if (appUser is null) return null;
 
-        var userAppUserOrgs = await db.GetUserOrganizationsAsync(userId, cancellationToken);
-        var userAppUserDeps = await db.GetUserDepartmentsAsync(userId, cancellationToken);
-        var totalPointsAwarded = await db.GetTasksWithPointsAwardedByUserAsync(userId, cancellationToken);
-        var totalPointsRedeemed = await db.GetPrizesByAssignedUserIdAsync(userId, cancellationToken);
+        List<TAppUserOrganization> userAppUserOrgs = [];
+        List<TAppUserDepartment> userAppUserDeps = [];
+        List<VTaskPointsAwarded> totalPointsAwarded = [];
+        List<TPrize> totalPointsRedeemed = [];
+
+        try
+        {
+            userAppUserOrgs = await db.GetUserOrganizationsAsync(userId, cancellationToken);
+            userAppUserDeps = await db.GetUserDepartmentsAsync(userId, cancellationToken);
+            totalPointsAwarded = await db.GetTasksWithPointsAwardedByUserAsync(userId, cancellationToken);
+            totalPointsRedeemed = await db.GetPrizesByAssignedUserIdAsync(userId, cancellationToken);
+        }
+        catch
+        {
+            // Keep login/info resilient even when optional membership tables are temporarily unavailable.
+        }
 
         return new UserModel
         {

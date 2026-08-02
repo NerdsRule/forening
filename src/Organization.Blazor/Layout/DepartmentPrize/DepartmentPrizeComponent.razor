@@ -34,11 +34,11 @@
 				<input id="creatorUser" class="form-control" value="@CreatorDisplayName" disabled />
 			</div>
 
-			@if (StaticUserInfoBlazor.SelectedDepartment?.Department != null)
+			@if (UiStateService.SelectedDepartment?.Department != null)
 			{
 				<div class="mb-3">
 					<label for="department" class="form-label">Department</label>
-					<input id="department" class="form-control" value="@StaticUserInfoBlazor.SelectedDepartment.Department.Name" disabled />
+					<input id="department" class="form-control" value="@UiStateService.SelectedDepartment.Department.Name" disabled />
 				</div>
 			}
 

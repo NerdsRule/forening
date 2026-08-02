@@ -39,7 +39,7 @@ public class TAppUserOrganization : TBaseTable
     public virtual TOrganization? Organization { get; set; }
 
     /// <summary>
-    /// Role of the user within the organization.
+    /// Roles assigned to the user within this organization membership.
     /// </summary>
-    public RolesEnum Role { get; set; } = RolesEnum.OrganizationMember;
+    public virtual List<TAppUserOrganizationRole> Roles { get; set; } = [];
 }

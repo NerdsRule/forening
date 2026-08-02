@@ -39,7 +39,7 @@ public class TAppUserDepartment : TBaseTable
     public virtual TDepartment? Department { get; set; }
 
     /// <summary>
-    /// Role of the user within the department.
+    /// Roles assigned to the user within this department membership.
     /// </summary>
-    public RolesEnum Role { get; set; } = RolesEnum.DepartmentMember;
+    public virtual List<TAppUserDepartmentRole> Roles { get; set; } = [];
 }

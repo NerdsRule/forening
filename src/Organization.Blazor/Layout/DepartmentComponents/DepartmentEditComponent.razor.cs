@@ -13,6 +13,7 @@ partial class DepartmentEditComponent
 	[Parameter] public EventCallback<TDepartment> OnDepartmentAdded { get; set; }
 
 	[Inject] private IDepartmentService DepartmentService { get; set; } = default!;
+	[Inject] private IUiStateService UiStateService { get; set; } = default!;
 
 	private string AddUpdateText => _department.Id == 0 ? "Add" : "Update";
 
@@ -36,7 +37,7 @@ partial class DepartmentEditComponent
 			return;
 		}
 
-		if (StaticUserInfoBlazor.User is null)
+		if (UiStateService.User is null)
 		{
 			_departments = [];
 			return;
@@ -44,7 +45,7 @@ partial class DepartmentEditComponent
 
 		_showSpinner = true;
 		var ct = new CancellationTokenSource(TimeSpan.FromSeconds(60)).Token;
-		var result = await DepartmentService.GetDepartmentsByOrganizationIdAsync(StaticUserInfoBlazor.User.Id, OrganizationId, ct);
+		var result = await DepartmentService.GetDepartmentsByOrganizationIdAsync(UiStateService.User.Id, OrganizationId, ct);
 		_showSpinner = false;
 
 		if (result.formResult is not null)

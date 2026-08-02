@@ -1,4 +1,6 @@
-@if (StaticUserInfoBlazor.User is not null && !StaticUserInfoBlazor.User.EmailConfirmed)
+@inject IUiStateService UiStateService
+
+@if (UiStateService.User is not null && !UiStateService.User.EmailConfirmed)
 {
     <div class="card mt-2">
         <div class="card-header">

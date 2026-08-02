@@ -62,6 +62,7 @@ partial class TaskListComponent
     [Parameter] public string? AssignedUserIdFilter { get; set; }
     [Parameter] public EventCallback<string?> AssignedUserIdFilterChanged { get; set; }
     [Inject] private IDepartmentTaskService DepartmentTaskService { get; set; } = default!;
+    [Inject] private IUiStateService UiStateService { get; set; } = default!;
 
     private static string GetUserDisplayText(AppUser user)
     {
@@ -96,7 +97,7 @@ partial class TaskListComponent
 
     private async Task LoadTasksForSelectedDepartmentAsync(bool forceReload = false)
     {
-        var departmentId = StaticUserInfoBlazor.SelectedDepartment?.DepartmentId;
+        var departmentId = UiStateService.SelectedDepartment?.DepartmentId;
         if (!departmentId.HasValue)
             return;
 

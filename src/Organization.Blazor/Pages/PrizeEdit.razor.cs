@@ -12,6 +12,7 @@ public partial class PrizeEdit
 
     [Inject] NavigationManager Navigation { get; set; } = null!;
     [Inject] IDepartmentTaskService DepartmentTaskService { get; set; } = null!;
+    [Inject] IUiStateService UiStateService { get; set; } = null!;
 
     private async Task OnPrizeAddedOrUpdated(TPrize prize)
     {
@@ -23,14 +24,14 @@ public partial class PrizeEdit
     {
         _newPrize = new TPrize
         {
-            CreatorUserId = StaticUserInfoBlazor.User!.Id,
+            CreatorUserId = UiStateService.User!.Id,
             CreatorUser = new AppUser
             {
-                Id = StaticUserInfoBlazor.User.Id,
-                UserName = StaticUserInfoBlazor.User.DisplayName ?? StaticUserInfoBlazor.User.UserName,
-                DisplayName = StaticUserInfoBlazor.User.DisplayName ?? StaticUserInfoBlazor.User.UserName,
+                Id = UiStateService.User.Id,
+                UserName = UiStateService.User.DisplayName ?? UiStateService.User.UserName,
+                DisplayName = UiStateService.User.DisplayName ?? UiStateService.User.UserName,
             },
-            DepartmentId = StaticUserInfoBlazor.SelectedDepartment!.DepartmentId,
+            DepartmentId = UiStateService.SelectedDepartment!.DepartmentId,
             Status = Shared.PrizeStatusEnum.Available,
         };
     }
@@ -43,7 +44,7 @@ public partial class PrizeEdit
         }
 
         ShowSpinner = true;
-        if (StaticUserInfoBlazor.User is null)
+        if (UiStateService.User is null)
         {
             Navigation.NavigateTo("/");
             return;
@@ -51,10 +52,10 @@ public partial class PrizeEdit
 
         BuildEmptyPrize();
 
-        if (StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.OrganizationAdmin || StaticUserInfoBlazor.DepartmentRole == Shared.RolesEnum.EnterpriseAdmin)
+        if (UiStateService.HasAnyRole(Shared.RolesEnum.OrganizationAdmin, Shared.RolesEnum.EnterpriseAdmin))
         {
             var (usersWithAccessToOrganization, formResultUsersWithAccessToOrganization) =
-                await DepartmentTaskService.GetUsersWithAccessToOrganizationAsync(StaticUserInfoBlazor.SelectedOrganization!.Id, CancellationToken.None);
+            await DepartmentTaskService.GetUsersWithAccessToOrganizationAsync(UiStateService.SelectedOrganization!.Id, CancellationToken.None);
             if (formResultUsersWithAccessToOrganization is not null && FormResult is not null)
             {
                 FormResult.SetFormResult(formResultUsersWithAccessToOrganization);
@@ -66,7 +67,7 @@ public partial class PrizeEdit
         }
 
         var (usersWithAccessToDepartment, formResultUsersWithAccessToDepartment) =
-            await DepartmentTaskService.GetUsersWithAccessToDepartmentAsync(StaticUserInfoBlazor.SelectedDepartment!.DepartmentId, CancellationToken.None);
+            await DepartmentTaskService.GetUsersWithAccessToDepartmentAsync(UiStateService.SelectedDepartment!.DepartmentId, CancellationToken.None);
         if (formResultUsersWithAccessToDepartment is not null && FormResult is not null)
         {
             FormResult.SetFormResult(formResultUsersWithAccessToDepartment);

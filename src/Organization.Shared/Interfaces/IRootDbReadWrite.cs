@@ -54,6 +54,26 @@ public interface IRootDbReadWrite
     public Task<List<TAppUserDepartment>> GetUserDepartmentsAsync(string userId, CancellationToken ct);
 
     /// <summary>
+    /// Creates or updates a user-organization membership and synchronizes its role rows.
+    /// </summary>
+    /// <param name="appUserId">User id.</param>
+    /// <param name="organizationId">Organization id.</param>
+    /// <param name="roles">Roles to persist for this membership.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The saved membership including Organization and Roles.</returns>
+    public Task<TAppUserOrganization> SaveUserOrganizationMembershipRolesAsync(string appUserId, int organizationId, IEnumerable<RolesEnum> roles, CancellationToken ct);
+
+    /// <summary>
+    /// Creates or updates a user-department membership and synchronizes its role rows.
+    /// </summary>
+    /// <param name="appUserId">User id.</param>
+    /// <param name="departmentId">Department id.</param>
+    /// <param name="roles">Roles to persist for this membership.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The saved membership including Department and Roles.</returns>
+    public Task<TAppUserDepartment> SaveUserDepartmentMembershipRolesAsync(string appUserId, int departmentId, IEnumerable<RolesEnum> roles, CancellationToken ct);
+
+    /// <summary>
     /// Get users in organization
     /// </summary>
     /// <param name="organizationId">Organization Id</param>

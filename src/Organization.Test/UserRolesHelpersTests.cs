@@ -18,6 +18,106 @@ public class UserRolesHelpersTests
         canAccess.Should().BeTrue();
     }
 
+    [Fact]
+    public async Task CanAccessUserBudgetAsync_WhenUserHasBudgetAdministratorRoleInDepartment_ReturnsTrue()
+    {
+        var user = CreateUser("user-1");
+        var db = new StubRootDbReadWrite
+        {
+            UserDepartments =
+            [
+                new TAppUserDepartment
+                {
+                    AppUserId = "user-1",
+                    DepartmentId = 42,
+                    Roles =
+                    [
+                        new TAppUserDepartmentRole { Role = RolesEnum.BudgetAdministrator }
+                    ]
+                }
+            ]
+        };
+
+        var canAccess = await UserRolesHelpers.CanAccessUserBudgetAsync(user, "user-2", 42, db, TestContext.Current.CancellationToken);
+
+        canAccess.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CanAccessUserBudgetAsync_WhenUserIsOnlyEnterpriseAdmin_ReturnsFalse()
+    {
+        var user = CreateUser("user-1");
+        var db = new StubRootDbReadWrite
+        {
+            UserOrganizations =
+            [
+                new TAppUserOrganization
+                {
+                    AppUserId = "user-1",
+                    OrganizationId = 10,
+                    Roles =
+                    [
+                        new TAppUserOrganizationRole { Role = RolesEnum.EnterpriseAdmin }
+                    ]
+                }
+            ]
+        };
+
+        var canAccess = await UserRolesHelpers.CanAccessUserBudgetAsync(user, "user-2", 42, db, TestContext.Current.CancellationToken);
+
+        canAccess.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task IsBudgetAdministratorAsync_WhenUserHasDepartmentBudgetAdministratorRole_ReturnsTrue()
+    {
+        var user = CreateUser("user-1");
+        var db = new StubRootDbReadWrite
+        {
+            UserDepartments =
+            [
+                new TAppUserDepartment
+                {
+                    AppUserId = "user-1",
+                    DepartmentId = 42,
+                    Roles =
+                    [
+                        new TAppUserDepartmentRole { Role = RolesEnum.BudgetAdministrator }
+                    ]
+                }
+            ]
+        };
+
+        var isBudgetAdmin = await UserRolesHelpers.IsBudgetAdministratorAsync(user, 42, db, TestContext.Current.CancellationToken);
+
+        isBudgetAdmin.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task IsBudgetAdministratorAsync_WhenUserLacksBudgetAdministratorRole_ReturnsFalse()
+    {
+        var user = CreateUser("user-1");
+        var db = new StubRootDbReadWrite
+        {
+            UserDepartments =
+            [
+                new TAppUserDepartment
+                {
+                    AppUserId = "user-1",
+                    DepartmentId = 42,
+                    Roles =
+                    [
+                        new TAppUserDepartmentRole { Role = RolesEnum.DepartmentAdmin }
+                    ]
+                }
+            ]
+        };
+
+        var isBudgetAdmin = await UserRolesHelpers.IsBudgetAdministratorAsync(user, 42, db, TestContext.Current.CancellationToken);
+
+        isBudgetAdmin.Should().BeFalse();
+    }
+
     private static ClaimsPrincipal CreateUser(string userId)
     {
         var identity = new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, userId)], "TestAuth");
@@ -26,9 +126,15 @@ public class UserRolesHelpersTests
 
     private sealed class StubRootDbReadWrite : IRootDbReadWrite
     {
-        public Task<List<TAppUserOrganization>> GetUserOrganizationsAsync(string userId, CancellationToken ct) => Task.FromResult(new List<TAppUserOrganization>());
+        public List<TAppUserOrganization> UserOrganizations { get; init; } = [];
 
-        public Task<List<TAppUserDepartment>> GetUserDepartmentsAsync(string userId, CancellationToken ct) => Task.FromResult(new List<TAppUserDepartment>());
+        public List<TAppUserDepartment> UserDepartments { get; init; } = [];
+
+        public Task<List<TAppUserOrganization>> GetUserOrganizationsAsync(string userId, CancellationToken ct)
+            => Task.FromResult(UserOrganizations.Where(c => c.AppUserId == userId).ToList());
+
+        public Task<List<TAppUserDepartment>> GetUserDepartmentsAsync(string userId, CancellationToken ct)
+            => Task.FromResult(UserDepartments.Where(c => c.AppUserId == userId).ToList());
 
         public Task<List<AppUser>> GetUsersInOrganizationAsync(int organizationId, CancellationToken ct) => Task.FromResult(new List<AppUser>());
 
@@ -41,6 +147,22 @@ public class UserRolesHelpersTests
         public Task<List<TDepartment>?> GetDepartmentsAsync(int organizationId, string userId, CancellationToken ct) => Task.FromResult<List<TDepartment>?>(null);
 
         public Task<List<TTask>> GetTasksByDepartmentAsync(int departmentId, CancellationToken ct) => Task.FromResult(new List<TTask>());
+
+        public Task<TAppUserOrganization> SaveUserOrganizationMembershipRolesAsync(string appUserId, int organizationId, IEnumerable<RolesEnum> roles, CancellationToken ct)
+            => Task.FromResult(new TAppUserOrganization
+            {
+                AppUserId = appUserId,
+                OrganizationId = organizationId,
+                Roles = roles.Select(role => new TAppUserOrganizationRole { Role = role }).ToList()
+            });
+
+        public Task<TAppUserDepartment> SaveUserDepartmentMembershipRolesAsync(string appUserId, int departmentId, IEnumerable<RolesEnum> roles, CancellationToken ct)
+            => Task.FromResult(new TAppUserDepartment
+            {
+                AppUserId = appUserId,
+                DepartmentId = departmentId,
+                Roles = roles.Select(role => new TAppUserDepartmentRole { Role = role }).ToList()
+            });
 
         public Task<List<string>> GetDistinctTaskTagsByDepartmentAsync(int departmentId, CancellationToken ct) => Task.FromResult(new List<string>());
 
