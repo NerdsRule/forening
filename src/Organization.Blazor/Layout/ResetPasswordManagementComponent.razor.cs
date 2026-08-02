@@ -20,7 +20,7 @@ public partial class ResetPasswordManagementComponent : ComponentBase
         {
             var tokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
             var cancellationToken = tokenSource.Token;
-            var (rows, result) = await ResetPasswordService.GetResetRequestsAsync(StaticUserInfoBlazor.SelectedOrganization!.OrganizationId, cancellationToken);
+            var (rows, result) = await ResetPasswordService.GetResetRequestsAsync(UiStateService.SelectedOrganization!.OrganizationId, cancellationToken);
             _resetRequests.Clear();
             if (rows is not null)
             {
@@ -46,7 +46,7 @@ public partial class ResetPasswordManagementComponent : ComponentBase
         {
             var tokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
             var cancellationToken = tokenSource.Token;
-            var result = await ResetPasswordService.DeleteResetRequestAsync(StaticUserInfoBlazor.SelectedOrganization!.OrganizationId, id, cancellationToken);
+            var result = await ResetPasswordService.DeleteResetRequestAsync(UiStateService.SelectedOrganization!.OrganizationId, id, cancellationToken);
             _formResult.SetFormResult(result, result.Succeeded ? 5 : 0);
 
             if (result.Succeeded)
@@ -65,4 +65,5 @@ public partial class ResetPasswordManagementComponent : ComponentBase
     }
 
     [Inject] private IResetPasswordService ResetPasswordService { get; set; } = default!;
+    [Inject] private IUiStateService UiStateService { get; set; } = default!;
 }

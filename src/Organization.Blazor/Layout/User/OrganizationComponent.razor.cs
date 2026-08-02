@@ -10,6 +10,7 @@ partial class OrganizationComponent
     [Parameter] public TAppUserOrganization? AppUserOrganization { get; set; }
     [Parameter] public List<TAppUserDepartment> AppUserDepartments { get; set; } = new();
     [Inject] private IAccountService AccountService { get; set; } = default!;
+    [Inject] private IUiStateService UiStateService { get; set; } = default!;
 
     private async Task HandleUpdateRoleAsync()
     {
@@ -55,7 +56,7 @@ partial class OrganizationComponent
         {
             result.appUserDepartment.Department = _departments.FirstOrDefault(d => d.Id == result.appUserDepartment.DepartmentId);
             AppUserDepartments.Add(result.appUserDepartment);
-            _newAppUserDepartment = new TAppUserDepartment { AppUserId = StaticUserInfoBlazor.User!.Id };
+            _newAppUserDepartment = new TAppUserDepartment { AppUserId = UiStateService.User!.Id };
         } else if (result.formResult != null)
         {
             _updateResult.SetFormResult(result.formResult, 2);

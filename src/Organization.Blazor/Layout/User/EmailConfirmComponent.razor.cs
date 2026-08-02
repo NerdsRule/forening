@@ -16,9 +16,10 @@ partial class EmailConfirmComponent : ComponentBase
         LastResult.ErrorList.Any(IsInvalidOrExpiredTokenMessage);
 
     private bool IsAdminUser =>
-        StaticUserInfoBlazor.DepartmentRole == Shared.RolesEnum.DepartmentAdmin ||
-        StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.OrganizationAdmin ||
-        StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.EnterpriseAdmin;
+        UiStateService.HasAnyRole(
+            Shared.RolesEnum.DepartmentAdmin,
+            Shared.RolesEnum.OrganizationAdmin,
+            Shared.RolesEnum.EnterpriseAdmin);
 
     [Parameter] public string? Token { get; set; }
 
@@ -74,9 +75,9 @@ partial class EmailConfirmComponent : ComponentBase
 
             if (result.Succeeded)
             {
-                if (StaticUserInfoBlazor.User is not null)
+                if (UiStateService.User is not null)
                 {
-                    StaticUserInfoBlazor.User.EmailConfirmed = true;
+                    UiStateService.User.EmailConfirmed = true;
                 }
 
                 _ = await AccountService.CheckAuthenticatedAsync();

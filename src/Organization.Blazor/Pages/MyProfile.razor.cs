@@ -33,9 +33,9 @@ partial class MyProfile : IDisposable
     /// </summary>
     public void HandleValidSubmit()
     {
-        StaticUserInfoBlazor.SelectedOrganization = StaticUserInfoBlazor.User!.AppUserOrganizations.FirstOrDefault(o => o.OrganizationId == _organizationDepartmentForm.SelectedOrganizationId);
-        StaticUserInfoBlazor.SelectedDepartment = StaticUserInfoBlazor.User!.AppUserDepartments.FirstOrDefault(d => d.DepartmentId == _organizationDepartmentForm.SelectedDepartmentId);
-        Console.WriteLine($"Selected organization: {StaticUserInfoBlazor.SelectedOrganization?.Organization?.Id}, Selected department: {StaticUserInfoBlazor.SelectedDepartment?.Department?.Id}");
+        UiStateService.SetSelectedOrganization(UiStateService.User!.AppUserOrganizations.FirstOrDefault(o => o.OrganizationId == _organizationDepartmentForm.SelectedOrganizationId));
+        UiStateService.SetSelectedDepartment(UiStateService.User!.AppUserDepartments.FirstOrDefault(d => d.DepartmentId == _organizationDepartmentForm.SelectedDepartmentId));
+        Console.WriteLine($"Selected organization: {UiStateService.SelectedOrganization?.Organization?.Id}, Selected department: {UiStateService.SelectedDepartment?.Department?.Id}");
         IsUpdating = true;
         // save to local storage
         var userLocalStorage = new UserLocalStorage
@@ -60,8 +60,8 @@ partial class MyProfile : IDisposable
         if (_organizationDepartmentForm.SelectedOrganizationId != null)
         {
             var orgId = _organizationDepartmentForm.SelectedOrganizationId.Value;                
-            _organizationDepartmentForm.Departments = [.. StaticUserInfoBlazor.User!.AppUserDepartments
-                .Where(d => d.AppUserId == StaticUserInfoBlazor.User.Id && d.Department!.OrganizationId == orgId)
+            _organizationDepartmentForm.Departments = [.. UiStateService.User!.AppUserDepartments
+                .Where(d => d.AppUserId == UiStateService.User.Id && d.Department!.OrganizationId == orgId)
                 .Select(c => c.Department!)];
         }
         else
@@ -90,17 +90,17 @@ partial class MyProfile : IDisposable
 
         // Load user info
         _ = await AccountService.CheckAuthenticatedAsync();
-        if (StaticUserInfoBlazor.User is null)
+        if (UiStateService.User is null)
         {
             Navigation.NavigateTo("/");
             return;
         }
-        _organizationDepartmentForm.SelectedOrganization = StaticUserInfoBlazor.SelectedOrganization?.Organization;
-        _organizationDepartmentForm.SelectedDepartment = StaticUserInfoBlazor.SelectedDepartment?.Department;
-        _organizationDepartmentForm.SelectedOrganizationId = StaticUserInfoBlazor.SelectedOrganization?.OrganizationId;
-        _organizationDepartmentForm.SelectedDepartmentId = StaticUserInfoBlazor.SelectedDepartment?.Id;
-        _organizationDepartmentForm.Organizations = [.. StaticUserInfoBlazor.User.AppUserOrganizations.Select(c => c.Organization!)];
-        _organizationDepartmentForm.Departments = [.. StaticUserInfoBlazor.User.AppUserDepartments.Where(d => d.AppUserId == StaticUserInfoBlazor.User.Id).Select(c => c.Department!)];
+        _organizationDepartmentForm.SelectedOrganization = UiStateService.SelectedOrganization?.Organization;
+        _organizationDepartmentForm.SelectedDepartment = UiStateService.SelectedDepartment?.Department;
+        _organizationDepartmentForm.SelectedOrganizationId = UiStateService.SelectedOrganization?.OrganizationId;
+        _organizationDepartmentForm.SelectedDepartmentId = UiStateService.SelectedDepartment?.Id;
+        _organizationDepartmentForm.Organizations = [.. UiStateService.User.AppUserOrganizations.Select(c => c.Organization!)];
+        _organizationDepartmentForm.Departments = [.. UiStateService.User.AppUserDepartments.Where(d => d.AppUserId == UiStateService.User.Id).Select(c => c.Department!)];
         await base.OnInitializedAsync();
     }
 

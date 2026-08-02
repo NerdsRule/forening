@@ -16,13 +16,13 @@ partial class DepartmentPrizeComponent
 	private bool DisableStatus { get; set; } = false;
 	private bool ShowSpinner { get; set; } = false;
 	private string AssignedUserSearchText { get; set; } = string.Empty;
-	private bool IsDepartmentAdmin { get; set; } = StaticUserInfoBlazor.DepartmentRole == Shared.RolesEnum.DepartmentAdmin;
-	private bool IsOrganizationAdmin { get; set; } = StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.OrganizationAdmin;
-	private bool IsEnterpriseAdmin { get; set; } = StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.EnterpriseAdmin;
-	private bool IsPrizeAssignedToMe => ChildContent.AssignedUserId == StaticUserInfoBlazor.User?.Id;
+	private bool IsDepartmentAdmin { get; set; }
+	private bool IsOrganizationAdmin { get; set; }
+	private bool IsEnterpriseAdmin { get; set; }
+	private bool IsPrizeAssignedToMe => ChildContent.AssignedUserId == UiStateService.User?.Id;
 	private string CreatorDisplayName => ChildContent.CreatorUser?.DisplayName ?? ChildContent.CreatorUser?.UserName ?? "Unknown creator";
 	private string AddUpdateText => ChildContent.Id == 0 ? "Add Prize" : "Update Prize";
-	private (string text, Shared.PrizeStatusEnum enumValue)[] StatusOptions => PrizeWorkflows.GetAvailablePrizeStatus(ChildContent.Status, [StaticUserInfoBlazor.DepartmentRole, StaticUserInfoBlazor.OrganizationRole], IsPrizeAssignedToMe);
+	private (string text, Shared.PrizeStatusEnum enumValue)[] StatusOptions => PrizeWorkflows.GetAvailablePrizeStatus(ChildContent.Status, UiStateService.CurrentRoles, IsPrizeAssignedToMe);
 
 	[Parameter] public bool InitDisplayDetails { get; set; } = false;
 	[Parameter] public TPrize ChildContent { get; set; } = null!;
@@ -32,9 +32,14 @@ partial class DepartmentPrizeComponent
 
 	[Inject] private IPrizeService PrizeService { get; set; } = null!;
 	[Inject] private IJSRuntime JsRuntime { get; set; } = null!;
+	[Inject] private IUiStateService UiStateService { get; set; } = null!;
 
 	private void SetDisableProperties()
 	{
+		IsDepartmentAdmin = UiStateService.HasRole(Shared.RolesEnum.DepartmentAdmin);
+		IsOrganizationAdmin = UiStateService.HasRole(Shared.RolesEnum.OrganizationAdmin);
+		IsEnterpriseAdmin = UiStateService.HasRole(Shared.RolesEnum.EnterpriseAdmin);
+
 		var isAdmin = IsDepartmentAdmin || IsOrganizationAdmin || IsEnterpriseAdmin;
 		var isNewPrize = ChildContent.Id == 0;
 
@@ -74,10 +79,10 @@ partial class DepartmentPrizeComponent
 		FormResultComponent.ClearFormResult();
 
 		// Ensure required ownership context is set for new prizes.
-		prize.CreatorUserId ??= StaticUserInfoBlazor.User?.Id ?? string.Empty;
+		prize.CreatorUserId ??= UiStateService.User?.Id ?? string.Empty;
 		if (prize.DepartmentId == 0)
 		{
-			prize.DepartmentId = StaticUserInfoBlazor.SelectedDepartment?.DepartmentId ?? 0;
+			prize.DepartmentId = UiStateService.SelectedDepartment?.DepartmentId ?? 0;
 		}
 
 		using CancellationTokenSource cts = new(TimeSpan.FromSeconds(60));

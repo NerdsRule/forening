@@ -12,6 +12,7 @@ partial class OrganizationEditComponent
 
 	[Inject] private IOrganizationService OrganizationService { get; set; } = default!;
 	[Inject] private IDepartmentService DepartmentService { get; set; } = default!;
+	[Inject] private IUiStateService UiStateService { get; set; } = default!;
 
 	private string AddUpdateText => _organization.Id == 0 ? "Add" : "Update";
 
@@ -139,7 +140,7 @@ partial class OrganizationEditComponent
 			return;
 		}
 
-		if (StaticUserInfoBlazor.User is null)
+		if (UiStateService.User is null)
 		{
 			_departments = [];
 			_formResult.SetFormResult(new FormResult { Succeeded = false, ErrorList = ["User not loaded"] });
@@ -148,7 +149,7 @@ partial class OrganizationEditComponent
 
 		_showSpinner = true;
 		var ct = new CancellationTokenSource(TimeSpan.FromSeconds(60)).Token;
-		var result = await DepartmentService.GetDepartmentsByOrganizationIdAsync(StaticUserInfoBlazor.User.Id, organizationId, ct);
+		var result = await DepartmentService.GetDepartmentsByOrganizationIdAsync(UiStateService.User.Id, organizationId, ct);
 		_showSpinner = false;
 
 		if (result.formResult is not null)

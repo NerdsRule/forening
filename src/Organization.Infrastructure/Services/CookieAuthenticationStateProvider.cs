@@ -11,7 +11,7 @@ namespace Organization.Infrastructure.Services;
 /// <param name="httpClientFactory">Factory to retrieve auth client.</param>
 /// <param name="privateLocalStorageService">Local storage service.</param>
 /// <param name="logger">Logger instance.</param>
-public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFactory, ILogger<CookieAuthenticationStateProvider> logger, IPrivateLocalStorageService privateLocalStorageService) : AuthenticationStateProvider, IAccountService
+public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFactory, ILogger<CookieAuthenticationStateProvider> logger, IPrivateLocalStorageService privateLocalStorageService, IUiStateService uiStateService) : AuthenticationStateProvider, IAccountService
 {
     /// <summary>
     /// Map the JavaScript-formatted properties to C#-formatted classes.
@@ -316,9 +316,10 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
 
         // default to not authenticated
         var user = unauthenticated;
-        StaticUserInfoBlazor.User = null;
-        StaticUserInfoBlazor.SelectedOrganization = null;
-        StaticUserInfoBlazor.SelectedDepartment = null;
+        uiStateService.SetCurrentPrincipal(null);
+        uiStateService.SetUser(null);
+        uiStateService.SetSelectedOrganization(null);
+        uiStateService.SetSelectedDepartment(null);
         try
         {
             // the user info endpoint is secured, so if the user isn't logged in this will fail
@@ -339,66 +340,68 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
                     new(ClaimTypes.Email, userInfo.Email),
                 };
 
-                StaticUserInfoBlazor.User = userInfo;
+                uiStateService.SetUser(userInfo);
                 // Read user settings from local storage
                 try
                 {
+                    TAppUserOrganization? selectedOrganization = null;
+                    TAppUserDepartment? selectedDepartment = null;
+
                     var userLocalStorage = await _localStorageService.GetUserSettingsAsync(StaticUserInfoBlazor.UserLocalStorageKey);
                     if (userLocalStorage != null)
                     {
                         if (userLocalStorage.SelectedOrganizationId != 0)
                         {
-                            StaticUserInfoBlazor.SelectedOrganization = userInfo.AppUserOrganizations.FirstOrDefault(o => o.OrganizationId == userLocalStorage.SelectedOrganizationId);
-                            if (StaticUserInfoBlazor.SelectedOrganization != null)
+                            selectedOrganization = userInfo.AppUserOrganizations.FirstOrDefault(o => o.OrganizationId == userLocalStorage.SelectedOrganizationId);
+                            if (selectedOrganization == null)
                             {
-                                claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.OrganizationRole.ToString()));
+                                selectedOrganization = userInfo.AppUserOrganizations.FirstOrDefault();
                             }
-                            else
+                            if (selectedOrganization != null)
                             {
-                                StaticUserInfoBlazor.SelectedOrganization = userInfo.AppUserOrganizations.FirstOrDefault();
-                                if (StaticUserInfoBlazor.SelectedOrganization != null)
-                                {
-                                    claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.OrganizationRole.ToString()));
-                                }
+                                claims.Add(new Claim(ClaimTypes.Role, selectedOrganization.Role.ToString()));
                             }
                         }
                         if (userLocalStorage.SelectedDepartmentId != 0)
                         {
-                            StaticUserInfoBlazor.SelectedDepartment = userInfo.AppUserDepartments.FirstOrDefault(d => d.DepartmentId == userLocalStorage.SelectedDepartmentId);
-                            if (StaticUserInfoBlazor.SelectedDepartment != null)
+                            selectedDepartment = userInfo.AppUserDepartments.FirstOrDefault(d => d.DepartmentId == userLocalStorage.SelectedDepartmentId);
+                            if (selectedDepartment == null)
                             {
-                                claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.DepartmentRole.ToString()));
+                                selectedDepartment = userInfo.AppUserDepartments.FirstOrDefault();
                             }
-                            else
+                            if (selectedDepartment != null)
                             {
-                                StaticUserInfoBlazor.SelectedDepartment = userInfo.AppUserDepartments.FirstOrDefault();
-                                if (StaticUserInfoBlazor.SelectedDepartment != null)
-                                {
-                                    claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.DepartmentRole.ToString()));
-                                }
+                                claims.Add(new Claim(ClaimTypes.Role, selectedDepartment.Role.ToString()));
                             }
                         }
+
+                        uiStateService.SetSelectedOrganization(selectedOrganization);
+                        uiStateService.SetSelectedDepartment(selectedDepartment);
                     }
                     else
                     {
-                        // store static user info for Blazor client
-                        if (userInfo.AppUserOrganizations.Count > 0)
+                        // store selection for Blazor client
+                        selectedOrganization = userInfo.AppUserOrganizations.FirstOrDefault();
+                        selectedDepartment = userInfo.AppUserDepartments.FirstOrDefault();
+
+                        if (selectedOrganization != null)
                         {
-                            StaticUserInfoBlazor.SelectedOrganization = userInfo.AppUserOrganizations[0];
-                            claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.OrganizationRole.ToString()));
+                            claims.Add(new Claim(ClaimTypes.Role, selectedOrganization.Role.ToString()));
                         }
-                        if (userInfo.AppUserDepartments.Count > 0)
+                        if (selectedDepartment != null)
                         {
-                            StaticUserInfoBlazor.SelectedDepartment = userInfo.AppUserDepartments[0];
-                            claims.Add(new Claim(ClaimTypes.Role, StaticUserInfoBlazor.DepartmentRole.ToString()));
+                            claims.Add(new Claim(ClaimTypes.Role, selectedDepartment.Role.ToString()));
                         }
-                        if (StaticUserInfoBlazor.SelectedOrganization != null && StaticUserInfoBlazor.SelectedDepartment != null)
+                        uiStateService.SetSelectedOrganization(selectedOrganization);
+                        uiStateService.SetSelectedDepartment(selectedDepartment);
+
+                        if (selectedOrganization != null && selectedDepartment != null)
                         {
                             // save to local storage
                             await _localStorageService.SaveUserSettingsAsync(new UserLocalStorage
                             {
-                                SelectedOrganizationId = StaticUserInfoBlazor.SelectedOrganization?.OrganizationId ?? 0,
-                                SelectedDepartmentId = StaticUserInfoBlazor.SelectedDepartment?.DepartmentId ?? 0
+                                SelectedOrganizationId = selectedOrganization.OrganizationId,
+                                SelectedDepartmentId = selectedDepartment.DepartmentId
                             }, StaticUserInfoBlazor.UserLocalStorageKey);
                         }
                     }
@@ -414,6 +417,7 @@ public class CookieAuthenticationStateProvider(IHttpClientFactory httpClientFact
                 // set the principal
                 var id = new ClaimsIdentity(claims, nameof(CookieAuthenticationStateProvider));
                 user = new ClaimsPrincipal(id);
+                uiStateService.SetCurrentPrincipal(user);
                 authenticated = true;
             }
             else

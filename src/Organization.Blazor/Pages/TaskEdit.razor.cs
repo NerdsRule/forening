@@ -14,6 +14,7 @@ public partial class TaskEdit
     private List<UserModel> UsersWithAccess => [.. UsersWithAccessToOrganization.Union(UsersWithAccessToDepartment)];
     [Inject] NavigationManager Navigation { get; set; } = null!;
     [Inject] IDepartmentTaskService DepartmentTaskService { get; set; } = null!;
+    [Inject] IUiStateService UiStateService { get; set; } = null!;
     /// <summary>
     /// Handle the event when a task is added or updated in the DepartmentTaskComponent. This method will be called with the task that was added or updated, and it can be used to perform any necessary actions, such as displaying a success message or refreshing a list of tasks.
     /// </summary>
@@ -30,7 +31,7 @@ public partial class TaskEdit
     /// </summary> <returns>A task that represents the asynchronous operation.</returns>
     private void BuildEmptyTask()
     {
-        _newTask = new TTask { CreatorUserId = StaticUserInfoBlazor.User!.Id, CreatorUser = new AppUser { Id = StaticUserInfoBlazor.User.Id, UserName = StaticUserInfoBlazor.User.DisplayName ?? StaticUserInfoBlazor.User.UserName, DisplayName = StaticUserInfoBlazor.User.DisplayName ?? StaticUserInfoBlazor.User.UserName }, DueDateUtc = DateTime.UtcNow.AddDays(7), DepartmentId = StaticUserInfoBlazor.SelectedDepartment!.DepartmentId, Department = StaticUserInfoBlazor.SelectedDepartment!.Department };
+        _newTask = new TTask { CreatorUserId = UiStateService.User!.Id, CreatorUser = new AppUser { Id = UiStateService.User.Id, UserName = UiStateService.User.DisplayName ?? UiStateService.User.UserName, DisplayName = UiStateService.User.DisplayName ?? UiStateService.User.UserName }, DueDateUtc = DateTime.UtcNow.AddDays(7), DepartmentId = UiStateService.SelectedDepartment!.DepartmentId, Department = UiStateService.SelectedDepartment!.Department };
     }
 
     /// <summary>
@@ -46,23 +47,23 @@ public partial class TaskEdit
 
         ShowSpinner = true;
         //_ = await AccountService.CheckAuthenticatedAsync();
-        if (StaticUserInfoBlazor.User is null)
+        if (UiStateService.User is null)
         {
             Navigation.NavigateTo("/");
             return;
         }
         BuildEmptyTask();
         
-        if (StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.OrganizationAdmin || StaticUserInfoBlazor.DepartmentRole == Shared.RolesEnum.EnterpriseAdmin)
+        if (UiStateService.HasAnyRole(Shared.RolesEnum.OrganizationAdmin, Shared.RolesEnum.EnterpriseAdmin))
         {
-            var (usersWithAccessToOrganization, formResultUsersWithAccessToOrganization) = await DepartmentTaskService.GetUsersWithAccessToOrganizationAsync(StaticUserInfoBlazor.SelectedOrganization!.Id, CancellationToken.None);
+            var (usersWithAccessToOrganization, formResultUsersWithAccessToOrganization) = await DepartmentTaskService.GetUsersWithAccessToOrganizationAsync(UiStateService.SelectedOrganization!.Id, CancellationToken.None);
             if (formResultUsersWithAccessToOrganization is not null && FormResult is not null)
                 FormResult.SetFormResult(formResultUsersWithAccessToOrganization);
             else if (usersWithAccessToOrganization is not null)
                 UsersWithAccessToOrganization = usersWithAccessToOrganization;
         }
-        //Console.WriteLine($"Selected department: {StaticUserInfoBlazor.SelectedDepartment?.DepartmentId}");
-        var (usersWithAccessToDepartment, formResultUsersWithAccessToDepartment) = await DepartmentTaskService.GetUsersWithAccessToDepartmentAsync(StaticUserInfoBlazor.SelectedDepartment!.DepartmentId, CancellationToken.None);
+        //Console.WriteLine($"Selected department: {UiStateService.SelectedDepartment?.DepartmentId}");
+        var (usersWithAccessToDepartment, formResultUsersWithAccessToDepartment) = await DepartmentTaskService.GetUsersWithAccessToDepartmentAsync(UiStateService.SelectedDepartment!.DepartmentId, CancellationToken.None);
         if (formResultUsersWithAccessToDepartment is not null && FormResult is not null)
             FormResult.SetFormResult(formResultUsersWithAccessToDepartment);
         else if (usersWithAccessToDepartment is not null)

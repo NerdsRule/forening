@@ -10,12 +10,14 @@ partial class PrizeListComponent
     [Parameter] public List<UserModel> UsersWithAccess { get; set; } = [];
 
     [Inject] private IPrizeService PrizeService { get; set; } = default!;
+    [Inject] private IUiStateService UiStateService { get; set; } = default!;
 
-    private static bool HasPrizeReadAccess =>
-        StaticUserInfoBlazor.DepartmentRole == Shared.RolesEnum.DepartmentAdmin ||
-        StaticUserInfoBlazor.DepartmentRole == Shared.RolesEnum.DepartmentMember ||
-        StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.OrganizationAdmin ||
-        StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.EnterpriseAdmin;
+        private bool HasPrizeReadAccess =>
+            UiStateService.HasAnyRole(
+                Shared.RolesEnum.DepartmentAdmin,
+                Shared.RolesEnum.DepartmentMember,
+                Shared.RolesEnum.OrganizationAdmin,
+                Shared.RolesEnum.EnterpriseAdmin);
 
     /// <summary>
     /// Refresh prizes for the selected department.
@@ -30,14 +32,14 @@ partial class PrizeListComponent
             return;
         }
 
-        if (StaticUserInfoBlazor.SelectedDepartment is null)
+            if (UiStateService.SelectedDepartment is null)
         {
             _prizeResult.SetFormResult(new FormResult { Succeeded = false, ErrorList = ["No department selected."] }, 2);
             return;
         }
 
         var ct = new CancellationTokenSource(TimeSpan.FromSeconds(60)).Token;
-        var response = await PrizeService.GetPrizesByDepartmentIdAsync(StaticUserInfoBlazor.SelectedDepartment.DepartmentId, ct);
+            var response = await PrizeService.GetPrizesByDepartmentIdAsync(UiStateService.SelectedDepartment.DepartmentId, ct);
         if (response.data != null)
         {
             _prizes = response.data;

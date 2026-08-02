@@ -9,35 +9,35 @@
             <span class="card-title fs-4 d-none d-md-block fw-bold">Your Profile Information</span>
         </div>
         <div class="card-body">
-            @if (StaticUserInfoBlazor.User != null)
+            @if (UiStateService.User != null)
             {
                 <div class="mb-3">
                     <label class="form-label">Display Name:</label>
-                    <InputText class="form-control" @bind-Value="StaticUserInfoBlazor.User.DisplayName" disabled />
+                    <InputText class="form-control" @bind-Value="UiStateService.User.DisplayName" disabled />
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Email:</label>
-                    <InputText class="form-control" @bind-Value="StaticUserInfoBlazor.User.Email" disabled />
+                    <InputText class="form-control" @bind-Value="UiStateService.User.Email" disabled />
                 </div>
                 <div class="mb-3 form-check">
-                    <InputCheckbox class="form-check-input" @bind-Value="StaticUserInfoBlazor.User.EmailConfirmed" disabled />
+                    <InputCheckbox class="form-check-input" @bind-Value="UiStateService.User.EmailConfirmed" disabled />
                     <label class="form-check-label">Email confirmed</label>
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Member number:</label>
-                    <InputText class="form-control" @bind-Value="StaticUserInfoBlazor.User.MemberNumber" disabled />
+                    <InputText class="form-control" @bind-Value="UiStateService.User.MemberNumber" disabled />
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Points earned:</label>
-                    <InputNumber class="form-control" @bind-Value="StaticUserInfoBlazor.User.TotalPointsAwarded" disabled />
+                    <InputNumber class="form-control" @bind-Value="UiStateService.User.TotalPointsAwarded" disabled />
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Points redeemed:</label>
-                    <InputNumber class="form-control" @bind-Value="StaticUserInfoBlazor.User.TotalPointsRedeemed" disabled />
+                    <InputNumber class="form-control" @bind-Value="UiStateService.User.TotalPointsRedeemed" disabled />
                 </div>
                 <div class="mb-3">
                     <label class="form-label">Points balance:</label>
-                    <input class="form-control" value="@StaticUserInfoBlazor.User.PointsBalance" disabled readonly />
+                    <input class="form-control" value="@UiStateService.User.PointsBalance" disabled readonly />
                 </div>
                 <button class="btn btn-success" @onclick="NavigateToChangePassword">Change Password</button>
                 
@@ -64,7 +64,7 @@
                         <option value="">Select Organization</option>
                         @foreach (var org in _organizationDepartmentForm.Organizations)
                         {
-                            <option value="@org.Id">@org.Name (@StaticUserInfoBlazor.OrganizationRole)</option>
+                            <option value="@org.Id">@org.Name (@UiStateService.SelectedOrganization?.Role)</option>
                         }
                     </InputSelect>
                     <ValidationMessage For="@(() => _organizationDepartmentForm.SelectedOrganizationId)" />
@@ -77,7 +77,7 @@
                         <option value="">Select Department</option>
                         @foreach (var dept in _organizationDepartmentForm.Departments)
                         {
-                            <option value="@dept.Id">@dept.Name (@StaticUserInfoBlazor.DepartmentRole)</option>
+                            <option value="@dept.Id">@dept.Name (@UiStateService.SelectedDepartment?.Role)</option>
                         }
                     </InputSelect>
                     <ValidationMessage For="@(() => _organizationDepartmentForm.SelectedDepartmentId)" />
@@ -90,7 +90,7 @@
         </div>
     </div>
     
-    <TaskListComponent AssignedUserIdFilter="@StaticUserInfoBlazor.User?.Id"
+    <TaskListComponent AssignedUserIdFilter="@UiStateService.User?.Id"
                        ShowNotStarted="true"
                        ShowInProgress="true"
                        ShowCompleted="true"

@@ -16,10 +16,11 @@ partial class UserBudgetAdminComponent
 
     [Inject] private IDepartmentTaskService DepartmentTaskService { get; set; } = null!;
     [Inject] private IUserBudgetService UserBudgetService { get; set; } = null!;
+    [Inject] private IUiStateService UiStateService { get; set; } = null!;
 
     protected override async Task OnInitializedAsync()
     {
-        _departmentId = StaticUserInfoBlazor.SelectedDepartment?.DepartmentId;
+        _departmentId = UiStateService.SelectedDepartment?.DepartmentId;
         if (!_departmentId.HasValue)
             return;
 

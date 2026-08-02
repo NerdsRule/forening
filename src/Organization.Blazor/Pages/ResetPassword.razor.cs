@@ -56,16 +56,17 @@ partial class ResetPassword
 
     protected override async Task OnInitializedAsync()
     {
-        if (StaticUserInfoBlazor.User is null)
+        if (UiStateService.User is null)
         {
             Navigation.NavigateTo("/");
             return;
         }
-        _users = await AccountService.GetUsersAsync(StaticUserInfoBlazor.SelectedOrganization?.OrganizationId ?? 0, StaticUserInfoBlazor.SelectedDepartment?.DepartmentId ?? 0);
+        _users = await AccountService.GetUsersAsync(UiStateService.SelectedOrganization?.OrganizationId ?? 0, UiStateService.SelectedDepartment?.DepartmentId ?? 0);
         await base.OnInitializedAsync();
     }
 
     [Inject] private IAccountService AccountService { get; set; } = default!;
     [Inject] private IResetPasswordService ResetPasswordService { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private IUiStateService UiStateService { get; set; } = default!;
 }

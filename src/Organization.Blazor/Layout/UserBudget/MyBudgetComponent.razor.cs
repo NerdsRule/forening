@@ -18,10 +18,9 @@ partial class MyBudgetComponent
     public decimal Sum => _budgets.Sum(budget => budget.Amount);
     public decimal VisibleSum => GetVisibleBudgets().Sum(budget => budget.Amount);
     private bool CanModifyEntries =>
-        StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.EnterpriseAdmin ||
-        StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.BudgetAdministrator ||
-        StaticUserInfoBlazor.DepartmentRole == Shared.RolesEnum.EnterpriseAdmin ||
-        StaticUserInfoBlazor.DepartmentRole == Shared.RolesEnum.BudgetAdministrator;
+        UiStateService.HasAnyRole(
+            Shared.RolesEnum.EnterpriseAdmin,
+            Shared.RolesEnum.BudgetAdministrator);
 
     [Parameter] public bool Collapsed { get; set; } = true;
     [Parameter] public bool CanEdit { get; set; } = true;
@@ -34,6 +33,7 @@ partial class MyBudgetComponent
     [Parameter] public string? FilterTag { get; set; }
     [Parameter] public string? FilterDescription { get; set; }
     [Inject] private IUserBudgetService UserBudgetService { get; set; } = null!;
+    [Inject] private IUiStateService UiStateService { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
     {
@@ -73,7 +73,7 @@ partial class MyBudgetComponent
             return;
 
         using var cancellationTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-        if (string.IsNullOrWhiteSpace(UserId) || string.Equals(UserId, StaticUserInfoBlazor.User?.Id, StringComparison.OrdinalIgnoreCase))
+        if (string.IsNullOrWhiteSpace(UserId) || string.Equals(UserId, UiStateService.User?.Id, StringComparison.OrdinalIgnoreCase))
         {
             var result = await UserBudgetService.GetMyBudgetAsync(_departmentId.Value, cancellationTokenSource.Token);
             if (result.data is not null)
@@ -242,15 +242,15 @@ partial class MyBudgetComponent
 
     private int? ResolveDepartmentId()
     {
-        var selectedDepartmentId = StaticUserInfoBlazor.SelectedDepartment?.DepartmentId;
+        var selectedDepartmentId = UiStateService.SelectedDepartment?.DepartmentId;
         if (selectedDepartmentId.HasValue)
             return selectedDepartmentId.Value;
 
-        return StaticUserInfoBlazor.User?.AppUserDepartments.FirstOrDefault()?.DepartmentId;
+        return UiStateService.User?.AppUserDepartments.FirstOrDefault()?.DepartmentId;
     }
 
     private string? ResolveUserId()
-        => string.IsNullOrWhiteSpace(UserId) ? StaticUserInfoBlazor.User?.Id : UserId;
+        => string.IsNullOrWhiteSpace(UserId) ? UiStateService.User?.Id : UserId;
 
     private static List<string> NormalizeTags(string? value)
     {

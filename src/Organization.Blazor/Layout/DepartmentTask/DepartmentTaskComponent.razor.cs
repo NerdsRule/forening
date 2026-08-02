@@ -6,7 +6,6 @@ namespace Organization.Blazor.Layout.DepartmentTask;
 partial class DepartmentTaskComponent
 {
     private FormResultComponent FormResultComponent { get; set; } = null!;
-    private UserModel Me { get; set; } = StaticUserInfoBlazor.User!;
     private bool DisplayDetails { get; set; } = false;
     private bool DisableSubmit { get; set; } = false;
     private bool DisableDelete { get; set; } = true;
@@ -24,14 +23,14 @@ partial class DepartmentTaskComponent
     private string TagInput { get; set; } = string.Empty;
     private string AssignedUserSearchText { get; set; } = string.Empty;
     private List<string> ExistingDepartmentTags { get; set; } = [];
-    private bool IsDepartmentAdmin { get; set; } = StaticUserInfoBlazor.DepartmentRole == Shared.RolesEnum.DepartmentAdmin;
-    private bool IsOrganizationAdmin { get; set; } = StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.OrganizationAdmin;
-    private bool IsEnterpriseAdmin { get; set; } = StaticUserInfoBlazor.OrganizationRole == Shared.RolesEnum.EnterpriseAdmin;
-    private bool IsDepartmentMember { get; set; } = StaticUserInfoBlazor.DepartmentRole == Shared.RolesEnum.DepartmentMember;
+    private bool IsDepartmentAdmin { get; set; }
+    private bool IsOrganizationAdmin { get; set; }
+    private bool IsEnterpriseAdmin { get; set; }
+    private bool IsDepartmentMember { get; set; }
     private string AddUpdateText => ChildContent.Id == 0 ? "Add Task" : "Update Task";
-    private bool IsThisTaskAssignedToMe => ChildContent.AssignedUserId == StaticUserInfoBlazor.User?.Id;
+    private bool IsThisTaskAssignedToMe => ChildContent.AssignedUserId == UiStateService.User?.Id;
     private bool IsNotAssigned => ChildContent.AssignedUserId == null;
-    private (string text, Shared.TaskStatusEnum enumValue)[] StatusOptions => TaskWorkflows.GetAvailableTaskStatus(ChildContent.Status, [StaticUserInfoBlazor.DepartmentRole, StaticUserInfoBlazor.OrganizationRole], IsThisTaskAssignedToMe);
+    private (string text, Shared.TaskStatusEnum enumValue)[] StatusOptions => TaskWorkflows.GetAvailableTaskStatus(ChildContent.Status, UiStateService.CurrentRoles, IsThisTaskAssignedToMe);
     
     [Parameter] public bool InitDisplayDetails { get; set; } = false;
     [Parameter] public TTask ChildContent { get; set; } = null!;
@@ -47,6 +46,11 @@ partial class DepartmentTaskComponent
     /// </summary>
     private void SetDisableProperties()
     {
+        IsDepartmentAdmin = UiStateService.HasRole(Shared.RolesEnum.DepartmentAdmin);
+        IsOrganizationAdmin = UiStateService.HasRole(Shared.RolesEnum.OrganizationAdmin);
+        IsEnterpriseAdmin = UiStateService.HasRole(Shared.RolesEnum.EnterpriseAdmin);
+        IsDepartmentMember = UiStateService.HasRole(Shared.RolesEnum.DepartmentMember);
+
         if (ChildContent.Status == Shared.TaskStatusEnum.VerifiedCompleted && !IsDepartmentAdmin && !IsOrganizationAdmin && !IsEnterpriseAdmin)
         {
             DisableName = true;
@@ -99,13 +103,13 @@ partial class DepartmentTaskComponent
     /// </summary>
     private bool IsAssignedToMe 
     {
-        get => ChildContent?.AssignedUserId == StaticUserInfoBlazor.User?.Id;
+        get => ChildContent?.AssignedUserId == UiStateService.User?.Id;
         set 
         {
             if (value)
             {
-                ChildContent.AssignedUserId = StaticUserInfoBlazor.User!.Id;
-                ChildContent.AssignedUser = new AppUser { Id = StaticUserInfoBlazor.User.Id, UserName = StaticUserInfoBlazor.User.UserName };
+                ChildContent.AssignedUserId = UiStateService.User!.Id;
+                ChildContent.AssignedUser = new AppUser { Id = UiStateService.User.Id, UserName = UiStateService.User.UserName };
             }
             else
             {
@@ -313,7 +317,7 @@ partial class DepartmentTaskComponent
     /// </summary>
     private async Task UpdateAwardedPointsForUserAsync()
     {
-        if (StaticUserInfoBlazor.User is null)
+        if (UiStateService.User is null)
         {
             Debug.WriteLine("No user is currently logged in.");
             return;
